@@ -1,33 +1,80 @@
-# GoRASA — Next.js App
+# GoRASA — CockroachDB Standalone
 
-This is the active GoRASA codebase — a Next.js 15 luxury travel platform with Supabase auth, TBO API flight/hotel search, and multi-environment CI/CD.
+Standalone deployment of GoRASA travel platform using CockroachDB and Better Auth.
+
+## Stack
+
+- **Database:** CockroachDB (losing-cyclops-27787)
+- **Auth:** Better Auth (email/password + Google OAuth)
+- **Framework:** Next.js 16.2.7
+- **ORM:** Prisma
+- **Deployment:** Vercel
 
 ## Quick Start
 
 ```bash
+# Install dependencies
 npm install
-cp .env.local.example .env.local   # Fill in env vars
+
+# Set up environment
+cp .env.example .env.local
+# Edit .env.local with your values
+
+# Generate Prisma client
+npx prisma generate
+
+# Run development server
 npm run dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000).
+## Environment Variables
 
-## Environments
+See `.env.example` for required variables.
 
-| Env | Branch | URL |
-|---|---|---|
-| Dev | `dev` | https://project-uul0v.vercel.app |
-| QA | `qa` | https://project-sm6gc.vercel.app |
-| Prod | `main` | https://gorasa-next.vercel.app |
+## Database
 
-## Key Stack
+CockroachDB cluster: `losing-cyclops-27787.j77.aws-ap-south-1.cockroachlabs.cloud`
 
-- **Next.js 15** (App Router)
-- **Supabase** (auth + database)
-- **TBO API** (flights + hotels)
-- **Tailwind CSS** + **shadcn/ui**
-- **Vercel** hosting
+Tables: 32 (User, Booking, Lead, tickets, etc.)
 
-## Deploy
+## Auth
 
-Push to `dev` or merge PR to `qa` triggers auto-deploy. Production deploys manually via GitHub Actions `deploy-prod.yml` with reviewer approval.
+Better Auth handles:
+- Email/password authentication
+- Google OAuth
+- Session management
+- User profiles
+
+API routes: `/api/auth/*`
+
+## Deployment
+
+```bash
+# Deploy to Vercel
+vercel deploy --prod
+```
+
+## Architecture
+
+```
+Vercel (Next.js)
+    ↓
+CockroachDB (losing-cyclops-27787)
+    ↓
+Better Auth (session management)
+```
+
+## Migration from Supabase
+
+Data migrated from Supabase (isubgeemvhvhnhikxbjb) to CockroachDB:
+- 7 users
+- 17 bookings
+- 15 leads
+- 6 tickets
+- 238 total rows
+
+## Security
+
+- All secrets in `.env.local` (gitignored)
+- Never commit credentials
+- Use Vercel env vars for production
