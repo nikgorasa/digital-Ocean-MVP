@@ -1,0 +1,489 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+model User {
+  id            String                @id @default(cuid())
+  supabaseId    String?               @unique
+  email         String                @unique
+  name          String
+  role          String                @default("CUSTOMER")
+  avatar        String?
+  companyId     String?
+  walletBalance Float                 @default(0)
+  loyaltyPoints Int                   @default(0)
+  loyaltyTier   String                @default("Silver")
+  isActive      Boolean               @default(true)
+  createdAt     DateTime              @default(now())
+  updatedAt     DateTime              @updatedAt
+  passengers    Json?                 @default("[]")
+  preferences   Json?                 @default("{\"sms\": false, \"meal\": \"Vegetarian\", \"seat\": \"Window\", \"email\": true, \"hotel\": \"Deluxe Suite\", \"carrier\": \"Indigo\", \"whatsapp\": true}")
+  wishlist      Json?                 @default("[]")
+  activities    Activity[]
+  bookings      Booking[]
+  cancellations CancellationRequest[]
+  leads         Lead[]
+  Redemption    Redemption[]
+  company       Company?              @relation(fields: [companyId], references: [id])
+}
+
+model Company {
+  id             String          @id @default(cuid())
+  name           String
+  domain         String?
+  walletBalance  Float           @default(0)
+  discountRate   Float           @default(0)
+  isActive       Boolean         @default(true)
+  approvedBy     String?
+  createdAt      DateTime        @default(now())
+  updatedAt      DateTime        @updatedAt
+  corporateRates CorporateRate[]
+  employees      User[]
+}
+
+model CorporateRate {
+  id            String   @id @default(uuid())
+  companyId     String
+  category      String   @default("ALL")
+  destination   String?
+  discountType  String
+  discountValue Float
+  maxDiscount   Float?
+  isActive      Boolean  @default(true)
+  createdAt     DateTime @default(now()) @db.Timestamptz
+  updatedAt     DateTime @default(now()) @updatedAt @db.Timestamptz
+  company       Company  @relation(fields: [companyId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+}
+
+model Lead {
+  id              String     @id @default(cuid())
+  destination     String
+  travelerName    String
+  travelerEmail   String
+  travelerPhone   String?
+  numberOfDays    Int        @default(5)
+  inclusions      String     @default("[]")
+  specificDemands String?
+  notes           String?
+  stage           String     @default("NEW")
+  assignedTo      String?
+  source          String     @default("manual")
+  createdAt       DateTime   @default(now())
+  updatedAt       DateTime   @updatedAt
+  activities      Activity[]
+  assignedUser    User?      @relation(fields: [assignedTo], references: [id])
+}
+
+model Activity {
+  id          String   @id @default(cuid())
+  leadId      String
+  userId      String?
+  type        String
+  description String
+  createdBy   String
+  createdAt   DateTime @default(now())
+  lead        Lead     @relation(fields: [leadId], references: [id])
+  user        User?    @relation(fields: [userId], references: [id])
+}
+
+model Package {
+  id             String   @id @default(cuid())
+  title          String
+  duration       String
+  price          Float
+  originalPrice  Float?
+  rating         Float    @default(4.5)
+  provider       String   @default("GoRASA Direct")
+  overview       String   @default("{}")
+  itinerary      String   @default("{}")
+  inclusions     String   @default("[]")
+  exclusions     String   @default("[]")
+  importantNotes String   @default("{}")
+  images         String   @default("[]")
+  status         String   @default("DRAFT")
+  isActive       Boolean  @default(true)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+  category       String?  @default("STANDARD")
+}
+
+model PricingRule {
+  id            String    @id @default(cuid())
+  type          String
+  destination   String?
+  hotelName     String?
+  markupPercent Float
+  isActive      Boolean   @default(true)
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @default(now()) @updatedAt
+  name          String    @default("Unnamed Rule")
+  category      String    @default("ALL")
+  airlineCode   String?
+  roomType      String?
+  markupType    String    @default("PERCENT")
+  markupValue   Float     @default(0)
+  minPrice      Float?
+  maxPrice      Float?
+  priority      Int       @default(0)
+  validFrom     DateTime? @db.Timestamptz
+  validTo       DateTime? @db.Timestamptz
+}
+
+model Booking {
+  id                String               @id @default(cuid())
+  userId            String
+  type              String
+  itemName          String
+  providerOrAirline String?
+  price             Float
+  originalPrice     Float?
+  discountApplied   Float                @default(0)
+  promoCost         Float                @default(0)
+  couponCodeUsed    String?
+  status            String               @default("CONFIRMED")
+  pnr               String?
+  seatOrRoom        String?
+  leadGuestPan      String?
+  paxCount          Int                  @default(1)
+  travelDates       String?
+  bookedAt          DateTime             @default(now())
+  updatedAt         DateTime             @updatedAt
+  paymentStatus     String               @default("PENDING")
+  confirmedAt       DateTime?            @db.Timestamptz
+  expiresAt         DateTime?            @db.Timestamptz
+  expiredAt         DateTime?            @db.Timestamptz
+  validatedPrice    Float?
+  priceRevalidatedAt DateTime?           @db.Timestamptz
+  priceChangeAmount Float?
+  supplierBookingRef String?
+  metadata          Json?
+  user              User                 @relation(fields: [userId], references: [id])
+  cancellation      CancellationRequest?
+  invoice           Invoice?
+  payment           Payment?
+}
+
+model Payment {
+  id            String    @id @default(cuid())
+  bookingId     String    @unique
+  amount        Float
+  method        String
+  status        String    @default("PENDING")
+  phonepeId     String?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  gateway       String    @default("razorpay")
+  orderId       String?
+  paymentId     String?
+  signature     String?
+  failureReason String?
+  refundedAt    DateTime? @db.Timestamptz
+  refundAmount  Float?
+  metadata      Json?
+  booking       Booking   @relation(fields: [bookingId], references: [id])
+}
+
+model Invoice {
+  id        String   @id @default(cuid())
+  bookingId String   @unique
+  number    String   @unique
+  url       String?
+  issuedAt  DateTime @default(now())
+  booking   Booking  @relation(fields: [bookingId], references: [id])
+}
+
+model CancellationRequest {
+  id          String   @id @default(cuid())
+  bookingId   String   @unique
+  userId      String
+  reason      String
+  status      String   @default("PENDING")
+  processedBy String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  booking     Booking  @relation(fields: [bookingId], references: [id])
+  user        User     @relation(fields: [userId], references: [id])
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model City {
+  id          String    @id @default(uuid())
+  name        String
+  country     String    @default("India")
+  type        String    @default("domestic")
+  searchcount Int       @default(0)
+  isactive    Boolean   @default(true)
+  createdAt   DateTime? @default(now()) @db.Timestamptz
+  iata_code   String?
+}
+
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model Faq {
+  id        String    @id @default(uuid())
+  keyword   String
+  question  String    @default("")
+  answer    String
+  isActive  Boolean?  @default(true)
+  createdAt DateTime? @default(now()) @db.Timestamp
+}
+
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model FaqCategory {
+  id        String    @id
+  label     String
+  keywords  String    @default("[]")
+  sortorder Int       @default(0)
+  isactive  Boolean   @default(true)
+  createdAt DateTime? @default(now()) @db.Timestamptz
+}
+
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model Flight {
+  id            String    @id
+  airline       String
+  flightNumber  String
+  origin        String
+  destination   String
+  departureTime String
+  arrivalTime   String
+  duration      String
+  stops         Int       @default(0)
+  price         Float
+  tier          String    @default("Economy")
+  createdAt     DateTime? @default(now()) @db.Timestamp
+}
+
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model FooterLink {
+  id        String    @id @default(uuid())
+  section   String
+  label     String
+  href      String?
+  sortorder Int       @default(0)
+  isactive  Boolean   @default(true)
+  createdAt DateTime? @default(now()) @db.Timestamptz
+}
+
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model LeadStage {
+  id        String    @id
+  label     String
+  color     String
+  sortorder Int       @default(0)
+  isactive  Boolean   @default(true)
+  createdAt DateTime? @default(now()) @db.Timestamptz
+}
+
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model LoyaltyReward {
+  id          String       @id @default(uuid())
+  name        String
+  description String       @default("")
+  pointsCost  Int
+  category    String       @default("Travel Perks")
+  imageColor  String       @default("bg-amber-100 text-amber-600")
+  icon        String       @default("Gift")
+  isActive    Boolean      @default(true)
+  createdAt   DateTime     @default(now()) @db.Timestamp
+  Redemption  Redemption[]
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model NavigationItem {
+  id           String    @id @default(uuid())
+  href         String
+  label        String
+  icon         String
+  section      String    @default("main")
+  requiredrole String?
+  sortorder    Int       @default(0)
+  isactive     Boolean   @default(true)
+  createdAt    DateTime? @default(now()) @db.Timestamptz
+}
+
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model PackageCategory {
+  id         String    @id
+  title      String
+  subtitle   String
+  icon       String    @default("TrendingUp")
+  badgecolor String
+  badgetext  String
+  sortorder  Int       @default(0)
+  isactive   Boolean   @default(true)
+  createdAt  DateTime? @default(now()) @db.Timestamptz
+}
+
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model PreferenceOption {
+  id        String    @id @default(uuid())
+  category  String
+  label     String
+  value     String
+  sortorder Int       @default(0)
+  isactive  Boolean   @default(true)
+  createdAt DateTime? @default(now()) @db.Timestamptz
+}
+
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model PromoCode {
+  id              String    @id @default(uuid())
+  code            String
+  discountValue   Float
+  type            String    @default("flat")
+  description     String    @default("")
+  minBookingValue Float     @default(0)
+  isActive        Boolean   @default(true)
+  createdAt       DateTime  @default(now()) @db.Timestamp
+  updatedAt       DateTime  @default(now()) @db.Timestamp
+  maxDiscount     Float?
+  maxUses         Int?
+  usedCount       Int       @default(0)
+  applicableTo    String    @default("ALL")
+  isFirstBooking  Boolean   @default(false)
+  validFrom       DateTime? @db.Timestamptz
+  validTo         DateTime? @db.Timestamptz
+}
+
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model QuickTopUpAmount {
+  id        String    @id @default(uuid())
+  amount    Int
+  sortorder Int       @default(0)
+  isactive  Boolean   @default(true)
+  createdAt DateTime? @default(now()) @db.Timestamptz
+}
+
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model Redemption {
+  id            String        @id @default(uuid())
+  userId        String
+  rewardId      String
+  pointsCost    Int
+  createdAt     DateTime      @default(now()) @db.Timestamp
+  LoyaltyReward LoyaltyReward @relation(fields: [rewardId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  User          User          @relation(fields: [userId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+}
+
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model Role {
+  id        String    @id
+  label     String
+  color     String
+  isactive  Boolean   @default(true)
+  createdAt DateTime? @default(now()) @db.Timestamptz
+}
+
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model SiteConfig {
+  key       String    @id
+  value     String
+  updatedAt DateTime? @default(now()) @db.Timestamptz
+}
+
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model Testimonial {
+  id        String    @id @default(uuid())
+  name      String
+  role      String    @default("")
+  text      String
+  rating    Int       @default(5)
+  isActive  Boolean?  @default(true)
+  createdAt DateTime? @default(now()) @db.Timestamp
+}
+
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model ValueProposition {
+  id          String    @id @default(uuid())
+  icon        String    @default("Shield")
+  title       String
+  description String
+  sortorder   Int       @default(0)
+  isactive    Boolean   @default(true)
+  createdAt   DateTime? @default(now()) @db.Timestamptz
+}
+
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model ticket_activities {
+  id           String    @id @default(uuid())
+  ticket_id    String?
+  action       String
+  performed_by String
+  details      String?
+  created_at   DateTime? @default(now()) @db.Timestamptz
+  tickets      tickets?  @relation(fields: [ticket_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model ticket_notes {
+  id          String    @id @default(uuid())
+  ticket_id   String?
+  author      String
+  author_role String
+  content     String
+  is_internal Boolean?  @default(false)
+  created_at  DateTime? @default(now()) @db.Timestamptz
+  tickets     tickets?  @relation(fields: [ticket_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model tickets {
+  id                String              @id @default(uuid())
+  subject           String
+  description       String
+  category          String
+  priority          String              @default("medium")
+  status            String              @default("open")
+  user_id           String?
+  user_name         String
+  user_email        String
+  user_phone        String?
+  booking_ref       String?
+  assigned_to       String?
+  assigned_to_name  String?
+  created_at        DateTime?           @default(now()) @db.Timestamptz
+  updated_at        DateTime?           @default(now()) @db.Timestamptz
+  resolved_at       DateTime?           @db.Timestamptz
+  closed_at         DateTime?           @db.Timestamptz
+  ticket_activities ticket_activities[]
+  ticket_notes      ticket_notes[]
+
+  @@index([assigned_to], map: "idx_tickets_assigned")
+  @@index([booking_ref], map: "idx_tickets_booking")
+  @@index([status], map: "idx_tickets_status")
+  @@index([user_id], map: "idx_tickets_user")
+}
+
+model ApiLog {
+  id                 String   @id @default(cuid())
+  provider           String
+  endpoint           String
+  method             String
+  request_body       Json?
+  response_body      Json?
+  status_code        Int?
+  response_time_ms   Int?
+  error_message      String?
+  request_id         String?
+  batch_index        Int?
+  batch_total        Int?
+  environment        String
+  vercel_deployment_id String?
+  created_at         DateTime @default(now())
+
+  @@index([provider, created_at(sort: Desc)])
+  @@index([request_id])
+  @@index([environment, created_at(sort: Desc)])
+  @@index([created_at(sort: Desc)])
+  @@map("api_logs")
+}
