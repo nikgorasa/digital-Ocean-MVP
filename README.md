@@ -128,7 +128,7 @@ npm install
 
 # Set up environment
 cp .env.example .env.local
-# Edit .env.local with CockroachDB credentials
+# Edit .env.local with your values
 
 # Generate Prisma client
 npx prisma generate
