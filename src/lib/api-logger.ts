@@ -1,6 +1,6 @@
 import { prisma } from './prisma';
 
-export type ApiProvider = 'tbo_hotel' | 'tbo_flight';
+export type ApiProvider = 'tbo_hotel' | 'tbo_flight' | 'tbo_hotel_static' | 'tbo_hotel_search' | 'tbo_hotel_booking';
 
 export async function logApiCall(params: {
   provider: ApiProvider;

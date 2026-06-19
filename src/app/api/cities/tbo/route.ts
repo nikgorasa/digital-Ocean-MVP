@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import * as cities from "@/lib/db/cities";
 
-const BASE_URL = "https://api.tbotechnology.in/TBOHolidays_HotelAPI";
+const BASE_URL = "http://api.tbotechnology.in/TBOHolidays_HotelAPI";
 const HOTEL_USERNAME = process.env.TBO_HOTEL_USERNAME || "TBOStaticAPITest";
 const HOTEL_PASSWORD = process.env.TBO_HOTEL_PASSWORD || "Tbo@11530818";
 const AUTH_HEADER = { Authorization: `Basic ${Buffer.from(`${HOTEL_USERNAME}:${HOTEL_PASSWORD}`).toString("base64")}` };

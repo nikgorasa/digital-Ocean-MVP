@@ -30,9 +30,11 @@ Navigate to: **Settings → Environments → [cckr / cckr2] → Environment vari
 | `GOOGLE_CLIENT_SECRET` | `your-google-oauth-client-secret` | From Google Cloud Console |
 | `TBO_USERNAME` | `your-tbo-username` | TBO API credentials |
 | `TBO_PASSWORD` | `your-tbo-password` | TBO API credentials |
-| `TBO_HOTEL_USERNAME` | `your-tbo-hotel-username` | TBO Hotel API credentials |
-| `TBO_HOTEL_PASSWORD` | `your-tbo-hotel-password` | TBO Hotel API credentials |
-| `TBO_ENDPOINT` | `http://api.tbotechnology.in/hotelapi_v7/hotelservice.svc` | TBO endpoint |
+| `TBO_HOTEL_USERNAME` | `your-tbo-hotel-username` | TBO Hotel static data credentials (Basic Auth) |
+| `TBO_HOTEL_PASSWORD` | `your-tbo-hotel-password` | TBO Hotel static data credentials (Basic Auth) |
+| `TBO_ENDPOINT` | `https://affiliate.tektravels.com/HotelAPI` | TBO hotel search/booking base URL |
+| `TBO_BOOKING_ENDPOINT` | `https://HotelBE.tektravels.com/hotelservice.svc/rest` | TBO hotel booking/confirm URL |
+| `TBO_STATIC_ENDPOINT` | `http://api.tbotechnology.in/TBOHolidays_HotelAPI` | TBO hotel static data URL (country,city,codes,details) |
 | `NODE_ENV` | `production` | |
 
 ### CCKR2 (Production Environment)
@@ -48,9 +50,11 @@ Navigate to: **Settings → Environments → [cckr / cckr2] → Environment vari
 | `GOOGLE_CLIENT_SECRET` | `your-google-oauth-client-secret` | |
 | `TBO_USERNAME` | `your-tbo-username` | |
 | `TBO_PASSWORD` | `your-tbo-password` | |
-| `TBO_HOTEL_USERNAME` | `your-tbo-hotel-username` | |
-| `TBO_HOTEL_PASSWORD` | `your-tbo-hotel-password` | |
-| `TBO_ENDPOINT` | `http://api.tbotechnology.in/hotelapi_v7/hotelservice.svc` | |
+| `TBO_HOTEL_USERNAME` | `your-tbo-hotel-username` | Static data Basic Auth |
+| `TBO_HOTEL_PASSWORD` | `your-tbo-hotel-password` | Static data Basic Auth |
+| `TBO_ENDPOINT` | `https://affiliate.tektravels.com/HotelAPI` | Hotel search/booking URL |
+| `TBO_BOOKING_ENDPOINT` | `https://HotelBE.tektravels.com/hotelservice.svc/rest` | Hotel booking/confirm URL |
+| `TBO_STATIC_ENDPOINT` | `http://api.tbotechnology.in/TBOHolidays_HotelAPI` | Hotel static data URL |
 | `NODE_ENV` | `production` | |
 
 ## Protection Rules (Per-Environment)

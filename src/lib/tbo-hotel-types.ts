@@ -22,10 +22,19 @@ export interface TBOHotelAuthResponse {
   Member: unknown | null;
 }
 
+export const HOTEL_BOOKING_MODE = 5;
+
 export interface TBOHotelPaxRoom {
   Adults: number;
   Children: number;
   ChildrenAges: number[];
+}
+
+export interface TBOSearchFilters {
+  Refundable: boolean;
+  NoOfRooms: number;
+  MealType: string | null;
+  StarRating: number | null;
 }
 
 export interface TBOHotelSearchRequest {
@@ -34,8 +43,9 @@ export interface TBOHotelSearchRequest {
   HotelCodes: string;
   GuestNationality: string;
   PaxRooms: TBOHotelPaxRoom[];
-  EndUserIp?: string;
-  TokenId?: string;
+  ResponseTime?: number;
+  IsDetailedResponse?: boolean;
+  Filters?: TBOSearchFilters;
   PreferredCurrency?: string;
   IsNearBySearch?: boolean;
   MaxRating?: number;
@@ -92,12 +102,13 @@ export interface TBOHotelSearchResponse {
   Status: TBOStatus;
   HotelResult: TBOHotelResult[];
   NoOfRooms: number;
+  TraceId?: string;
 }
 
 export interface TBOHotelPreBookRequest {
   BookingCode: string;
-  EndUserIp?: string;
-  TokenId?: string;
+  EndUserIp: string;
+  TokenId: string;
   TraceId?: string;
 }
 
@@ -427,3 +438,91 @@ export interface TBOHotelBookingDetailOutput {
 
 export type TBODisplayHotel = TBOHotelDisplay;
 export type TBODisplayRoom = TBOHotelRoomDisplay;
+
+export interface TBOHotelGenerateVoucherRequest {
+  EndUserIp: string;
+  BookingId: number;
+}
+
+export interface TBOHotelGenerateVoucherResult {
+  VoucherStatus: boolean;
+  Status: number;
+  HotelBookingStatus: string;
+  BookingId: number;
+  BookingRefNo: string;
+  ConfirmationNo: string;
+  InvoiceNumber: string;
+  ResponseStatus: number;
+  TraceId: string;
+  Error: TBOError;
+}
+
+export interface TBOHotelGenerateVoucherResponse {
+  GenerateVoucherResult: TBOHotelGenerateVoucherResult;
+}
+
+export interface TBOHotelSendChangeRequest {
+  BookingMode: number;
+  RequestType: number;
+  Remarks: string;
+  BookingId: number;
+  EndUserIp: string;
+  TokenId: string;
+}
+
+export interface TBOHotelSendChangeResult {
+  ChangeRequestId: number;
+  ChangeRequestStatus: number;
+  ResponseStatus: number;
+  TraceId: string;
+  Error: TBOError;
+}
+
+export interface TBOHotelSendChangeResponse {
+  HotelChangeRequestResult: TBOHotelSendChangeResult;
+}
+
+export interface TBOHotelGetChangeRequestStatusRequest {
+  BookingMode: number;
+  ChangeRequestId: number;
+  EndUserIp: string;
+  TokenId: string;
+}
+
+export interface TBOHotelGetChangeRequestStatusResult {
+  ChangeRequestId: number;
+  RefundedAmount: number;
+  CancellationCharge: number;
+  ChangeRequestStatus: number;
+  ResponseStatus: number;
+  TraceId: string;
+  Error: TBOError;
+}
+
+export interface TBOHotelGetChangeRequestStatusResponse {
+  HotelChangeRequestStatusResult: TBOHotelGetChangeRequestStatusResult;
+}
+
+export interface TBOHotelGenerateVoucherOutput {
+  voucherStatus: boolean;
+  status: number;
+  hotelBookingStatus: string;
+  bookingId: number;
+  confirmationNo: string;
+  invoiceNumber: string;
+  traceId: string;
+}
+
+export interface TBOHotelCancelOutput {
+  changeRequestId: number;
+  changeRequestStatus: number;
+  traceId: string;
+}
+
+export interface TBOHotelCancelStatusOutput {
+  changeRequestId: number;
+  refundedAmount: number;
+  cancellationCharge: number;
+  changeRequestStatus: number;
+  traceId: string;
+}
