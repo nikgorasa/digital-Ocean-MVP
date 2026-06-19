@@ -1,14 +1,6 @@
 name: Deploy to CCKR2 (Production)
 
 on:
-  push:
-    branches: [main]
-    paths:
-      - 'src/**'
-      - 'prisma/**'
-      - 'package.json'
-      - 'package-lock.json'
-      - '.github/workflows/deploy-cckr2.yml'
   workflow_dispatch:
     inputs:
       confirm_production:
@@ -18,7 +10,7 @@ on:
 
 env:
   VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
-  VERCEL_PROJECT_ID_CCKR2: ${{ secrets.VERCEL_PROJECT_ID_CCKR2 }}
+  VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID_CCKR2 }}
 
 jobs:
   deploy:
@@ -48,8 +40,7 @@ jobs:
       - name: Deploy to Vercel (CCKR2)
         run: |
           vercel deploy --prebuilt --prod --token=${{ secrets.VERCEL_TOKEN }} \
-            --scope=${{ secrets.VERCEL_ORG_ID }} \
-            --alias=project-yidb6.vercel.app
+            --scope=${{ secrets.VERCEL_ORG_ID }}
 
       - name: Notify deployment
         run: |

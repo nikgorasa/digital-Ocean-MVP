@@ -2,7 +2,7 @@ name: Deploy to CCKR (Staging)
 
 on:
   push:
-    branches: [main, develop]
+    branches: [main]
     paths:
       - 'src/**'
       - 'prisma/**'
@@ -10,19 +10,10 @@ on:
       - 'package-lock.json'
       - '.github/workflows/deploy-cckr.yml'
   workflow_dispatch:
-    inputs:
-      environment:
-        description: 'Target environment'
-        required: true
-        default: 'cckr'
-        type: choice
-        options:
-          - cckr
-          - cckr2
 
 env:
   VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
-  VERCEL_PROJECT_ID_CCKR: ${{ secrets.VERCEL_PROJECT_ID_CCKR }}
+  VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID_CCKR }}
 
 jobs:
   deploy:
@@ -36,25 +27,12 @@ jobs:
         run: npm install -g vercel@latest
 
       - name: Pull Vercel Environment
-        run: vercel pull --yes --environment=preview --token=${{ secrets.VERCEL_TOKEN }}
+        run: vercel pull --yes --environment=production --token=${{ secrets.VERCEL_TOKEN }}
 
       - name: Build Project Artifacts
-        run: vercel build --token=${{ secrets.VERCEL_TOKEN }}
+        run: vercel build --prod --token=${{ secrets.VERCEL_TOKEN }}
 
       - name: Deploy to Vercel (CCKR)
         run: |
-          vercel deploy --prebuilt --token=${{ secrets.VERCEL_TOKEN }} \
-            --scope=${{ secrets.VERCEL_ORG_ID }} \
-            --alias=cckr.vercel.app
-
-      - name: Comment deployment URL
-        if: github.event_name == 'pull_request'
-        uses: actions/github-script@v7
-        with:
-          script: |
-            github.rest.issues.createComment({
-              issue_number: context.issue.number,
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              body: '🚀 **CCKR Preview Deployed**\n\n[cckr.vercel.app](https://cckr.vercel.app)\n\nCommit: ${{ github.sha }}'
-            })
+          vercel deploy --prebuilt --prod --token=${{ secrets.VERCEL_TOKEN }} \
+            --scope=${{ secrets.VERCEL_ORG_ID }}
