@@ -93,11 +93,6 @@ export default function CitySearchDropdown({
         {city.state && (
           <span className="text-[11px] text-slate-400 truncate">· {city.state}</span>
         )}
-        {city.iata_code && (
-          <span className="text-[10px] font-mono text-blue-600 bg-blue-50 px-1.5 py-0.5 rounded shrink-0">
-            {city.iata_code}
-          </span>
-        )}
       </div>
       {city.source === "fallback" && (
         <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-full shrink-0 bg-amber-100 text-amber-700">

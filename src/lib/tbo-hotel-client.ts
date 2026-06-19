@@ -134,51 +134,6 @@ export function setLastHotelResults(results: any[], traceId: string): void {
   _lastTraceId = traceId;
 }
 
-const CITY_TO_CODE: Record<string, number> = {
-  goa: 15648,
-  mumbai: 13484,
-  bombay: 13484,
-  delhi: 13482,
-  "new delhi": 13482,
-  "delhi ncr": 13482,
-  ncr: 13482,
-  bangalore: 14565,
-  bengaluru: 14565,
-  chennai: 14564,
-  madras: 14564,
-  hyderabad: 15664,
-  jaipur: 15197,
-  kolkata: 13543,
-  calcutta: 13543,
-  pune: 14612,
-  poona: 14612,
-  kodaikanal: 123608,
-  ooty: 13014,
-  udagamandalam: 13014,
-  manali: 12597,
-  varanasi: 14312,
-  agra: 15169,
-  amritsar: 13274,
-  ahmedabad: 13629,
-  lucknow: 13733,
-  indore: 13324,
-  bhopal: 14517,
-  chandigarh: 15173,
-  kochi: 12974,
-  cochin: 12974,
-  thiruvananthapuram: 14702,
-  trivandrum: 14702,
-  mysore: 13010,
-  udaipur: 14329,
-  jodhpur: 15195,
-  guwahati: 13050,
-  srinagar: 15029,
-  rishikesh: 7102,
-  haridwar: 7110,
-  "shimla": 14843,
-  darjeeling: 6979,
-};
-
 let _hotelCodesCache: Record<string, string> = {};
 let _hotelDetailsCache: Record<string, { name: string; rating: string; address: string; city: string; imageUrl?: string; amenities: string[]; facilities: string[] }> = {};
 
@@ -228,71 +183,37 @@ async function fetchHotelImages(hotelCodes: string[], requestId?: string): Promi
 }
 
 async function resolveHotelCodes(city?: string, hotelCodes?: string, cityCode?: string, requestId?: string): Promise<string> {
-  // 1. If hotel codes provided directly, use them
   if (hotelCodes) return hotelCodes;
 
-  // 2. If city code provided from dropdown, use it directly
-  if (cityCode) {
-    const cacheKey = `code:${cityCode}`;
-    if (_hotelCodesCache[cacheKey]) return _hotelCodesCache[cacheKey];
-
-    try {
-      const res = await api.getHotelCodeList(cityCode, { requestId });
-      if (res.Status?.Code === 200 && res.Hotels?.length > 0) {
-        const codeStr = res.Hotels.slice(0, 50).map(c => c.HotelCode).join(",");
-        _hotelCodesCache[cacheKey] = codeStr;
-        for (const h of res.Hotels) {
-          _hotelDetailsCache[h.HotelCode] = {
-            name: h.HotelName,
-            rating: h.HotelRating,
-            address: h.Address || "",
-            city: h.CityName || city || "",
-            amenities: [],
-            facilities: [],
-          };
-        }
-        console.log(`Resolved ${res.Hotels.length} hotel codes for city code ${cityCode} (showing first 50)`);
-        return codeStr;
-      }
-      console.warn(`No hotel codes returned for city code ${cityCode}:`, res.Status?.Description);
-    } catch (e) {
-      console.warn(`Failed to fetch hotel codes for city code ${cityCode}:`, e);
-    }
+  if (!cityCode) {
+    console.warn(`No cityCode provided for "${city}" — cannot resolve hotel codes`);
     return "";
   }
 
-  // 3. Fallback: try hardcoded mapping by city name
-  if (!city) return "";
-  const key = city.toLowerCase().trim();
-  if (_hotelCodesCache[key]) return _hotelCodesCache[key];
-
-  const mappedCode = CITY_TO_CODE[key];
-  if (!mappedCode) {
-    console.warn(`No city code mapping for "${city}" and no cityCode provided`);
-    return "";
-  }
+  const cacheKey = `code:${cityCode}`;
+  if (_hotelCodesCache[cacheKey]) return _hotelCodesCache[cacheKey];
 
   try {
-    const res = await api.getHotelCodeList(String(mappedCode));
+    const res = await api.getHotelCodeList(cityCode, { requestId });
     if (res.Status?.Code === 200 && res.Hotels?.length > 0) {
       const codeStr = res.Hotels.slice(0, 50).map(c => c.HotelCode).join(",");
-      _hotelCodesCache[key] = codeStr;
+      _hotelCodesCache[cacheKey] = codeStr;
       for (const h of res.Hotels) {
         _hotelDetailsCache[h.HotelCode] = {
           name: h.HotelName,
           rating: h.HotelRating,
           address: h.Address || "",
-          city: h.CityName || city,
+          city: h.CityName || city || "",
           amenities: [],
           facilities: [],
         };
       }
-      console.log(`Resolved ${res.Hotels.length} hotel codes for ${city} (showing first 50)`);
+      console.log(`Resolved ${res.Hotels.length} hotel codes for city code ${cityCode} (showing first 50)`);
       return codeStr;
     }
-    console.warn(`No hotel codes returned for ${city}:`, res.Status?.Description);
+    console.warn(`No hotel codes returned for city code ${cityCode}:`, res.Status?.Description);
   } catch (e) {
-    console.warn(`Failed to fetch hotel codes for ${city}:`, e);
+    console.warn(`Failed to fetch hotel codes for city code ${cityCode}:`, e);
   }
 
   return "";
