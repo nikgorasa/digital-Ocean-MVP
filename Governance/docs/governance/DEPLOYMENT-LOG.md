@@ -10,5 +10,5 @@
 
 | Date | Environment | Status | URL | Notes |
 |------|---|---|---|---|
-| 2026-06-19 | DEV | ✅ Live | https://cckr.vercel.app | Full cleanup, Supabase removed, dual DB isolation |
+| 2026-06-19 | DEV | ✅ Live | https://cckr.vercel.app | First deployment — Supabase removed, aqua-pony CockroachDB cluster |
 | 2026-06-17 | DEV | ✅ Live | https://cckr.vercel.app | Initial CockroachDB standalone deployment |
