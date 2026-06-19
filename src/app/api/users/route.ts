@@ -33,54 +33,25 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { email, name, role, companyId, password } = body;
+    const { email, name, role, companyId } = body;
 
     if (!email || !name) {
       return NextResponse.json({ error: "email and name are required" }, { status: 400 });
     }
 
-    // Create Supabase Auth user
-    const { supabaseAdmin } = await import("@/lib/supabase-admin");
-    const tempPassword = password || `GoRASA-${Math.random().toString(36).slice(-8)}`;
-
-    const { data: authUser, error: authError } = await supabaseAdmin.auth.admin.createUser({
-      email,
-      password: tempPassword,
-      email_confirm: true,
-      user_metadata: { name, role: role || "CUSTOMER" },
-    });
-
-    if (authError) {
-      console.error("Supabase Auth error:", authError.message);
-      // If user already exists in auth, try to get their ID
-      const { data: existingUsers } = await supabaseAdmin.auth.admin.listUsers();
-      const existing = existingUsers?.users?.find((u) => u.email === email);
-      if (existing) {
-        // User exists in auth, just create DB record with their auth ID
-        const user = await users.create({
-          id: existing.id,
-          email,
-          name,
-          role: role || "CUSTOMER",
-          companyId: companyId || null,
-          supabaseId: existing.id,
-        });
-        return NextResponse.json({ ...user, tempPassword, note: "User already existed in auth" }, { status: 201 });
-      }
-      return NextResponse.json({ error: `Auth error: ${authError.message}` }, { status: 500 });
+    const existing = await users.findByEmail(email);
+    if (existing) {
+      return NextResponse.json({ error: "User with this email already exists" }, { status: 409 });
     }
 
-    // Create DB record linked to auth user
     const user = await users.create({
-      id: authUser.user.id,
       email,
       name,
       role: role || "CUSTOMER",
       companyId: companyId || null,
-      supabaseId: authUser.user.id,
     });
 
-    return NextResponse.json({ ...user, tempPassword }, { status: 201 });
+    return NextResponse.json(user, { status: 201 });
   } catch (error) {
     console.error("User create error:", error);
     return NextResponse.json({ error: "Invalid request body" }, { status: 400 });

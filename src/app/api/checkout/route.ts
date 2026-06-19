@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createCheckout, PAYMENT_CONFIG } from "@/lib/payment";
 import * as users from "@/lib/db/users";
-import { isPrisma, prisma, supabaseAdmin } from "@/lib/db";
+import { prisma } from "@/lib/prisma";
 
 async function getUserFromRequest(request: Request) {
   const userEmail = request.headers.get("x-user-email");
@@ -10,91 +10,53 @@ async function getUserFromRequest(request: Request) {
 }
 
 async function getBooking(bookingId: string) {
-  if (isPrisma()) {
-    return prisma.booking.findUnique({
-      where: { id: bookingId },
-      select: {
-        id: true,
-        price: true,
-        status: true,
-        type: true,
-        expiresAt: true,
-        travelDates: true,
-        itemName: true,
-        validatedPrice: true,
-        priceRevalidatedAt: true,
-      },
-    });
-  } else {
-    const { data } = await supabaseAdmin
-      .from('Booking')
-      .select('id, price, status, type, "expiresAt", "travelDates", "itemName", "validatedPrice", "priceRevalidatedAt"')
-      .eq('id', bookingId)
-      .single();
-    return data;
-  }
+  return prisma.booking.findUnique({
+    where: { id: bookingId },
+    select: {
+      id: true,
+      price: true,
+      status: true,
+      type: true,
+      expiresAt: true,
+      travelDates: true,
+      itemName: true,
+      validatedPrice: true,
+      priceRevalidatedAt: true,
+    },
+  });
 }
 
 async function updateBookingPrice(bookingId: string, newPrice: number, priceChange: number) {
-  if (isPrisma()) {
-    return prisma.booking.update({
-      where: { id: bookingId },
-      data: {
-        validatedPrice: newPrice,
-        priceRevalidatedAt: new Date(),
-        priceChangeAmount: priceChange,
-        price: newPrice,
-      },
-    });
-  } else {
-    const { data } = await supabaseAdmin
-      .from('Booking')
-      .update({
-        validatedPrice: newPrice,
-        priceRevalidatedAt: new Date().toISOString(),
-        priceChangeAmount: priceChange,
-        price: newPrice,
-      })
-      .eq('id', bookingId)
-      .select()
-      .single();
-    return data;
-  }
+  return prisma.booking.update({
+    where: { id: bookingId },
+    data: {
+      validatedPrice: newPrice,
+      priceRevalidatedAt: new Date(),
+      priceChangeAmount: priceChange,
+      price: newPrice,
+    },
+  });
 }
 
 async function markBookingExpired(bookingId: string) {
-  if (isPrisma()) {
-    return prisma.booking.update({
-      where: { id: bookingId },
-      data: { status: 'EXPIRED', expiredAt: new Date() },
-    });
-  } else {
-    await supabaseAdmin
-      .from('Booking')
-      .update({ status: 'EXPIRED', expiredAt: new Date().toISOString() })
-      .eq('id', bookingId);
-  }
+  return prisma.booking.update({
+    where: { id: bookingId },
+    data: { status: 'EXPIRED', expiredAt: new Date() },
+  });
 }
 
-function revalidatePrice(booking: any): { available: boolean; newPrice: number; reason?: string } {
-  // In demo/mock mode, simulate a small price change (±5%) or no change
+function revalidatePrice(booking: { price: number }): { available: boolean; newPrice: number; reason?: string } {
   if (PAYMENT_CONFIG.mock) {
     const rand = Math.random();
     if (rand > 0.85) {
-      // 15% chance of price increase
       const increase = Math.round(booking.price * 0.05);
       return { available: true, newPrice: booking.price + increase };
     } else if (rand > 0.7) {
-      // 15% chance of price decrease
       const decrease = Math.round(booking.price * 0.03);
       return { available: true, newPrice: booking.price - decrease };
     }
-    // 70% chance of same price
     return { available: true, newPrice: booking.price };
   }
-
-  // In production, call TBO API to re-validate
-  // For now, return the stored price (TBO integration would go here)
   return { available: true, newPrice: booking.price };
 }
 
@@ -119,14 +81,12 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Booking not found" }, { status: 404 });
     }
 
-    // Check if booking is already confirmed or cancelled
     if (booking.status !== 'PENDING') {
       return NextResponse.json({
         error: `Booking is ${booking.status.toLowerCase()}. Only pending bookings can be paid.`,
       }, { status: 400 });
     }
 
-    // Check expiry
     if (booking.expiresAt) {
       const expiresAt = new Date(booking.expiresAt);
       if (expiresAt < new Date()) {
@@ -138,7 +98,6 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // Re-validate price
     const revalidation = revalidatePrice(booking);
 
     if (!revalidation.available) {
@@ -151,7 +110,6 @@ export async function POST(request: NextRequest) {
 
     const priceChange = revalidation.newPrice - booking.price;
 
-    // If price changed and user hasn't accepted, return price change info
     if (Math.abs(priceChange) > 1 && !acceptPriceChange) {
       return NextResponse.json({
         priceChanged: true,
@@ -162,7 +120,6 @@ export async function POST(request: NextRequest) {
       });
     }
 
-    // If price changed and user accepted, update the booking price
     if (Math.abs(priceChange) > 1 && acceptPriceChange) {
       await updateBookingPrice(bookingId, revalidation.newPrice, priceChange);
     }
@@ -174,7 +131,7 @@ export async function POST(request: NextRequest) {
       bookingId,
       amount: revalidation.newPrice,
       gateway: selectedGateway,
-      userEmail: (user as any).email,
+      userEmail: (user as { email: string }).email,
       appUrl,
     });
 

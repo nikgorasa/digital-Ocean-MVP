@@ -2,7 +2,7 @@
 
 | Field | Value |
 |-------|-------|
-| Version | 1.0.0 |
-| Last Updated | 2026-06-14 |
+| Version | 2.0.0 |
+| Last Updated | 2026-06-19 |
 | Author | GoRASA Team |
-| Change | Initial governance restructure — dedicated files, removed symlinks |
+| Change | Full Supabase purge, dual DB isolation, governance script fixes |

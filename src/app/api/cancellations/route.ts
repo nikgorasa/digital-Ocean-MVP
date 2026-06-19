@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { isPrisma, prisma, supabaseAdmin } from "@/lib/db";
+import { prisma } from "@/lib/prisma";
 
 function calculateMockRefund(bookingPrice: number, bookedAt: Date): {
   refundAmount: number;
@@ -35,34 +35,12 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "bookingId, userId, and reason are required" }, { status: 400 });
     }
 
-    let existing;
-    if (isPrisma()) {
-      existing = await prisma.cancellationRequest.findFirst({ where: { bookingId } });
-    } else {
-      const { data } = await supabaseAdmin
-        .from('CancellationRequest')
-        .select('id')
-        .eq('bookingId', bookingId)
-        .maybeSingle();
-      existing = data;
-    }
-
+    const existing = await prisma.cancellationRequest.findFirst({ where: { bookingId } });
     if (existing) {
       return NextResponse.json({ error: "Cancellation already requested for this booking" }, { status: 409 });
     }
 
-    let booking;
-    if (isPrisma()) {
-      booking = await prisma.booking.findUnique({ where: { id: bookingId } });
-    } else {
-      const { data } = await supabaseAdmin
-        .from('Booking')
-        .select('*')
-        .eq('id', bookingId)
-        .maybeSingle();
-      booking = data;
-    }
-
+    const booking = await prisma.booking.findUnique({ where: { id: bookingId } });
     if (!booking) {
       return NextResponse.json({ error: "Booking not found" }, { status: 404 });
     }
@@ -76,43 +54,20 @@ export async function POST(request: NextRequest) {
       new Date(booking.bookedAt),
     );
 
-    let cancellation;
-    if (isPrisma()) {
-      cancellation = await prisma.cancellationRequest.create({
-        data: {
-          bookingId,
-          userId,
-          reason,
-          status: "COMPLETED",
-          processedBy: "SYSTEM",
-        },
-      });
-    } else {
-      const { data } = await supabaseAdmin
-        .from('CancellationRequest')
-        .insert({
-          bookingId,
-          userId,
-          reason,
-          status: "COMPLETED",
-          processedBy: "SYSTEM",
-        })
-        .select()
-        .single();
-      cancellation = data;
-    }
+    const cancellation = await prisma.cancellationRequest.create({
+      data: {
+        bookingId,
+        userId,
+        reason,
+        status: "COMPLETED",
+        processedBy: "SYSTEM",
+      },
+    });
 
-    if (isPrisma()) {
-      await prisma.booking.update({
-        where: { id: bookingId },
-        data: { status: "CANCELLED", paymentStatus: "REFUNDED" },
-      });
-    } else {
-      await supabaseAdmin
-        .from('Booking')
-        .update({ status: "CANCELLED", paymentStatus: "REFUNDED" })
-        .eq("id", bookingId);
-    }
+    await prisma.booking.update({
+      where: { id: bookingId },
+      data: { status: "CANCELLED", paymentStatus: "REFUNDED" },
+    });
 
     return NextResponse.json({
       ...cancellation,

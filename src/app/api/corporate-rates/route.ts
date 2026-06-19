@@ -1,21 +1,12 @@
 import { NextResponse } from "next/server";
-import { isPrisma, prisma, supabaseAdmin } from "@/lib/db";
+import { prisma } from "@/lib/prisma";
 
 export async function GET() {
   try {
-    let rates;
-    if (isPrisma()) {
-      rates = await prisma.corporateRate.findMany({
-        include: { company: { select: { name: true } } },
-        orderBy: { createdAt: 'desc' },
-      });
-    } else {
-      const { data } = await supabaseAdmin
-        .from('CorporateRate')
-        .select('*, company:Company(name)')
-        .order('createdAt', { ascending: false })
-      rates = data || [];
-    }
+    const rates = await prisma.corporateRate.findMany({
+      include: { company: { select: { name: true } } },
+      orderBy: { createdAt: 'desc' },
+    });
     return NextResponse.json(rates);
   } catch (error) {
     return NextResponse.json({ error: "Failed to fetch corporate rates" }, { status: 500 });
@@ -34,35 +25,17 @@ export async function POST(request: Request) {
       );
     }
 
-    let rate;
-    if (isPrisma()) {
-      rate = await prisma.corporateRate.create({
-        data: {
-          companyId,
-          category: category || "ALL",
-          destination: destination || null,
-          discountType,
-          discountValue,
-          maxDiscount: maxDiscount || null,
-          isActive: isActive !== false,
-        },
-      });
-    } else {
-      const { data } = await supabaseAdmin
-        .from('CorporateRate')
-        .insert({
-          companyId,
-          category: category || "ALL",
-          destination: destination || null,
-          discountType,
-          discountValue,
-          maxDiscount: maxDiscount || null,
-          isActive: isActive !== false,
-        })
-        .select()
-        .single();
-      rate = data;
-    }
+    const rate = await prisma.corporateRate.create({
+      data: {
+        companyId,
+        category: category || "ALL",
+        destination: destination || null,
+        discountType,
+        discountValue,
+        maxDiscount: maxDiscount || null,
+        isActive: isActive !== false,
+      },
+    });
 
     return NextResponse.json(rate, { status: 201 });
   } catch (error) {

@@ -33,7 +33,7 @@ export {
   resolveTicket as resolveTicketLocal,
 } from "./ticketManager";
 
-// Server-side (Supabase)
+// Server-side (Prisma)
 export {
   createTicket,
   getTicket,

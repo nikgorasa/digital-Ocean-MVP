@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import * as bookings from "@/lib/db/bookings";
 import * as users from "@/lib/db/users";
-import { isPrisma, prisma, supabaseAdmin } from "@/lib/db";
+import { prisma } from "@/lib/prisma";
 
 async function getUserFromRequest(request: Request) {
   const userEmail = request.headers.get("x-user-email");
@@ -16,7 +16,7 @@ export async function GET(request: Request) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const data = await bookings.findByUser((user as any).id);
+    const data = await bookings.findByUser((user as { id: string }).id);
     return NextResponse.json(data);
   } catch (error) {
     console.error("Bookings error:", error);
@@ -46,7 +46,7 @@ export async function POST(request: Request) {
 
     const booking = await bookings.create({
       id: bookingId,
-      userId: (user as any).id,
+      userId: (user as { id: string }).id,
       type,
       itemName,
       providerOrAirline,
@@ -64,23 +64,14 @@ export async function POST(request: Request) {
     });
 
     if (paymentMethod) {
-      if (isPrisma()) {
-        await prisma.payment.create({
-          data: {
-            bookingId: (booking as any).id,
-            amount: Number(price),
-            method: paymentMethod,
-            status: "PENDING",
-          },
-        });
-      } else {
-        await supabaseAdmin.from("Payment").insert({
-          bookingId: (booking as any).id,
+      await prisma.payment.create({
+        data: {
+          bookingId: (booking as { id: string }).id,
           amount: Number(price),
           method: paymentMethod,
           status: "PENDING",
-        });
-      }
+        },
+      });
     }
 
     return NextResponse.json(booking, { status: 201 });
