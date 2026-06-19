@@ -700,8 +700,63 @@ export function getHotelInfoByCode(hotelCode: string | number): {
   return null;
 }
 
+let voucherCount = 0;
+let cancelRequestIdCounter = 0;
+
+export function mockGenerateVoucher(bookingId: number): {
+  voucherStatus: boolean;
+  status: number;
+  hotelBookingStatus: string;
+  bookingId: number;
+  confirmationNo: string;
+  invoiceNumber: string;
+  traceId: string;
+} {
+  voucherCount++;
+  return {
+    voucherStatus: true,
+    status: 1,
+    hotelBookingStatus: "Confirmed",
+    bookingId,
+    confirmationNo: `CF${Math.floor(Math.random() * 10000000000)}`,
+    invoiceNumber: `INV/25/${Math.floor(Math.random() * 10000)}`,
+    traceId: uuid(),
+  };
+}
+
+export function mockCancel(bookingId: number): {
+  changeRequestId: number;
+  changeRequestStatus: number;
+  traceId: string;
+} {
+  cancelRequestIdCounter++;
+  return {
+    changeRequestId: cancelRequestIdCounter,
+    changeRequestStatus: 3,
+    traceId: uuid(),
+  };
+}
+
+export function mockCancelStatus(changeRequestId: number): {
+  changeRequestId: number;
+  refundedAmount: number;
+  cancellationCharge: number;
+  changeRequestStatus: number;
+  traceId: string;
+} {
+  return {
+    changeRequestId,
+    refundedAmount: 4262.5,
+    cancellationCharge: 450,
+    changeRequestStatus: 3,
+    traceId: uuid(),
+  };
+}
+
 export function resetMock(): void {
   mockPreBookCache.clear();
   mockBookings.clear();
   bookingIdCounter = 1000000;
+  voucherCount = 0;
+  cancelRequestIdCounter = 0;
 }

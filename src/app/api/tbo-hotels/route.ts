@@ -4,6 +4,9 @@ import {
   preBook,
   bookHotel,
   getBookingDetail,
+  generateVoucher,
+  cancelBooking,
+  getCancelStatus,
   setLastHotelResults,
   getCountries,
   getCities,
@@ -59,13 +62,19 @@ export async function POST(req: NextRequest) {
         return NextResponse.json(result);
       }
 
-      case "pre-book": {
+      case "pre-book":
+      case "block": {
         const { bookingCode } = body;
         if (!bookingCode) {
           return NextResponse.json({ error: "bookingCode required" }, { status: 400 });
         }
         const result = await preBook({ bookingCode });
-        return NextResponse.json(result);
+        return NextResponse.json({
+          success: true,
+          bookingCode,
+          isPriceChanged: false,
+          ...result,
+        });
       }
 
       case "book": {
@@ -84,7 +93,7 @@ export async function POST(req: NextRequest) {
           netAmount: netAmount || 0,
           hotelRoomsDetails,
         });
-        return NextResponse.json(result);
+        return NextResponse.json({ success: true, ...result });
       }
 
       case "booking-detail": {
@@ -117,6 +126,33 @@ export async function POST(req: NextRequest) {
         }
         const result = getHotelCodes(Number(cityCode));
         return NextResponse.json({ hotels: result });
+      }
+
+      case "generate-voucher": {
+        const { bookingId } = body;
+        if (!bookingId) {
+          return NextResponse.json({ error: "bookingId required" }, { status: 400 });
+        }
+        const result = await generateVoucher({ bookingId: Number(bookingId) });
+        return NextResponse.json(result);
+      }
+
+      case "cancel": {
+        const { bookingId, remarks } = body;
+        if (!bookingId) {
+          return NextResponse.json({ error: "bookingId required" }, { status: 400 });
+        }
+        const result = await cancelBooking({ bookingId: Number(bookingId), remarks });
+        return NextResponse.json(result);
+      }
+
+      case "cancel-status": {
+        const { changeRequestId } = body;
+        if (!changeRequestId) {
+          return NextResponse.json({ error: "changeRequestId required" }, { status: 400 });
+        }
+        const result = await getCancelStatus({ changeRequestId: Number(changeRequestId) });
+        return NextResponse.json(result);
       }
 
       default:
