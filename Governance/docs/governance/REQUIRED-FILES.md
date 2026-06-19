@@ -1,8 +1,8 @@
 # GoRASA CockroachDB Standalone — Required Files
 
 > **Purpose:** Single source of truth for which governance files must exist and when to update them.
-> **Referenced by:** `scripts/Cckr-preflight-check.sh`, `scripts/Cckr-post-task-check.sh`
-> **Updated:** When adding or removing governance files.
+> **Referenced by:** `Governance/scripts/Cckr-preflight-check.sh`, `Governance/scripts/Cckr-post-task-check.sh`
+> **Updated:** 2026-06-19
 
 ---
 
@@ -10,12 +10,15 @@
 
 | File | Location | Purpose |
 |------|----------|---------|
-| Cckr-SESSION-LOG.md | cockroach-standalone/docs/governance/ | Sprint status, session history, progress |
-| Cckr-CONFIG-REFERENCE.md | cockroach-standalone/docs/governance/ | Configuration reference |
-| Cckr-CHANGE-LOG.md | cockroach-standalone/docs/governance/ | Governance change log (append-only) |
-| Cckr-MISTAKE-LOG.md | cockroach-standalone/docs/governance/ | Structured mistake entries |
-| Cckr-REQUIRED-FILES.md | cockroach-standalone/docs/governance/ | This file |
-| Cckr-VERSION.md | cockroach-standalone/docs/governance/ | Governance version marker |
+| Cckr-SESSION-LOG.md | Governance/docs/governance/ | Session history, current state, decisions |
+| Cckr-CONFIG-REFERENCE.md | Governance/docs/governance/ | Configuration reference (dual DB, Vercel, auth) |
+| CHANGE-LOG.md | Governance/docs/governance/ | Governance change log (append-only) |
+| MISTAKE-LOG.md | Governance/docs/governance/ | Structured mistake entries |
+| REQUIRED-FILES.md | Governance/docs/governance/ | This file |
+| VERSION.md | Governance/docs/governance/ | Governance version marker |
+| DB-CHANGES.md | Governance/docs/governance/ | DB schema and data changes |
+| DEPLOYMENT-LOG.md | Governance/docs/governance/ | Deployment history |
+| LEARNING-FROM-MISTAKES.md | Governance/docs/governance/ | Issue deep-dives (>30min debugging) |
 
 ---
 
@@ -24,8 +27,9 @@
 | Change Type | File to Update | When |
 |-------------|---------------|------|
 | Any significant work | Cckr-SESSION-LOG.md | Always |
-| Schema or data change | Cckr-DB-CHANGES.md | When DB changes |
-| Deployment | Cckr-DEPLOYMENT-LOG.md | When deploying |
-| >30min debugging | Cckr-LEARNING-FROM-MISTAKES.md | When debugging >30min |
+| Schema or data change | DB-CHANGES.md | When DB changes |
+| Deployment | DEPLOYMENT-LOG.md | When deploying |
+| >30min debugging | LEARNING-FROM-MISTAKES.md | When debugging >30min |
 | Config/keys/remotes | Cckr-CONFIG-REFERENCE.md | When config changes |
-| Governance rule change | Cckr-CHANGE-LOG.md + Cckr-VERSION.md | When rules change |
+| Governance rule change | CHANGE-LOG.md + VERSION.md | When rules change |
+| Any mistake | MISTAKE-LOG.md | After every mistake |

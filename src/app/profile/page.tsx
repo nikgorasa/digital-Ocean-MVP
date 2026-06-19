@@ -129,7 +129,7 @@ export default function ProfilePage() {
   const referralCode = user?.name ? `GORASA-${user.name.split(" ")[0].toUpperCase()}` : "GORASA-USER";
 
   const copyReferral = () => {
-    navigator.clipboard.writeText(`https://gorasa-next.vercel.app?ref=${referralCode}`);
+    navigator.clipboard.writeText(`https://cckr.vercel.app?ref=${referralCode}`);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
   };
@@ -494,7 +494,7 @@ export default function ProfilePage() {
                     <p className="text-sm text-slate-500 mb-3">Share your referral link and earn 500 points for each friend who books.</p>
                     <div className="flex items-center gap-2">
                       <code className="flex-1 px-3 py-3 bg-white border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-brand-saffron focus:ring-offset-2 outline-none transition-all font-mono text-slate-700">
-                        https://gorasa-next.vercel.app?ref={referralCode}
+                        https://cckr.vercel.app?ref={referralCode}
                       </code>
                       <button
                         onClick={copyReferral}

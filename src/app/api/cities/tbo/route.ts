@@ -26,7 +26,7 @@ const CACHE_TTL = 60 * 60 * 1000;
 async function fetchIATACodes(): Promise<Record<string, string>> {
   const data = await cities.findTBOCodes();
   const iataMap: Record<string, string> = {};
-  for (const c of data as any[]) {
+  for (const c of data as { name: string; iata_code: string | null }[]) {
     if (c.name && c.iata_code) {
       iataMap[c.name.toLowerCase()] = c.iata_code;
     }
@@ -81,10 +81,10 @@ async function fetchTBOCities(): Promise<CityResult[]> {
   return unique;
 }
 
-async function fetchSupabaseCities(): Promise<CityResult[]> {
+async function fetchDBCities(): Promise<CityResult[]> {
   const data = await cities.findAll();
 
-  return (data as any[]).map((c) => ({
+  return (data as { id: string; name: string; country: string; iata_code: string | null }[]).map((c) => ({
     code: c.id,
     name: c.name,
     state: c.country || "",
@@ -100,14 +100,14 @@ export async function GET(_req: NextRequest) {
       return NextResponse.json({ source: "tbo", cities: tboCities });
     }
   } catch (e) {
-    console.warn("TBO CityList failed, falling back to Supabase:", e);
+    console.warn("TBO CityList failed, falling back to DB:", e);
   }
 
   try {
-    const supabaseCities = await fetchSupabaseCities();
-    return NextResponse.json({ source: "supabase", cities: supabaseCities });
+    const dbCities = await fetchDBCities();
+    return NextResponse.json({ source: "database", cities: dbCities });
   } catch (e) {
-    console.error("Supabase cities fallback also failed:", e);
+    console.error("DB cities fallback also failed:", e);
     return NextResponse.json({ source: "fallback", cities: [] });
   }
 }

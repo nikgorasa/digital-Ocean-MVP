@@ -1,13 +1,14 @@
 # GoRASA CockroachDB Standalone — Deployment Log
 
 > **Purpose:** Record of all deployments.
-> **Format:** `Date | Commit | SHA | Status | URL | Notes`
+> **Format:** `Date | Environment | Status | URL | Notes`
 > **Updated:** After every deployment.
 
 ---
 
 ## Deployments
 
-| Date | Commit | SHA | Status | URL | Notes |
-|------|--------|-----|--------|-----|-------|
-| 2026-06-17 | Initial deployment | — | ✅ Live | project-10o7w.vercel.app | CockroachDB standalone |
+| Date | Environment | Status | URL | Notes |
+|------|---|---|---|---|
+| 2026-06-19 | DEV | ✅ Live | https://cckr.vercel.app | First deployment — Supabase removed, aqua-pony CockroachDB cluster |
+| 2026-06-17 | DEV | ✅ Live | https://cckr.vercel.app | Initial CockroachDB standalone deployment |
