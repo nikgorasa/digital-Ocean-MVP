@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
-import { upsertConfig, invalidateCache, readConfig } from "@/lib/config-service";
-import { decrypt } from "@/lib/crypto";
+import { upsertConfig, invalidateCache } from "@/lib/config-service";
 import { headers } from "next/headers";
 
 export async function GET() {
@@ -76,6 +75,49 @@ export async function POST(req: NextRequest) {
     });
   } catch (e) {
     console.error("Config upsert error:", e);
+    return NextResponse.json(
+      { error: e instanceof Error ? e.message : "Internal server error" },
+      { status: 500 },
+    );
+  }
+}
+
+export async function DELETE(req: NextRequest) {
+  try {
+    const { searchParams } = new URL(req.url);
+    const provider = searchParams.get("provider");
+
+    if (!provider) {
+      return NextResponse.json({ error: "provider is required" }, { status: 400 });
+    }
+
+    const existing = await prisma.configProvider.findUnique({ where: { provider } });
+    if (!existing) {
+      return NextResponse.json({ error: `Provider '${provider}' not found` }, { status: 404 });
+    }
+
+    const headersList = await headers();
+    const ipAddress = headersList.get("x-forwarded-for")?.split(",")[0]?.trim()
+      || headersList.get("x-real-ip")
+      || "unknown";
+
+    await prisma.configProvider.delete({ where: { provider } });
+
+    await prisma.configAuditLog.create({
+      data: {
+        provider,
+        action: "DELETE",
+        field: "all",
+        performedBy: "admin",
+        ipAddress,
+      },
+    });
+
+    invalidateCache(provider);
+
+    return NextResponse.json({ success: true });
+  } catch (e) {
+    console.error("Config delete error:", e);
     return NextResponse.json(
       { error: e instanceof Error ? e.message : "Internal server error" },
       { status: 500 },
