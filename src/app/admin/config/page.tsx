@@ -398,10 +398,19 @@ export default function ConfigPage() {
                     <h4 className="text-[10px] font-bold uppercase tracking-widest text-slate-400 mb-2">Credentials</h4>
                     <div className="space-y-1">
                       {p.clientId && <p><span className="text-slate-400">Client ID:</span> <span className="font-mono">{p.clientId}</span></p>}
-                      <p><span className="text-slate-400">Username:</span> {p.hasUsername ? <span className="text-emerald-600 font-bold">Set</span> : <span className="text-slate-300">Not set</span>}</p>
-                      <p><span className="text-slate-400">Password:</span> {p.hasPassword ? <span className="text-emerald-600 font-bold">Set</span> : <span className="text-slate-300">Not set</span>}</p>
-                      {p.hasStaticUsername && <p><span className="text-slate-400">Static User:</span> <span className="text-emerald-600 font-bold">Set</span></p>}
-                      {p.hasStaticPassword && <p><span className="text-slate-400">Static Pass:</span> <span className="text-emerald-600 font-bold">Set</span></p>}
+                      {p.provider === "tbo_hotel_static" ? (
+                        <>
+                          <p><span className="text-slate-400">Username:</span> {p.hasStaticUsername ? <span className="text-emerald-600 font-bold">Set (TBOStaticAPITest)</span> : <span className="text-slate-300">Not set</span>}</p>
+                          <p><span className="text-slate-400">Password:</span> {p.hasStaticPassword ? <span className="text-emerald-600 font-bold">Set</span> : <span className="text-slate-300">Not set</span>}</p>
+                        </>
+                      ) : (
+                        <>
+                          <p><span className="text-slate-400">Username:</span> {p.hasUsername ? <span className="text-emerald-600 font-bold">Set (RasaT)</span> : <span className="text-slate-300">Not set</span>}</p>
+                          <p><span className="text-slate-400">Password:</span> {p.hasPassword ? <span className="text-emerald-600 font-bold">Set</span> : <span className="text-slate-300">Not set</span>}</p>
+                          {p.hasStaticUsername && <p><span className="text-slate-400">Static User:</span> <span className="text-emerald-600 font-bold">Set (TBOStaticAPITest)</span></p>}
+                          {p.hasStaticPassword && <p><span className="text-slate-400">Static Pass:</span> <span className="text-emerald-600 font-bold">Set</span></p>}
+                        </>
+                      )}
                     </div>
                     <p className="mt-2 text-slate-400">v{p.version} · Updated {new Date(p.updatedAt).toLocaleDateString()}</p>
                   </div>
