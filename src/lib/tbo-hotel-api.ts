@@ -22,18 +22,39 @@ import type {
   TBOHotelGetChangeRequestStatusResponse,
 } from "./tbo-hotel-types";
 import { logApiCall } from "./api-logger";
+import { readConfig } from "./config-service";
 
 const AUTH_URL = "http://Sharedapi.tektravels.com/SharedData.svc/rest/Authenticate";
-const STATIC_DATA_BASE = process.env.TBO_STATIC_ENDPOINT || "http://api.tbotechnology.in/TBOHolidays_HotelAPI";
-const SEARCH_BASE = process.env.TBO_ENDPOINT || "https://affiliate.tektravels.com/HotelAPI";
-const BOOKING_BASE = process.env.TBO_BOOKING_ENDPOINT || "https://HotelBE.tektravels.com/hotelservice.svc/rest";
 
-const HOTEL_USERNAME = process.env.TBO_HOTEL_USERNAME || "";
-const HOTEL_PASSWORD = process.env.TBO_HOTEL_PASSWORD || "";
-const HAS_BASIC_AUTH = !!(HOTEL_USERNAME && HOTEL_PASSWORD);
-const AUTH_HEADER: Record<string, string> = HAS_BASIC_AUTH
-  ? { Authorization: `Basic ${btoa(`${HOTEL_USERNAME}:${HOTEL_PASSWORD}`)}` }
-  : {};
+interface ApiContext {
+  baseUrl: string;
+  authHeader: { Authorization?: string };
+}
+
+async function getStaticContext(): Promise<ApiContext> {
+  const cfg = await readConfig("tbo_hotel_static");
+  const baseUrl = cfg.staticUrl || "http://api.tbotechnology.in/TBOHolidays_HotelAPI";
+  const username = cfg.staticUsername || "TBOStaticAPITest";
+  const password = cfg.staticPassword || "Tbo@11530818";
+  const hasAuth = !!(username && password);
+  const authHeader = hasAuth
+    ? { Authorization: `Basic ${Buffer.from(`${username}:${password}`).toString("base64")}` }
+    : {};
+  return { baseUrl, authHeader };
+}
+
+async function getBookingContext(): Promise<ApiContext> {
+  const cfg = await readConfig("tbo_hotel");
+  const baseUrl = cfg.baseUrl || "https://affiliate.tektravels.com/HotelAPI";
+  const bookingUrl = cfg.bookingUrl || "https://affiliate.tektravels.com/HotelAPI";
+  const username = cfg.username || "";
+  const password = cfg.password || "";
+  const hasAuth = !!(username && password);
+  const authHeader = hasAuth
+    ? { Authorization: `Basic ${Buffer.from(`${username}:${password}`).toString("base64")}` }
+    : {};
+  return { baseUrl, authHeader };
+}
 
 interface LogOptions {
   requestId?: string;
@@ -41,11 +62,11 @@ interface LogOptions {
   batchTotal?: number;
 }
 
-async function staticJsonPost<T>(url: string, body: unknown, logOpts?: LogOptions): Promise<T> {
+async function staticJsonPost<T>(url: string, body: unknown, ctx: ApiContext, logOpts?: LogOptions): Promise<T> {
   const start = Date.now();
   const res = await fetch(url, {
     method: "POST",
-    headers: { "Content-Type": "application/json", ...AUTH_HEADER },
+    headers: { "Content-Type": "application/json", ...ctx.authHeader },
     body: JSON.stringify(body),
   });
   const responseTime = Date.now() - start;
@@ -53,7 +74,7 @@ async function staticJsonPost<T>(url: string, body: unknown, logOpts?: LogOption
   if (!res.ok) {
     await logApiCall({
       provider: 'tbo_hotel_static',
-      endpoint: url.replace(STATIC_DATA_BASE, ''),
+      endpoint: url.replace(ctx.baseUrl, ''),
       method: 'POST',
       requestBody: body,
       statusCode: res.status,
@@ -69,7 +90,7 @@ async function staticJsonPost<T>(url: string, body: unknown, logOpts?: LogOption
   const data = await res.json();
   await logApiCall({
     provider: 'tbo_hotel_static',
-    endpoint: url.replace(STATIC_DATA_BASE, ''),
+    endpoint: url.replace(ctx.baseUrl, ''),
     method: 'POST',
     requestBody: body,
     responseBody: data,
@@ -82,18 +103,18 @@ async function staticJsonPost<T>(url: string, body: unknown, logOpts?: LogOption
   return data as T;
 }
 
-async function staticGet<T>(url: string, logOpts?: LogOptions): Promise<T> {
+async function staticGet<T>(url: string, ctx: ApiContext, logOpts?: LogOptions): Promise<T> {
   const start = Date.now();
   const res = await fetch(url, {
     method: "GET",
-    headers: { "Content-Type": "application/json", ...AUTH_HEADER },
+    headers: { "Content-Type": "application/json", ...ctx.authHeader },
   });
   const responseTime = Date.now() - start;
 
   if (!res.ok) {
     await logApiCall({
       provider: 'tbo_hotel_static',
-      endpoint: url.replace(STATIC_DATA_BASE, ''),
+      endpoint: url.replace(ctx.baseUrl, ''),
       method: 'GET',
       statusCode: res.status,
       responseTimeMs: responseTime,
@@ -106,7 +127,7 @@ async function staticGet<T>(url: string, logOpts?: LogOptions): Promise<T> {
   const data = await res.json();
   await logApiCall({
     provider: 'tbo_hotel_static',
-    endpoint: url.replace(STATIC_DATA_BASE, ''),
+    endpoint: url.replace(ctx.baseUrl, ''),
     method: 'GET',
     responseBody: data,
     statusCode: res.status,
@@ -116,11 +137,11 @@ async function staticGet<T>(url: string, logOpts?: LogOptions): Promise<T> {
   return data as T;
 }
 
-async function searchPost<T>(url: string, body: unknown, logOpts?: LogOptions): Promise<T> {
+async function searchPost<T>(url: string, body: unknown, ctx: ApiContext, logOpts?: LogOptions): Promise<T> {
   const start = Date.now();
   const res = await fetch(url, {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    headers: { "Content-Type": "application/json", ...ctx.authHeader },
     body: JSON.stringify(body),
   });
   const responseTime = Date.now() - start;
@@ -128,7 +149,7 @@ async function searchPost<T>(url: string, body: unknown, logOpts?: LogOptions): 
   if (!res.ok) {
     await logApiCall({
       provider: 'tbo_hotel_search',
-      endpoint: url.replace(SEARCH_BASE, ''),
+      endpoint: url.replace(ctx.baseUrl, ''),
       method: 'POST',
       requestBody: body,
       statusCode: res.status,
@@ -142,7 +163,7 @@ async function searchPost<T>(url: string, body: unknown, logOpts?: LogOptions): 
   const data = await res.json();
   await logApiCall({
     provider: 'tbo_hotel_search',
-    endpoint: url.replace(SEARCH_BASE, ''),
+    endpoint: url.replace(ctx.baseUrl, ''),
     method: 'POST',
     requestBody: body,
     responseBody: data,
@@ -153,11 +174,11 @@ async function searchPost<T>(url: string, body: unknown, logOpts?: LogOptions): 
   return data as T;
 }
 
-async function bookingPost<T>(url: string, body: unknown, logOpts?: LogOptions): Promise<T> {
+async function bookingPost<T>(url: string, body: unknown, ctx: ApiContext, logOpts?: LogOptions): Promise<T> {
   const start = Date.now();
   const res = await fetch(url, {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    headers: { "Content-Type": "application/json", ...ctx.authHeader },
     body: JSON.stringify(body),
   });
   const responseTime = Date.now() - start;
@@ -165,7 +186,7 @@ async function bookingPost<T>(url: string, body: unknown, logOpts?: LogOptions):
   if (!res.ok) {
     await logApiCall({
       provider: 'tbo_hotel_booking',
-      endpoint: url.replace(BOOKING_BASE, ''),
+      endpoint: url.replace(ctx.baseUrl, ''),
       method: 'POST',
       requestBody: body,
       statusCode: res.status,
@@ -179,7 +200,7 @@ async function bookingPost<T>(url: string, body: unknown, logOpts?: LogOptions):
   const data = await res.json();
   await logApiCall({
     provider: 'tbo_hotel_booking',
-    endpoint: url.replace(BOOKING_BASE, ''),
+    endpoint: url.replace(ctx.baseUrl, ''),
     method: 'POST',
     requestBody: body,
     responseBody: data,
@@ -224,46 +245,57 @@ export function authenticate(req: TBOHotelAuthRequest): Promise<TBOHotelAuthResp
   });
 }
 
-export function getCountries(): Promise<{ CountryList: TBOHotelCountry[] }> {
-  return staticGet<{ CountryList: TBOHotelCountry[] }>(`${STATIC_DATA_BASE}/CountryList`);
+export async function getCountries(): Promise<{ CountryList: TBOHotelCountry[] }> {
+  const ctx = await getStaticContext();
+  return staticGet<{ CountryList: TBOHotelCountry[] }>(`${ctx.baseUrl}/CountryList`, ctx);
 }
 
-export function getCities(countryCode: string): Promise<{ CityList?: TBOHotelCity[] }> {
-  return staticJsonPost<{ CityList?: TBOHotelCity[] }>(`${STATIC_DATA_BASE}/CityList`, { CountryCode: countryCode });
+export async function getCities(countryCode: string): Promise<{ CityList?: TBOHotelCity[] }> {
+  const ctx = await getStaticContext();
+  return staticJsonPost<{ CityList?: TBOHotelCity[] }>(`${ctx.baseUrl}/CityList`, { CountryCode: countryCode }, ctx);
 }
 
-export function getHotelCodeList(cityCode: string, logOpts?: LogOptions): Promise<{ Status: TBOStatus; Hotels: TBOHotelCodeItem[] }> {
-  return staticJsonPost(`${STATIC_DATA_BASE}/TBOHotelCodeList`, { CityCode: cityCode }, logOpts);
+export async function getHotelCodeList(cityCode: string, logOpts?: LogOptions): Promise<{ Status: TBOStatus; Hotels: TBOHotelCodeItem[] }> {
+  const ctx = await getStaticContext();
+  return staticJsonPost<{ Status: TBOStatus; Hotels: TBOHotelCodeItem[] }>(`${ctx.baseUrl}/TBOHotelCodeList`, { CityCode: cityCode }, ctx, logOpts);
 }
 
-export function getHotelDetails(hotelCodes: string, logOpts?: LogOptions): Promise<{ Status: { Code: number; Description: string }; HotelDetails: TBOHotelDetail[] }> {
-  return staticJsonPost(`${STATIC_DATA_BASE}/HotelDetails`, { HotelCodes: hotelCodes }, logOpts);
+export async function getHotelDetails(hotelCodes: string, logOpts?: LogOptions): Promise<{ Status: { Code: number; Description: string }; HotelDetails: TBOHotelDetail[] }> {
+  const ctx = await getStaticContext();
+  return staticJsonPost<{ Status: { Code: number; Description: string }; HotelDetails: TBOHotelDetail[] }>(`${ctx.baseUrl}/HotelDetails`, { HotelCodes: hotelCodes }, ctx, logOpts);
 }
 
-export function searchHotels(req: TBOHotelSearchRequest, logOpts?: LogOptions): Promise<TBOHotelSearchResponse> {
-  return searchPost<TBOHotelSearchResponse>(`${SEARCH_BASE}/Search`, req, logOpts);
+export async function searchHotels(req: TBOHotelSearchRequest, logOpts?: LogOptions): Promise<TBOHotelSearchResponse> {
+  const ctx = await getBookingContext();
+  return searchPost<TBOHotelSearchResponse>(`${ctx.baseUrl}/Search`, req, ctx, logOpts);
 }
 
-export function preBook(req: TBOHotelPreBookRequest): Promise<TBOHotelPreBookResponse> {
-  return searchPost<TBOHotelPreBookResponse>(`${SEARCH_BASE}/PreBook`, req);
+export async function preBook(req: TBOHotelPreBookRequest): Promise<TBOHotelPreBookResponse> {
+  const ctx = await getBookingContext();
+  return searchPost<TBOHotelPreBookResponse>(`${ctx.baseUrl}/PreBook`, req, ctx);
 }
 
-export function bookHotel(req: TBOHotelBookRequest): Promise<TBOHotelBookResponse> {
-  return bookingPost<TBOHotelBookResponse>(`${BOOKING_BASE}/book`, req);
+export async function bookHotel(req: TBOHotelBookRequest): Promise<TBOHotelBookResponse> {
+  const ctx = await getBookingContext();
+  return bookingPost<TBOHotelBookResponse>(`${ctx.baseUrl}/book`, req, ctx);
 }
 
-export function getBookingDetail(req: TBOHotelBookingDetailRequest): Promise<TBOHotelBookingDetailResponse> {
-  return bookingPost<TBOHotelBookingDetailResponse>(`${BOOKING_BASE}/Getbookingdetail`, req);
+export async function getBookingDetail(req: TBOHotelBookingDetailRequest): Promise<TBOHotelBookingDetailResponse> {
+  const ctx = await getBookingContext();
+  return bookingPost<TBOHotelBookingDetailResponse>(`${ctx.baseUrl}/Getbookingdetail`, req, ctx);
 }
 
-export function generateVoucher(req: TBOHotelGenerateVoucherRequest): Promise<TBOHotelGenerateVoucherResponse> {
-  return bookingPost<TBOHotelGenerateVoucherResponse>(`${BOOKING_BASE}/GenerateVoucher`, req);
+export async function generateVoucher(req: TBOHotelGenerateVoucherRequest): Promise<TBOHotelGenerateVoucherResponse> {
+  const ctx = await getBookingContext();
+  return bookingPost<TBOHotelGenerateVoucherResponse>(`${ctx.baseUrl}/GenerateVoucher`, req, ctx);
 }
 
-export function sendChangeRequest(req: TBOHotelSendChangeRequest): Promise<TBOHotelSendChangeResponse> {
-  return bookingPost<TBOHotelSendChangeResponse>(`${BOOKING_BASE}/SendChangeRequest`, req);
+export async function sendChangeRequest(req: TBOHotelSendChangeRequest): Promise<TBOHotelSendChangeResponse> {
+  const ctx = await getBookingContext();
+  return bookingPost<TBOHotelSendChangeResponse>(`${ctx.baseUrl}/SendChangeRequest`, req, ctx);
 }
 
-export function getChangeRequestStatus(req: TBOHotelGetChangeRequestStatusRequest): Promise<TBOHotelGetChangeRequestStatusResponse> {
-  return bookingPost<TBOHotelGetChangeRequestStatusResponse>(`${BOOKING_BASE}/GetChangeRequestStatus`, req);
+export async function getChangeRequestStatus(req: TBOHotelGetChangeRequestStatusRequest): Promise<TBOHotelGetChangeRequestStatusResponse> {
+  const ctx = await getBookingContext();
+  return bookingPost<TBOHotelGetChangeRequestStatusResponse>(`${ctx.baseUrl}/GetChangeRequestStatus`, req, ctx);
 }

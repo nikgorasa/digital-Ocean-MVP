@@ -52,6 +52,8 @@ export interface TBOHotelSearchRequest {
   MinRating?: number;
   ReviewCount?: number;
   SearchedCities?: string[];
+  EndUserIp?: string;
+  TokenId?: string;
 }
 
 export interface TBOHotelDayRate {
@@ -107,9 +109,7 @@ export interface TBOHotelSearchResponse {
 
 export interface TBOHotelPreBookRequest {
   BookingCode: string;
-  EndUserIp: string;
-  TokenId: string;
-  TraceId?: string;
+  PaymentMode: string;
 }
 
 export interface TBOHotelValidationInfo {
@@ -185,7 +185,10 @@ export interface TBOHotelBookRequest {
   EndUserIp?: string;
   TokenId?: string;
   TraceId?: string;
+  RequestedBookingMode: number;
   NetAmount: number;
+  TotalFare?: number;
+  ClientReferenceId?: string;
   HotelRoomsDetails: TBOHotelRoomDetail[];
 }
 

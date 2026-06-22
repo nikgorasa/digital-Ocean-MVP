@@ -17,16 +17,30 @@ import type {
 import * as api from "./tbo-flight-api";
 import * as mock from "./tbo-flight-mock";
 import { calculatePrice } from "./pricing";
-
-const hasCredentials = !!(process.env.TBO_USERNAME && process.env.TBO_PASSWORD)
-  && process.env.TBO_FLIGHT_FORCE_MOCK !== "true";
-
-const CLIENT_ID = process.env.TBO_CLIENT_ID || "ApiIntegrationNew";
+import { readConfig } from "./config-service";
 
 let cachedToken: { tokenId: string; date: string } | null = null;
 
+let _defaultEndUserIp = "192.168.1.1";
+
 function getEndUserIp(): string {
-  return "192.168.1.1";
+  return _defaultEndUserIp;
+}
+
+export function setEndUserIp(ip: string): void {
+  _defaultEndUserIp = ip;
+}
+
+async function getClientId(): Promise<string> {
+  const cfg = await readConfig("tbo_flight");
+  return cfg.clientId || process.env.TBO_CLIENT_ID || "ApiIntegrationNew";
+}
+
+async function checkCredentials(): Promise<boolean> {
+  const cfg = await readConfig("tbo_flight");
+  const username = cfg.username || process.env.TBO_USERNAME || "";
+  const password = cfg.password || process.env.TBO_PASSWORD || "";
+  return !!(username && password) && !cfg.forceMock;
 }
 
 async function ensureToken(): Promise<string> {
@@ -34,10 +48,14 @@ async function ensureToken(): Promise<string> {
   if (cachedToken?.date === today) {
     return cachedToken.tokenId;
   }
+  const clientId = await getClientId();
+  const username = (await readConfig("tbo_flight")).username || process.env.TBO_USERNAME || "";
+  const password = (await readConfig("tbo_flight")).password || process.env.TBO_PASSWORD || "";
+
   const req: TBOFlightAuthRequest = {
-    ClientId: CLIENT_ID,
-    UserName: process.env.TBO_USERNAME || "",
-    Password: process.env.TBO_PASSWORD || "",
+    ClientId: clientId,
+    UserName: username,
+    Password: password,
     EndUserIp: getEndUserIp(),
   };
   const res = await api.authenticate(req);
@@ -52,25 +70,29 @@ async function toDisplay(
   r: TBOFlightResult,
   leg: "outbound" | "inbound" | "oneway",
 ): Promise<TBOFlightDisplay> {
+  const seg = r.Segments[0];
+  const airline = seg?.Airline as any;
+  const origin = seg?.Origin as any;
+  const destination = seg?.Destination as any;
   return {
     resultIndex: r.ResultIndex,
     leg,
     isLCC: r.IsLCC,
     isRefundable: r.IsRefundable,
-    isDomestic: r.Segments[0]?.TripIndicator === 1,
+    isDomestic: seg?.TripIndicator === 1,
     source: r.Source,
-    airline: r.Segments[0]?.Airline ?? "",
-    airlineCode: r.Segments[0]?.AirlineCode ?? "",
-    flightNumber: r.Segments[0]?.FlightNumber ?? "",
-    operatingCarrier: r.Segments[0]?.OperatingCarrier ?? "",
-    origin: r.Segments[0]?.Origin ?? "",
-    destination: r.Segments[0]?.Destination ?? "",
-    departureTime: r.Segments[0]?.DepTime ?? "",
-    arrivalTime: r.Segments[0]?.ArrTime ?? "",
-    duration: r.Segments[0]?.Duration ?? "",
-    cabinClass: r.Segments[0]?.CabinClass ?? "",
-    baggage: r.Segments[0]?.Baggage ?? "",
-    cabinBaggage: r.Segments[0]?.CabinBaggage ?? "",
+    airline: (typeof airline === "object" ? airline?.AirlineName : airline) ?? "",
+    airlineCode: (typeof airline === "object" ? airline?.AirlineCode : "") ?? "",
+    flightNumber: (typeof airline === "object" ? airline?.FlightNumber : airline) ?? "",
+    operatingCarrier: (typeof airline === "object" ? airline?.OperatingCarrier : "") ?? "",
+    origin: (typeof origin === "object" ? origin?.Airport?.AirportCode : origin) ?? "",
+    destination: (typeof destination === "object" ? destination?.Airport?.AirportCode : destination) ?? "",
+    departureTime: seg?.DepTime ?? "",
+    arrivalTime: seg?.ArrTime ?? "",
+    duration: seg?.Duration ?? "",
+    cabinClass: seg?.CabinClass ?? "",
+    baggage: seg?.Baggage ?? "",
+    cabinBaggage: seg?.CabinBaggage ?? "",
     currency: r.Fare.Currency,
     publishedFare: r.Fare.PublishedFare,
     offeredFare: r.Fare.OfferedFare,
@@ -98,7 +120,7 @@ export async function searchFlights(params: {
   EndUserIp?: string;
   forceMock?: boolean;
 }): Promise<TBOFlightSearchOutput> {
-  if (!params.forceMock && hasCredentials) {
+  if (!params.forceMock && await checkCredentials()) {
     try {
       const tokenId = await ensureToken();
       const searchReq: TBOFlightSearchRequest = {
@@ -172,7 +194,7 @@ export async function getFareRule(params: {
   resultIndex: string;
   EndUserIp?: string;
 }): Promise<{ traceId: string; fareRules: any[] }> {
-  if (hasCredentials) {
+  if (await checkCredentials()) {
     try {
       const tokenId = await ensureToken();
       const req: TBOFlightFareRuleRequest = {
@@ -205,7 +227,7 @@ export async function getFareQuote(params: {
   fareBreakdown: any[];
   segments: any[];
 }> {
-  if (hasCredentials) {
+  if (await checkCredentials()) {
     try {
       const tokenId = await ensureToken();
       const req: TBOFlightFareQuoteRequest = {
@@ -246,7 +268,7 @@ export async function getSSR(params: {
   resultIndex: string;
   EndUserIp?: string;
 }): Promise<any> {
-  if (hasCredentials) {
+  if (await checkCredentials()) {
     try {
       const tokenId = await ensureToken();
       const req: TBOFlightSSRRequest = {
@@ -286,7 +308,7 @@ export async function bookFlight(params: {
   passengers: TBOFlightBookRequest["Passengers"];
   EndUserIp?: string;
 }): Promise<{ bookingId: string; pnr: string; isPriceChanged: boolean }> {
-  if (hasCredentials) {
+  if (await checkCredentials()) {
     try {
       const tokenId = await ensureToken();
       const req: TBOFlightBookRequest = {
@@ -355,7 +377,7 @@ export async function ticketFlight(params: {
   isLCC: boolean;
   EndUserIp?: string;
 }): Promise<TBOFlightTicketOutput> {
-  if (hasCredentials) {
+  if (await checkCredentials()) {
     try {
       const tokenId = await ensureToken();
       if (params.isLCC) {
@@ -425,7 +447,7 @@ export async function getBookingDetail(params: {
   bookingIds: string[];
   EndUserIp?: string;
 }): Promise<any[]> {
-  if (hasCredentials) {
+  if (await checkCredentials()) {
     try {
       const tokenId = await ensureToken();
       const results = [];

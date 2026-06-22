@@ -11,7 +11,9 @@ import {
   getCountries,
   getCities,
   getHotelCodes,
+  setEndUserIp,
 } from "@/lib/tbo-hotel-client";
+import * as api from "@/lib/tbo-hotel-api";
 
 export const maxDuration = 30;
 
@@ -32,6 +34,11 @@ export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
     const { action } = body;
+
+    const endUserIp = req.headers.get("x-forwarded-for")?.split(",")[0]?.trim()
+      || req.headers.get("x-real-ip")
+      || "192.168.1.1";
+    setEndUserIp(endUserIp);
 
     switch (action) {
       case "search": {
@@ -106,8 +113,8 @@ export async function POST(req: NextRequest) {
       }
 
       case "static-data/countries": {
-        const result = getCountries();
-        return NextResponse.json({ countries: result });
+        const result = await api.getCountries();
+        return NextResponse.json({ countries: result.CountryList || [] });
       }
 
       case "static-data/cities": {
@@ -115,8 +122,8 @@ export async function POST(req: NextRequest) {
         if (!countryCode) {
           return NextResponse.json({ error: "countryCode required" }, { status: 400 });
         }
-        const result = getCities(countryCode);
-        return NextResponse.json({ cities: result });
+        const result = await api.getCities(countryCode);
+        return NextResponse.json({ cities: result.CityList || [] });
       }
 
       case "static-data/hotel-codes": {
@@ -124,8 +131,8 @@ export async function POST(req: NextRequest) {
         if (!cityCode) {
           return NextResponse.json({ error: "cityCode required" }, { status: 400 });
         }
-        const result = getHotelCodes(Number(cityCode));
-        return NextResponse.json({ hotels: result });
+        const result = await api.getHotelCodeList(cityCode);
+        return NextResponse.json({ hotels: result.Hotels || [] });
       }
 
       case "generate-voucher": {

@@ -1,7 +1,7 @@
 # GoRASA CockroachDB Standalone — SESSION-LOG
 
 > **Purpose:** Living document tracking all sessions, changes, deployments, and learnings.
-> **Last updated:** 2026-06-19
+> **Last updated:** 2026-06-23
 
 ---
 
@@ -32,6 +32,31 @@ Each environment connects to a **different CockroachDB cluster**. Zero shared da
 ---
 
 ## Sessions
+
+### Session 2026-06-23 — TBO Hotel API Static Data Reconfiguration
+
+**Objective:** Separate TBO Hotel API auth into distinct environments (static data vs search/book), clean up dual implementations, and create comprehensive reference docs.
+
+**Changes:**
+- Created `Governance/docs/static-data/TBO-STATIC-DATA-REFERENCE.md` — 236-line reference covering all static data endpoints (CountryList, CityList, TBOHotelCodeList, HotelDetails, HotelInfo, CheckMinimumAge, MinHotelRate)
+- Reconfigured auth separation:
+  - Static data → `http://api.tbotechnology.in/TBOHolidays_HotelAPI` with `TBOStaticAPITest` creds (`TBO_HOTEL_USERNAME`/`TBO_HOTEL_PASSWORD`)
+  - Search/PreBook/Book → `https://affiliate.tektravels.com/HotelAPI` with `RasaT` creds (`TBO_USERNAME`/`TBO_PASSWORD`)
+- Restored `TBO_HOTEL_USERNAME` and `TBO_HOTEL_PASSWORD` env vars with static data staging creds
+- Added `TBO_STATIC_ENDPOINT` env var with staging URL as default
+- Updated `.env.example` with clear dual-auth documentation
+- Refactored `/api/cities/tbo` to use shared `getCitiesWithRoomsScore` from `tbo-hotel-client` instead of inline duplicate
+- Fixed `/api/tbo-hotels` static-data actions (countryList, hotelCodeList) to call real API instead of mock
+- Removed mock-only code paths from `tbo-hotel-api.ts`
+- Added `TBO_HOTEL_FORCE_MOCK` env var for testing
+
+**Files changed:** 9 source files + .env.example + 1 new governance doc
+
+**Verification:** TypeScript: 0 errors. Build: clean. Post-task: 8/8.
+
+**Known issues:** City code values differ between staging static API (CountryList/CityList) and production search API; static data endpoints return 500 errors against production URL.
+
+---
 
 ### Session 2026-06-19 — Full Cleanup + Dual DB Isolation
 

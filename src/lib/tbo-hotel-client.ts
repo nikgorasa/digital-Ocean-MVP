@@ -20,17 +20,31 @@ import type {
 import * as api from "./tbo-hotel-api";
 import * as mock from "./tbo-hotel-mock";
 import { calculatePrice } from "./pricing";
-
-const hasBasicAuth = !!(process.env.TBO_HOTEL_USERNAME && process.env.TBO_HOTEL_PASSWORD);
-const hasTokenAuth = !!(process.env.TBO_USERNAME && process.env.TBO_PASSWORD);
-const hasCredentials = (hasBasicAuth || hasTokenAuth) && process.env.TBO_HOTEL_FORCE_MOCK !== "true";
-
-const CLIENT_ID = process.env.TBO_CLIENT_ID || "ApiIntegrationNew";
+import { HOTEL_BOOKING_MODE } from "./tbo-hotel-types";
+import { readConfig } from "./config-service";
 
 let cachedToken: { tokenId: string; date: string } | null = null;
 
+let _defaultEndUserIp = "192.168.1.1";
+
 function getEndUserIp(): string {
-  return "192.168.1.1";
+  return _defaultEndUserIp;
+}
+
+export function setEndUserIp(ip: string): void {
+  _defaultEndUserIp = ip;
+}
+
+async function getClientId(): Promise<string> {
+  const cfg = await readConfig("tbo_hotel");
+  return cfg.clientId || process.env.TBO_CLIENT_ID || "ApiIntegrationNew";
+}
+
+async function checkCredentials(): Promise<boolean> {
+  const cfg = await readConfig("tbo_hotel");
+  const username = cfg.username || process.env.TBO_USERNAME || "";
+  const password = cfg.password || process.env.TBO_PASSWORD || "";
+  return !!(username && password) && !cfg.forceMock;
 }
 
 async function ensureToken(): Promise<string> {
@@ -38,10 +52,14 @@ async function ensureToken(): Promise<string> {
   if (cachedToken?.date === today) {
     return cachedToken.tokenId;
   }
+  const clientId = await getClientId();
+  const username = (await readConfig("tbo_hotel")).username || process.env.TBO_USERNAME || "";
+  const password = (await readConfig("tbo_hotel")).password || process.env.TBO_PASSWORD || "";
+
   const req: TBOHotelAuthRequest = {
-    ClientId: CLIENT_ID,
-    UserName: process.env.TBO_USERNAME || "",
-    Password: process.env.TBO_PASSWORD || "",
+    ClientId: clientId,
+    UserName: username,
+    Password: password,
     EndUserIp: getEndUserIp(),
   };
   const res = await api.authenticate(req);
@@ -136,6 +154,52 @@ export function setLastHotelResults(results: any[], traceId: string): void {
 
 let _hotelCodesCache: Record<string, string> = {};
 let _hotelDetailsCache: Record<string, { name: string; rating: string; address: string; city: string; imageUrl?: string; amenities: string[]; facilities: string[] }> = {};
+let _cityNameToCodeCache: Record<string, string> = {};
+
+// NOTE: City code discrepancy between static and search endpoints.
+// `api.getCities()` hits the static staging endpoint (api.tbotechnology.in) which returns
+// DIFFERENT city codes than what the production Search endpoint (affiliate.tektravels.com) uses.
+// The CitySearchDropdown component fetches codes and passes them through, so the search flow
+// uses whatever code the user selected — but lookupTboCityCode() returns staging codes which
+// may NOT work with production Search. This is a known limitation.
+async function lookupTboCityCode(cityName: string, requestId?: string, countryCode = "IN"): Promise<string | null> {
+  const cacheKey = `${countryCode}:${cityName.toLowerCase()}`;
+  if (_cityNameToCodeCache[cacheKey]) return _cityNameToCodeCache[cacheKey];
+
+  try {
+    const res = await api.getCities(countryCode);
+    if (res.CityList) {
+      let bestMatch: { code: string; name: string } | null = null;
+      for (const c of res.CityList) {
+        const fullName = c.CityName || (c as any).Name || "";
+        const name = fullName.split(",")[0].trim().toLowerCase();
+        const code = c.CityCode || (c as any).Code;
+        if (!name || !code) continue;
+
+        // Exact match on first part of name (e.g., "Goa" matches "Goa, Goa")
+        if (name === cityName.toLowerCase()) {
+          _cityNameToCodeCache[cacheKey] = String(code);
+          console.log(`Looked up TBO city code for "${cityName}": ${code} (exact match: ${fullName})`);
+          return String(code);
+        }
+        // Track best partial match (prefer shorter name = more specific city)
+        if (fullName.toLowerCase().includes(cityName.toLowerCase())) {
+          if (!bestMatch || name.length < bestMatch.name.length) {
+            bestMatch = { code: String(code), name: fullName };
+          }
+        }
+      }
+      if (bestMatch) {
+        _cityNameToCodeCache[cacheKey] = bestMatch.code;
+        console.log(`Looked up TBO city code for "${cityName}": ${bestMatch.code} (partial match: ${bestMatch.name})`);
+        return bestMatch.code;
+      }
+    }
+  } catch (e) {
+    console.warn(`Failed to look up TBO city code for "${cityName}":`, e);
+  }
+  return null;
+}
 
 async function fetchHotelImages(hotelCodes: string[], requestId?: string): Promise<void> {
   const uncached = hotelCodes.filter(code => !_hotelDetailsCache[code]?.imageUrl);
@@ -185,16 +249,23 @@ async function fetchHotelImages(hotelCodes: string[], requestId?: string): Promi
 async function resolveHotelCodes(city?: string, hotelCodes?: string, cityCode?: string, requestId?: string): Promise<string> {
   if (hotelCodes) return hotelCodes;
 
-  if (!cityCode) {
-    console.warn(`No cityCode provided for "${city}" — cannot resolve hotel codes`);
+  let resolvedCode = cityCode;
+
+  // If no city code provided, or provided code returns no hotels, look up via CityList
+  if (!resolvedCode && city) {
+    resolvedCode = await lookupTboCityCode(city, requestId) || undefined;
+  }
+
+  if (!resolvedCode) {
+    console.warn(`No cityCode provided or resolved for "${city}" — cannot resolve hotel codes`);
     return "";
   }
 
-  const cacheKey = `code:${cityCode}`;
+  const cacheKey = `code:${resolvedCode}`;
   if (_hotelCodesCache[cacheKey]) return _hotelCodesCache[cacheKey];
 
   try {
-    const res = await api.getHotelCodeList(cityCode, { requestId });
+    const res = await api.getHotelCodeList(resolvedCode, { requestId });
     if (res.Status?.Code === 200 && res.Hotels?.length > 0) {
       const codeStr = res.Hotels.slice(0, 50).map(c => c.HotelCode).join(",");
       _hotelCodesCache[cacheKey] = codeStr;
@@ -208,12 +279,37 @@ async function resolveHotelCodes(city?: string, hotelCodes?: string, cityCode?: 
           facilities: [],
         };
       }
-      console.log(`Resolved ${res.Hotels.length} hotel codes for city code ${cityCode} (showing first 50)`);
+      console.log(`Resolved ${res.Hotels.length} hotel codes for city code ${resolvedCode} (showing first 50)`);
       return codeStr;
     }
-    console.warn(`No hotel codes returned for city code ${cityCode}:`, res.Status?.Description);
+    console.warn(`No hotel codes returned for city code ${resolvedCode}:`, res.Status?.Description);
+
+    // If provided city code failed and we have a city name, try lookup
+    if (cityCode && city) {
+      const lookedUp = await lookupTboCityCode(city, requestId);
+      if (lookedUp && lookedUp !== cityCode) {
+        console.log(`Retrying with looked-up city code ${lookedUp} for "${city}"`);
+        const retryRes = await api.getHotelCodeList(lookedUp, { requestId });
+        if (retryRes.Status?.Code === 200 && retryRes.Hotels?.length > 0) {
+          const codeStr = retryRes.Hotels.slice(0, 50).map(c => c.HotelCode).join(",");
+          _hotelCodesCache[`code:${lookedUp}`] = codeStr;
+          for (const h of retryRes.Hotels) {
+            _hotelDetailsCache[h.HotelCode] = {
+              name: h.HotelName,
+              rating: h.HotelRating,
+              address: h.Address || "",
+              city: h.CityName || city || "",
+              amenities: [],
+              facilities: [],
+            };
+          }
+          console.log(`Resolved ${retryRes.Hotels.length} hotel codes with looked-up code ${lookedUp}`);
+          return codeStr;
+        }
+      }
+    }
   } catch (e) {
-    console.warn(`Failed to fetch hotel codes for city code ${cityCode}:`, e);
+    console.warn(`Failed to fetch hotel codes for city code ${resolvedCode}:`, e);
   }
 
   return "";
@@ -232,7 +328,7 @@ export async function searchHotels(params: {
 }): Promise<TBOHotelSearchOutput> {
   const requestId = `search_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
 
-  if (!params.forceMock && hasCredentials) {
+  if (!params.forceMock && await checkCredentials()) {
     try {
       const resolvedCodes = await resolveHotelCodes(params.city, params.hotelCodes, params.cityCode, requestId);
       if (!resolvedCodes) {
@@ -241,6 +337,7 @@ export async function searchHotels(params: {
         // Fetch images for resolved hotel codes
         await fetchHotelImages(resolvedCodes.split(","), requestId);
 
+        const tokenId = await ensureToken();
         const searchReq: TBOHotelSearchRequest = {
           CheckIn: params.checkIn,
           CheckOut: params.checkOut,
@@ -248,6 +345,11 @@ export async function searchHotels(params: {
           GuestNationality: params.guestNationality || "IN",
           PaxRooms: params.rooms.map(r => ({ Adults: r.adults, Children: r.children, ChildrenAges: r.childrenAges })),
           PreferredCurrency: params.preferredCurrency || "INR",
+          ResponseTime: 29,
+          IsDetailedResponse: true,
+          Filters: { Refundable: false, NoOfRooms: 0, MealType: null, StarRating: null },
+          EndUserIp: getEndUserIp(),
+          TokenId: tokenId,
         };
         const res = await api.searchHotels(searchReq, { requestId });
         if (res.TraceId) _lastTraceId = res.TraceId;
@@ -408,13 +510,11 @@ export async function searchHotels(params: {
 export async function preBook(params: {
   bookingCode: string;
 }): Promise<TBOHotelPreBookOutput> {
-  if (hasCredentials) {
+  if (await checkCredentials()) {
     try {
       const req: TBOHotelPreBookRequest = {
         BookingCode: params.bookingCode,
-        EndUserIp: getEndUserIp(),
-        TokenId: await ensureToken(),
-        TraceId: _lastTraceId || undefined,
+        PaymentMode: "Limit",
       };
       const res = await api.preBook(req);
       if (res.Status?.Code === 200) {
@@ -475,13 +575,16 @@ export async function bookHotel(params: {
   }[] }[];
   EndUserIp?: string;
 }): Promise<TBOHotelBookOutput> {
-  if (hasCredentials) {
+  if (await checkCredentials()) {
     try {
+      const clientRef = `gorasa_${Date.now()}`;
       const req: TBOHotelBookRequest = {
         BookingCode: params.bookingCode,
         IsVoucherBooking: true,
         GuestNationality: params.guestNationality,
+        RequestedBookingMode: HOTEL_BOOKING_MODE,
         NetAmount: params.netAmount,
+        ClientReferenceId: clientRef,
         EndUserIp: getEndUserIp(),
         HotelRoomsDetails: params.hotelRoomsDetails.map(rd => ({
           HotelPassenger: rd.passengers.map(p => ({
@@ -522,7 +625,9 @@ export async function bookHotel(params: {
     BookingCode: params.bookingCode,
     IsVoucherBooking: true,
     GuestNationality: params.guestNationality,
+    RequestedBookingMode: HOTEL_BOOKING_MODE,
     NetAmount: params.netAmount,
+    ClientReferenceId: `gorasa_${Date.now()}`,
     HotelRoomsDetails: params.hotelRoomsDetails.map(rd => ({
       HotelPassenger: rd.passengers.map(p => ({
         Title: p.title,
@@ -555,7 +660,7 @@ export async function bookHotel(params: {
 export async function getBookingDetail(params: {
   bookingId: number;
 }): Promise<TBOHotelBookingDetailOutput> {
-  if (hasCredentials) {
+  if (await checkCredentials()) {
     try {
       const req: TBOHotelBookingDetailRequest = {
         BookingId: params.bookingId,
@@ -637,22 +742,40 @@ export async function getBookingDetail(params: {
   };
 }
 
-export function getCountries(): { Code: string; Name: string }[] {
-  return mock.getMockCountries();
+export async function getCountries(): Promise<{ Code: string; Name: string }[]> {
+  try {
+    const res = await api.getCountries();
+    return res.CountryList || [];
+  } catch (e) {
+    console.warn("TBO getCountries API failed, falling back to mock:", e);
+    return mock.getMockCountries();
+  }
 }
 
-export function getCities(countryCode: string): any[] {
-  return mock.getMockCities(countryCode);
+export async function getCities(countryCode: string): Promise<any[]> {
+  try {
+    const res = await api.getCities(countryCode);
+    return res.CityList || [];
+  } catch (e) {
+    console.warn("TBO getCities API failed, falling back to mock:", e);
+    return mock.getMockCities(countryCode);
+  }
 }
 
-export function getHotelCodes(cityCode: number): any[] {
-  return mock.getMockHotelCodes(cityCode);
+export async function getHotelCodes(cityCode: string): Promise<any[]> {
+  try {
+    const res = await api.getHotelCodeList(cityCode);
+    return res.Hotels || [];
+  } catch (e) {
+    console.warn("TBO getHotelCodes API failed, falling back to mock:", e);
+    return mock.getMockHotelCodes(Number(cityCode));
+  }
 }
 
 export async function generateVoucher(params: {
   bookingId: number;
 }): Promise<TBOHotelGenerateVoucherOutput> {
-  if (hasTokenAuth) {
+  if (await checkCredentials()) {
     try {
       const req: TBOHotelGenerateVoucherRequest = {
         EndUserIp: getEndUserIp(),
@@ -684,7 +807,7 @@ export async function cancelBooking(params: {
   bookingId: number;
   remarks?: string;
 }): Promise<TBOHotelCancelOutput> {
-  if (hasTokenAuth) {
+  if (await checkCredentials()) {
     try {
       const tokenId = await ensureToken();
       const req: TBOHotelSendChangeRequest = {
@@ -715,7 +838,7 @@ export async function cancelBooking(params: {
 export async function getCancelStatus(params: {
   changeRequestId: number;
 }): Promise<TBOHotelCancelStatusOutput> {
-  if (hasTokenAuth) {
+  if (await checkCredentials()) {
     try {
       const tokenId = await ensureToken();
       const req: TBOHotelGetChangeRequestStatusRequest = {

@@ -8,19 +8,17 @@ import {
   ticketFlight,
   getBookingDetail,
   setLastResults,
+  setEndUserIp,
 } from "@/lib/tbo-flight-client";
-
-function getEndUserIp(req: NextRequest): string {
-  return req.headers.get("x-forwarded-for")?.split(",")[0]?.trim()
-    || req.headers.get("x-real-ip")
-    || "192.168.1.1";
-}
 
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
     const { action } = body;
-    const endUserIp = getEndUserIp(req);
+    const endUserIp = req.headers.get("x-forwarded-for")?.split(",")[0]?.trim()
+      || req.headers.get("x-real-ip")
+      || "192.168.1.1";
+    setEndUserIp(endUserIp);
 
     switch (action) {
       case "search": {

@@ -487,3 +487,39 @@ model ApiLog {
   @@index([created_at(sort: Desc)])
   @@map("api_logs")
 }
+
+model ConfigProvider {
+  id                      String   @id @default(cuid())
+  provider                String   @unique
+  label                   String
+  baseUrl                 String?
+  bookingUrl              String?
+  staticUrl               String?
+  clientId                String?
+  encryptedUsername       String?
+  encryptedPassword       String?
+  encryptedStaticUsername String?
+  encryptedStaticPassword String?
+  forceMock               Boolean  @default(false)
+  isActive                Boolean  @default(true)
+  version                 Int      @default(1)
+  createdBy               String?
+  updatedBy               String?
+  createdAt               DateTime @default(now())
+  updatedAt               DateTime @updatedAt
+}
+
+model ConfigAuditLog {
+  id          String   @id @default(cuid())
+  provider    String
+  action      String
+  field       String?
+  oldValue    String?
+  newValue    String?
+  performedBy String?
+  ipAddress   String?
+  createdAt   DateTime @default(now())
+
+  @@index([provider, createdAt(sort: Desc)])
+  @@map("config_audit_logs")
+}

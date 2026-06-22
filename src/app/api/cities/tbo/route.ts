@@ -1,10 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import * as cities from "@/lib/db/cities";
-
-const BASE_URL = "http://api.tbotechnology.in/TBOHolidays_HotelAPI";
-const HOTEL_USERNAME = process.env.TBO_HOTEL_USERNAME || "TBOStaticAPITest";
-const HOTEL_PASSWORD = process.env.TBO_HOTEL_PASSWORD || "Tbo@11530818";
-const AUTH_HEADER = { Authorization: `Basic ${Buffer.from(`${HOTEL_USERNAME}:${HOTEL_PASSWORD}`).toString("base64")}` };
+import * as api from "@/lib/tbo-hotel-api";
 
 interface TBOCity {
   Code: string;
@@ -20,6 +16,7 @@ interface CityResult {
 }
 
 let _tboCitiesCache: CityResult[] | null = null;
+let _tboCitiesCacheKey = "";
 let _tboCitiesCacheTime = 0;
 const CACHE_TTL = 60 * 60 * 1000;
 
@@ -34,29 +31,20 @@ async function fetchIATACodes(): Promise<Record<string, string>> {
   return iataMap;
 }
 
-async function fetchTBOCities(): Promise<CityResult[]> {
+async function fetchTBOCities(countryCode: string): Promise<CityResult[]> {
   const now = Date.now();
-  if (_tboCitiesCache && now - _tboCitiesCacheTime < CACHE_TTL) {
+  const cacheKey = countryCode.toUpperCase();
+  if (_tboCitiesCache && cacheKey === _tboCitiesCacheKey && now - _tboCitiesCacheTime < CACHE_TTL) {
     return _tboCitiesCache;
   }
 
-  const res = await fetch(`${BASE_URL}/CityList`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json", ...AUTH_HEADER },
-    body: JSON.stringify({ CountryCode: "IN" }),
-  });
-
-  if (!res.ok) {
-    throw new Error(`TBO CityList HTTP ${res.status}`);
-  }
-
-  const data = await res.json();
-  const tboCities: TBOCity[] = data.CityList || [];
+  const res = await api.getCities(countryCode);
+  const tboCities: TBOCity[] = (res as any).CityList || [];
 
   const iataMap = await fetchIATACodes();
 
   const parsed = tboCities.map(c => {
-    const parts = c.Name.split(",").map(s => s.trim());
+    const parts = (c.Name || "").split(",").map(s => s.trim());
     const name = parts[0];
     return {
       code: c.Code,
@@ -76,6 +64,7 @@ async function fetchTBOCities(): Promise<CityResult[]> {
   }).sort((a, b) => a.name.localeCompare(b.name));
 
   _tboCitiesCache = unique;
+  _tboCitiesCacheKey = cacheKey;
   _tboCitiesCacheTime = now;
 
   return unique;
@@ -93,21 +82,23 @@ async function fetchDBCities(): Promise<CityResult[]> {
   }));
 }
 
-export async function GET(_req: NextRequest) {
+export async function GET(req: NextRequest) {
+  const countryCode = req.nextUrl.searchParams.get("countryCode") || "IN";
+
   try {
-    const tboCities = await fetchTBOCities();
+    const tboCities = await fetchTBOCities(countryCode);
     if (tboCities.length > 0) {
-      return NextResponse.json({ source: "tbo", cities: tboCities });
+      return NextResponse.json({ source: "tbo", cities: tboCities, countryCode });
     }
   } catch (e) {
-    console.warn("TBO CityList failed, falling back to DB:", e);
+    console.warn(`TBO CityList failed for ${countryCode}, falling back to DB:`, e);
   }
 
   try {
     const dbCities = await fetchDBCities();
-    return NextResponse.json({ source: "database", cities: dbCities });
+    return NextResponse.json({ source: "database", cities: dbCities, countryCode });
   } catch (e) {
     console.error("DB cities fallback also failed:", e);
-    return NextResponse.json({ source: "fallback", cities: [] });
+    return NextResponse.json({ source: "fallback", cities: [], countryCode });
   }
 }

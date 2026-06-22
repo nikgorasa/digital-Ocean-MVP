@@ -2,7 +2,7 @@
 
 > **Purpose:** Single source of truth for all configuration.
 > **Read this BEFORE any deployment.
-> **Last updated:** 2026-06-19
+> **Last updated:** 2026-06-23
 
 ---
 
@@ -72,11 +72,18 @@ c.connect().then(() => c.query('SELECT 1')).then(r => { console.log('OK'); c.end
 |---|---|
 | `GOOGLE_CLIENT_ID` | Google OAuth |
 | `GOOGLE_CLIENT_SECRET` | Google OAuth secret |
-| `TBO_USERNAME` | TBO flight API |
-| `TBO_PASSWORD` | TBO flight API |
-| `TBO_HOTEL_USERNAME` | TBO hotel API |
-| `TBO_HOTEL_PASSWORD` | TBO hotel API |
-| `TBO_ENDPOINT` | TBO API endpoint |
+| `TBO_USERNAME` | TBO hotel API — search/book (production: `RasaT`) |
+| `TBO_PASSWORD` | TBO hotel API — search/book (production: `RasaT@123`) |
+| `TBO_ENDPOINT` | TBO hotel API — search/book endpoint (`https://affiliate.tektravels.com/HotelAPI`) |
+| `TBO_BOOKING_ENDPOINT` | TBO hotel API — booking endpoint (`https://affiliate.tektravels.com/HotelAPI`) |
+| `TBO_HOTEL_USERNAME` | TBO hotel API — static data (staging: `TBOStaticAPITest`) |
+| `TBO_HOTEL_PASSWORD` | TBO hotel API — static data (staging: `Tbo@11530818`) |
+| `TBO_STATIC_ENDPOINT` | TBO hotel API — static data endpoint (`http://api.tbotechnology.in/TBOHolidays_HotelAPI`) |
+| `TBO_HOTEL_FORCE_MOCK` | Force mock mode for hotel API (`true` to bypass real calls) |
+| `PAYMENT_GATEWAY` | Payment gateway selection (`mock`) |
+| `PAYMENT_MOCK` | Enable mock payment (`true`) |
+
+**Note:** The TBO Hotel API uses **two separate credential pairs**: one for search/PreBook/Book (production, `RasaT`) and one for static data endpoints like CountryList, CityList, TBOHotelCodeList (staging, `TBOStaticAPITest`). City codes from the staging static API may differ from production search codes.
 
 ---
 
