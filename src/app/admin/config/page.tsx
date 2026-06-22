@@ -42,6 +42,13 @@ interface AuditLog {
   createdAt: string;
 }
 
+interface EnvStatus {
+  hasEncryptionKey: boolean;
+  tboHotel: { hasEndpoint: boolean; hasBookingEndpoint: boolean; hasClientId: boolean; hasUsername: boolean; hasPassword: boolean; forceMock: boolean };
+  tboHotelStatic: { hasEndpoint: boolean; hasUsername: boolean; hasPassword: boolean };
+  tboFlight: { hasClientId: boolean; hasUsername: boolean; hasPassword: boolean; forceMock: boolean };
+}
+
 const PROVIDER_META: Record<string, { label: string; icon: React.ReactNode; description: string; defaultBaseUrl: string; defaultBookingUrl: string; defaultStaticUrl: string; defaultClientId: string; defaultUsername: string; defaultPassword: string }> = {
   tbo_hotel: {
     label: "TBO Hotel (Search/Book)",
@@ -115,6 +122,7 @@ export default function ConfigPage() {
   const { user } = useAuth();
   const [tab, setTab] = useState<Tab>("providers");
   const [providers, setProviders] = useState<ConfigProvider[]>([]);
+  const [envStatus, setEnvStatus] = useState<EnvStatus | null>(null);
   const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
   const [modalMode, setModalMode] = useState<"create" | "edit">("create");
@@ -142,6 +150,7 @@ export default function ConfigPage() {
       const res = await fetch("/api/admin/config");
       const data = await res.json();
       setProviders(data.providers || []);
+      setEnvStatus(data.envStatus || null);
     } catch (err) {
       console.error("Failed to fetch config providers:", err);
     } finally {
@@ -284,6 +293,72 @@ export default function ConfigPage() {
       {/* PROVIDERS TAB */}
       {tab === "providers" && (
         <div className="space-y-4">
+          {/* Environment Status */}
+          {envStatus && (
+            <div className="bg-white rounded-2xl p-5 border border-slate-200">
+              <h3 className="font-bold text-slate-900 mb-3 flex items-center gap-2"><Settings size={16} /> Environment Variable Status</h3>
+              <p className="text-xs text-slate-400 mb-4">These are the environment variables available as fallback when no database configuration exists. The database configuration (above) takes priority.</p>
+              <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                <div className="p-3 bg-slate-50 rounded-xl">
+                  <h4 className="text-[10px] font-bold uppercase tracking-widest text-slate-400 mb-2">Encryption</h4>
+                  <div className="flex items-center gap-2">
+                    {envStatus.hasEncryptionKey ? <CheckCircle2 size={14} className="text-emerald-500" /> : <XCircle size={14} className="text-red-500" />}
+                    <span className="text-xs font-medium">CONFIG_ENCRYPTION_KEY</span>
+                  </div>
+                </div>
+                <div className="p-3 bg-slate-50 rounded-xl">
+                  <h4 className="text-[10px] font-bold uppercase tracking-widest text-slate-400 mb-2">TBO Hotel (Search/Book)</h4>
+                  <div className="space-y-1">
+                    {[
+                      { label: "Endpoint", ok: envStatus.tboHotel.hasEndpoint },
+                      { label: "Booking Endpoint", ok: envStatus.tboHotel.hasBookingEndpoint },
+                      { label: "Client ID", ok: envStatus.tboHotel.hasClientId },
+                      { label: "Username (RasaT)", ok: envStatus.tboHotel.hasUsername },
+                      { label: "Password", ok: envStatus.tboHotel.hasPassword },
+                    ].map(v => (
+                      <div key={v.label} className="flex items-center gap-2">
+                        {v.ok ? <CheckCircle2 size={12} className="text-emerald-500" /> : <XCircle size={12} className="text-slate-300" />}
+                        <span className={`text-xs ${v.ok ? "text-slate-600" : "text-slate-300"}`}>{v.label}</span>
+                      </div>
+                    ))}
+                    {envStatus.tboHotel.forceMock && <p className="text-xs font-bold text-amber-600 mt-1">Force Mock: ON</p>}
+                  </div>
+                </div>
+                <div className="p-3 bg-slate-50 rounded-xl">
+                  <h4 className="text-[10px] font-bold uppercase tracking-widest text-slate-400 mb-2">TBO Hotel (Static Data)</h4>
+                  <div className="space-y-1">
+                    {[
+                      { label: "Endpoint", ok: envStatus.tboHotelStatic.hasEndpoint },
+                      { label: "Username (TBOStaticAPITest)", ok: envStatus.tboHotelStatic.hasUsername },
+                      { label: "Password", ok: envStatus.tboHotelStatic.hasPassword },
+                    ].map(v => (
+                      <div key={v.label} className="flex items-center gap-2">
+                        {v.ok ? <CheckCircle2 size={12} className="text-emerald-500" /> : <XCircle size={12} className="text-slate-300" />}
+                        <span className={`text-xs ${v.ok ? "text-slate-600" : "text-slate-300"}`}>{v.label}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+                <div className="p-3 bg-slate-50 rounded-xl">
+                  <h4 className="text-[10px] font-bold uppercase tracking-widest text-slate-400 mb-2">TBO Flight</h4>
+                  <div className="space-y-1">
+                    {[
+                      { label: "Client ID", ok: envStatus.tboFlight.hasClientId },
+                      { label: "Username (RasaT)", ok: envStatus.tboFlight.hasUsername },
+                      { label: "Password", ok: envStatus.tboFlight.hasPassword },
+                    ].map(v => (
+                      <div key={v.label} className="flex items-center gap-2">
+                        {v.ok ? <CheckCircle2 size={12} className="text-emerald-500" /> : <XCircle size={12} className="text-slate-300" />}
+                        <span className={`text-xs ${v.ok ? "text-slate-600" : "text-slate-300"}`}>{v.label}</span>
+                      </div>
+                    ))}
+                    {envStatus.tboFlight.forceMock && <p className="text-xs font-bold text-amber-600 mt-1">Force Mock: ON</p>}
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
           {providers.length === 0 && (
             <div className="text-center py-12 bg-white rounded-2xl border border-slate-200">
               <Settings size={48} className="mx-auto text-slate-300 mb-4" />

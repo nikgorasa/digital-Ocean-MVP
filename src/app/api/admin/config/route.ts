@@ -28,7 +28,31 @@ export async function GET() {
       createdAt: r.createdAt,
       updatedAt: r.updatedAt,
     }));
-    return NextResponse.json({ providers });
+
+    const envStatus = {
+      hasEncryptionKey: !!process.env.CONFIG_ENCRYPTION_KEY,
+      tboHotel: {
+        hasEndpoint: !!process.env.TBO_ENDPOINT,
+        hasBookingEndpoint: !!process.env.TBO_BOOKING_ENDPOINT,
+        hasClientId: !!process.env.TBO_CLIENT_ID,
+        hasUsername: !!process.env.TBO_USERNAME,
+        hasPassword: !!process.env.TBO_PASSWORD,
+        forceMock: process.env.TBO_HOTEL_FORCE_MOCK === "true",
+      },
+      tboHotelStatic: {
+        hasEndpoint: !!process.env.TBO_STATIC_ENDPOINT,
+        hasUsername: !!process.env.TBO_HOTEL_USERNAME,
+        hasPassword: !!process.env.TBO_HOTEL_PASSWORD,
+      },
+      tboFlight: {
+        hasClientId: !!process.env.TBO_CLIENT_ID,
+        hasUsername: !!process.env.TBO_USERNAME,
+        hasPassword: !!process.env.TBO_PASSWORD,
+        forceMock: process.env.TBO_FLIGHT_FORCE_MOCK === "true",
+      },
+    };
+
+    return NextResponse.json({ providers, envStatus });
   } catch (e) {
     console.error("Config fetch error:", e);
     return NextResponse.json({ error: "Internal server error" }, { status: 500 });
