@@ -32,7 +32,7 @@ ERRORS=0
 # ═══════════════════════════════════════════════════════
 # Check 1: TypeScript compiles
 # ═══════════════════════════════════════════════════════
-print_status "CHECK 1/8: TypeScript compilation..."
+print_status "CHECK 1/9: TypeScript compilation..."
 
 if npx tsc --noEmit 2>/dev/null; then
     print_status "  ✓ TypeScript compilation successful"
@@ -44,7 +44,7 @@ fi
 # ═══════════════════════════════════════════════════════
 # Check 2: Build passes
 # ═══════════════════════════════════════════════════════
-print_status "CHECK 2/8: Next.js build..."
+print_status "CHECK 2/9: Next.js build..."
 
 if npm run build >/dev/null 2>&1; then
     print_status "  ✓ Build successful"
@@ -56,7 +56,7 @@ fi
 # ═══════════════════════════════════════════════════════
 # Check 3: No stale Supabase imports
 # ═══════════════════════════════════════════════════════
-print_status "CHECK 3/8: No stale Supabase imports..."
+print_status "CHECK 3/9: No stale Supabase imports..."
 
 STALE=$(grep -rn "@supabase/supabase-js\|@supabase/ssr\|@/lib/supabase" src/ 2>/dev/null || true)
 if [[ -z "$STALE" ]]; then
@@ -69,7 +69,7 @@ fi
 # ═══════════════════════════════════════════════════════
 # Check 4: Git status
 # ═══════════════════════════════════════════════════════
-print_status "CHECK 4/8: Git status..."
+print_status "CHECK 4/9: Git status..."
 
 CHANGES=$(git status --porcelain 2>/dev/null | wc -l)
 if [[ "$CHANGES" -gt 0 ]]; then
@@ -84,7 +84,7 @@ fi
 # ═══════════════════════════════════════════════════════
 # Check 5: Session log updated
 # ═══════════════════════════════════════════════════════
-print_status "CHECK 5/8: Session log..."
+print_status "CHECK 5/9: Session log..."
 
 SESSION_FILE="$DOCS_DIR/Cckr-SESSION-LOG.md"
 if [[ -f "$SESSION_FILE" ]]; then
@@ -97,7 +97,7 @@ fi
 # ═══════════════════════════════════════════════════════
 # Check 6: DB changes documented
 # ═══════════════════════════════════════════════════════
-print_status "CHECK 6/8: DB changes log..."
+print_status "CHECK 6/9: DB changes log..."
 
 DB_FILE="$DOCS_DIR/DB-CHANGES.md"
 if [[ -f "$DB_FILE" ]]; then
@@ -109,7 +109,7 @@ fi
 # ═══════════════════════════════════════════════════════
 # Check 7: No Supabase env vars
 # ═══════════════════════════════════════════════════════
-print_status "CHECK 7/8: No Supabase env vars..."
+print_status "CHECK 7/9: No Supabase env vars..."
 
 if grep -q "^NEXT_PUBLIC_SUPABASE\|^SUPABASE_SERVICE" .env.local 2>/dev/null; then
     print_error "  ✗ Supabase env vars still in .env.local"
@@ -121,12 +121,28 @@ fi
 # ═══════════════════════════════════════════════════════
 # Check 8: Dual DB isolation
 # ═══════════════════════════════════════════════════════
-print_status "CHECK 8/8: Dual DB isolation..."
+print_status "CHECK 8/9: Dual DB isolation..."
 
 if [[ -f ".env.local" ]] && [[ -f ".env.production" ]]; then
     print_status "  ✓ Both .env.local and .env.production exist"
 else
     print_warning "  ⚠ Missing env file(s)"
+fi
+
+# ═══════════════════════════════════════════════════════
+# Check 9: API Configuration Guard
+# ═══════════════════════════════════════════════════════
+print_status "CHECK 9/9: API configuration guard..."
+
+API_CONFIG_SCRIPT="$GOVERNANCE_ROOT/scripts/Cckr-api-config-check.sh"
+if [[ -f "$API_CONFIG_SCRIPT" ]]; then
+    if bash "$API_CONFIG_SCRIPT"; then
+        print_status "  ✓ API configuration valid"
+    else
+        ERRORS=$((ERRORS + 1))
+    fi
+else
+    print_warning "  ⚠ API config check script not found at $API_CONFIG_SCRIPT"
 fi
 
 # ═══════════════════════════════════════════════════════
@@ -140,7 +156,7 @@ if [[ "$ERRORS" -gt 0 ]]; then
     print_error "Fix errors before committing"
     exit 1
 else
-    print_status "✓ ALL 8 CHECKS PASSED"
+    print_status "✓ ALL 9 CHECKS PASSED"
     print_status "✓ Work is complete"
     exit 0
 fi

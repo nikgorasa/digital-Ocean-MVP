@@ -62,7 +62,7 @@ function envFallback(provider: string): ConfigProviderData {
     case "tbo_hotel":
       cfg.label = "TBO Hotel (Search/Book)";
       cfg.baseUrl = process.env.TBO_ENDPOINT || "https://affiliate.tektravels.com/HotelAPI";
-      cfg.bookingUrl = process.env.TBO_BOOKING_ENDPOINT || "https://affiliate.tektravels.com/HotelAPI";
+      cfg.bookingUrl = process.env.TBO_BOOKING_ENDPOINT || "https://HotelBE.tektravels.com/hotelservice.svc/rest";
       cfg.staticUrl = null;
       cfg.clientId = process.env.TBO_CLIENT_ID || "ApiIntegrationNew";
       cfg.username = process.env.TBO_USERNAME || "";

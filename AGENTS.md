@@ -67,7 +67,7 @@ bash scripts/preflight-check.sh
 
 ---
 
-## Pre-Flight Check (12 checks — MANDATORY)
+## Pre-Flight Check (13 checks — MANDATORY)
 
 **Before starting ANY significant work:**
 
@@ -75,11 +75,11 @@ bash scripts/preflight-check.sh
 bash scripts/preflight-check.sh
 ```
 
-Checks: docs exist, session context, config reference, env vars, TypeScript, git status, recent commits, no stale imports, vercel.json safety, Prisma provider, git email, dual DB isolation.
+Checks: docs exist, session context, config reference, env vars, TypeScript, git status, recent commits, no stale imports, vercel.json safety, Prisma provider, git email, dual DB isolation, API config guard.
 
 ---
 
-## Post-Task Check (8 checks — MANDATORY)
+## Post-Task Check (9 checks — MANDATORY)
 
 **After completing ANY significant task:**
 
@@ -87,7 +87,7 @@ Checks: docs exist, session context, config reference, env vars, TypeScript, git
 bash scripts/post-task-check.sh
 ```
 
-Checks: TypeScript, build, no stale imports, git status, session log, DB changes log, no stale env vars, dual DB isolation.
+Checks: TypeScript, build, no stale imports, git status, session log, DB changes log, no stale env vars, dual DB isolation, API config guard.
 
 ---
 
@@ -113,6 +113,21 @@ Always use normal push or PR.
 ### Rule 6: Schema Changes via Manual SQL Only
 `prisma db push` does NOT work on CockroachDB. Use direct SQL on BOTH clusters.
 
+### Rule 7: API Config Guard (MANDATORY)
+The TBO Hotel API has **dual endpoint architecture**. Every change to API configuration must be validated:
+
+**Dual endpoint architecture (single source of truth):**
+| Endpoint Group | Base URL | Credentials |
+|---|---|---|
+| **Search/PreBook** | `https://affiliate.tektravels.com/HotelAPI` | RasaT / RasaT@123 |
+| **Book/Voucher/Cancel** | `https://HotelBE.tektravels.com/hotelservice.svc/rest` | RasaT / RasaT@123 |
+| **Static Data** | `http://api.tbotechnology.in/TBOHolidays_HotelAPI` | TBOStaticAPITest / Tbo@11530818 |
+
+**NEVER** set `bookingUrl` to the affiliate endpoint — it must point to HotelBE.
+**NEVER** run `npx tsx scripts/seed-config.ts` without verifying all URLs are correct.
+**ALWAYS** run `Governance/scripts/Cckr-api-config-check.sh` after any API config change.
+**ALWAYS** update BOTH `ConfigProvider` DB table AND the 3 code defaults (seed-config.ts, config-service.ts envFallback, page.tsx PROVIDER_META) in sync.
+
 ---
 
 ## Key Files
@@ -126,6 +141,8 @@ Always use normal push or PR.
 | `Governance/docs/governance/DB-CHANGES.md` | DB changes |
 | `Governance/docs/governance/DEPLOYMENT-LOG.md` | Deployments |
 | `Governance/docs/governance/LEARNING-FROM-MISTAKES.md` | Issue deep-dives |
+| `Governance/scripts/Cckr-api-config-check.sh` | API config validation (6 checks) |
+| `Governance/docs/static-data/TBO-STATIC-DATA-REFERENCE.md` | TBO API endpoint reference |
 
 ---
 

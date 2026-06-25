@@ -229,8 +229,28 @@ All booking endpoints use **Basic Auth** with RasaT credentials (shared with fli
 | `TBO_USERNAME` | `RasaT` | Agency Basic Auth username (shared with flights) |
 | `TBO_PASSWORD` | `RasaT@123` | Agency Basic Auth password (shared with flights) |
 | `TBO_ENDPOINT` | `https://affiliate.tektravels.com/HotelAPI` | Base URL for Search, PreBook |
-| `TBO_BOOKING_ENDPOINT` | `https://affiliate.tektravels.com/HotelAPI` | Base URL for Book, GetBookingDetail, Voucher, Cancel |
+| `TBO_BOOKING_ENDPOINT` | `https://HotelBE.tektravels.com/hotelservice.svc/rest` | Base URL for Book, GetBookingDetail, Voucher, Cancel |
 | `TBO_HOTEL_FORCE_MOCK` | (empty) | Set to `"true"` to use mock data without API calls |
+
+### ConfigProvider Settings
+
+The `ConfigProvider` DB table stores runtime configuration that takes priority over environment variables. The table is read via `readConfig()` in `config-service.ts`.
+
+| Provider Key | Field | Typical Value | Source |
+|---|---|---|---|
+| `tbo_hotel` | `baseUrl` | `https://affiliate.tektravels.com/HotelAPI` | Env falls back to `TBO_ENDPOINT` |
+| `tbo_hotel` | `bookingUrl` | `https://HotelBE.tektravels.com/hotelservice.svc/rest` | Env falls back to `TBO_BOOKING_ENDPOINT` |
+| `tbo_hotel` | `clientId` | `ApiIntegrationNew` | Env falls back to `TBO_CLIENT_ID` |
+| `tbo_hotel` | `username` | `RasaT` | Env falls back to `TBO_USERNAME` |
+| `tbo_hotel` | `password` | `RasaT@123` | Env falls back to `TBO_PASSWORD` |
+| `tbo_hotel_static` | `staticUrl` | `http://api.tbotechnology.in/TBOHolidays_HotelAPI` | Env falls back to `TBO_STATIC_ENDPOINT` |
+| `tbo_hotel_static` | `staticUsername` | `TBOStaticAPITest` | Env falls back to `TBO_HOTEL_USERNAME` |
+| `tbo_hotel_static` | `staticPassword` | `Tbo@11530818` | Env falls back to `TBO_HOTEL_PASSWORD` |
+
+The `envFallback()` function in `config-service.ts` resolves these values:
+- If a DB row exists for the provider, its stored values are used (decrypted for secrets).
+- If no DB row exists (or fields are null), the corresponding env var is read.
+- If neither DB nor env var is set, the hardcoded default in `envFallback()` is used.
 
 ### Transport Functions
 
@@ -284,9 +304,9 @@ The staging static data endpoint (`api.tbotechnology.in`) uses **different city 
 - [x] Update `.env.example` with separated env vars
 - [x] Update reference document with dual-auth architecture
 
-### Phase 2: Frontend Integration
-- [ ] `/api/cities/tbo` now accepts `?countryCode=XX` query parameter
-- [ ] Country list exposed via `/api/tbo-hotels` (`action: "static-data/countries"`)
-- [ ] City list exposed via `/api/tbo-hotels` (`action: "static-data/cities"`)
-- [ ] Parameterized by country code (not India-only)
-- [ ] Proper caching (60-min TTL) in API route
+### Phase 2: Frontend Integration (Completed 2026-06-25)
+- [x] `/api/cities/tbo` now accepts `?countryCode=XX` query parameter
+- [x] Country list exposed via `/api/tbo-hotels` (`action: "static-data/countries"`)
+- [x] City list exposed via `/api/tbo-hotels` (`action: "static-data/cities"`)
+- [x] Parameterized by country code (not India-only)
+- [x] Proper caching (60-min TTL) in API route

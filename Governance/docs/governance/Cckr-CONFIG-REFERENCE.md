@@ -2,7 +2,7 @@
 
 > **Purpose:** Single source of truth for all configuration.
 > **Read this BEFORE any deployment.
-> **Last updated:** 2026-06-23
+> **Last updated:** 2026-06-25
 
 ---
 
@@ -74,8 +74,8 @@ c.connect().then(() => c.query('SELECT 1')).then(r => { console.log('OK'); c.end
 | `GOOGLE_CLIENT_SECRET` | Google OAuth secret |
 | `TBO_USERNAME` | TBO hotel API — search/book (production: `RasaT`) |
 | `TBO_PASSWORD` | TBO hotel API — search/book (production: `RasaT@123`) |
-| `TBO_ENDPOINT` | TBO hotel API — search/book endpoint (`https://affiliate.tektravels.com/HotelAPI`) |
-| `TBO_BOOKING_ENDPOINT` | TBO hotel API — booking endpoint (`https://affiliate.tektravels.com/HotelAPI`) |
+| `TBO_ENDPOINT` | TBO hotel API — search/PreBook endpoint (`https://affiliate.tektravels.com/HotelAPI`) |
+| `TBO_BOOKING_ENDPOINT` | TBO hotel API — Book/GetBookingDetail/Voucher/Cancel endpoint (`https://HotelBE.tektravels.com/hotelservice.svc/rest`) |
 | `TBO_HOTEL_USERNAME` | TBO hotel API — static data (staging: `TBOStaticAPITest`) |
 | `TBO_HOTEL_PASSWORD` | TBO hotel API — static data (staging: `Tbo@11530818`) |
 | `TBO_STATIC_ENDPOINT` | TBO hotel API — static data endpoint (`http://api.tbotechnology.in/TBOHolidays_HotelAPI`) |
@@ -84,6 +84,8 @@ c.connect().then(() => c.query('SELECT 1')).then(r => { console.log('OK'); c.end
 | `PAYMENT_MOCK` | Enable mock payment (`true`) |
 
 **Note:** The TBO Hotel API uses **two separate credential pairs**: one for search/PreBook/Book (production, `RasaT`) and one for static data endpoints like CountryList, CityList, TBOHotelCodeList (staging, `TBOStaticAPITest`). City codes from the staging static API may differ from production search codes.
+
+**ConfigProvider Priority:** The `ConfigProvider` DB table (managed via the admin config panel at `/admin/config`) takes priority over these environment variables. Env vars are only fallbacks when no database configuration exists or when a field is null. The `readConfig("tbo_hotel")` and `readConfig("tbo_hotel_static")` functions in `config-service.ts` resolve values in this order: (1) DB row, (2) env var, (3) hardcoded default.
 
 ---
 

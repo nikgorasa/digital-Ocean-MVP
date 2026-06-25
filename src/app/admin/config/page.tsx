@@ -44,7 +44,7 @@ interface AuditLog {
 
 interface EnvStatus {
   hasEncryptionKey: boolean;
-  tboHotel: { hasEndpoint: boolean; hasBookingEndpoint: boolean; hasClientId: boolean; hasUsername: boolean; hasPassword: boolean; forceMock: boolean };
+  tboHotel: { hasEndpoint: boolean; endpointUrl: string; hasBookingEndpoint: boolean; bookingUrl: string; hasClientId: boolean; hasUsername: boolean; hasPassword: boolean; forceMock: boolean };
   tboHotelStatic: { hasEndpoint: boolean; hasUsername: boolean; hasPassword: boolean };
   tboFlight: { hasClientId: boolean; hasUsername: boolean; hasPassword: boolean; forceMock: boolean };
 }
@@ -55,7 +55,7 @@ const PROVIDER_META: Record<string, { label: string; icon: React.ReactNode; desc
     icon: <Building2 size={20} />,
     description: "Production hotel search, prebook, book, cancel endpoints using RasaT agency credentials",
     defaultBaseUrl: "https://affiliate.tektravels.com/HotelAPI",
-    defaultBookingUrl: "https://affiliate.tektravels.com/HotelAPI",
+    defaultBookingUrl: "https://HotelBE.tektravels.com/hotelservice.svc/rest",
     defaultStaticUrl: "",
     defaultClientId: "ApiIntegrationNew",
     defaultUsername: "",
@@ -94,13 +94,13 @@ const HOTEL_ENDPOINTS = {
     { method: "GET", url: "/HotelCodes", desc: "Returns all hotel codes (not currently used)", params: "None", response: "HotelCodes[] as integers" },
   ],
   search: [
-    { method: "POST", url: "/Search", desc: "Search hotels by city code or hotel codes", params: '{"CheckIn":"2026-07-01","CheckOut":"2026-07-02","HotelCodes":"1218373","GuestNationality":"IN","PaxRooms":[{"Adults":1,"Children":0,"ChildrenAges":[]}],"PreferredCurrency":"INR"}', response: "HotelResult[] with Rooms, TotalFare, BookingCode" },
-    { method: "POST", url: "/PreBook", desc: "Validate pricing and cancellation policy before booking", params: '{"BookingCode":"xxx","PaymentMode":"Limit"}', response: "NetAmount, RoomRate, TaxBreakup, CancelPolicies" },
-    { method: "POST", url: "/Book", desc: "Confirm a hotel booking with passenger details", params: '{"BookingCode":"xxx","IsVoucherBooking":true,"GuestNationality":"IN","RequestedBookingMode":5,"NetAmount":1000,"HotelRoomsDetails":[...]}', response: "BookingId, ConfirmationNo, BookingRefNo" },
-    { method: "POST", url: "/GetBookingDetail", desc: "Retrieve booking details by BookingId", params: '{"BookingId":12345}', response: "HotelName, CheckIn, CheckOut, Rooms, PriceBreakup" },
-    { method: "POST", url: "/GenerateVoucher", desc: "Generate voucher for a confirmed booking", params: '{"BookingId":12345}', response: "VoucherStatus, ConfirmationNo, InvoiceNumber" },
-    { method: "POST", url: "/SendChangeRequest", desc: "Cancel or modify a booking", params: '{"BookingMode":5,"RequestType":4,"Remarks":"Customer requested","BookingId":12345}', response: "ChangeRequestId, ChangeRequestStatus" },
-    { method: "POST", url: "/GetChangeRequestStatus", desc: "Check status of a cancellation/modification", params: '{"BookingMode":5,"ChangeRequestId":67890}', response: "RefundedAmount, CancellationCharge, ChangeRequestStatus" },
+    { method: "POST", url: "/Search", desc: "Search hotels by city code or hotel codes", tag: "Search", params: '{"CheckIn":"2026-07-01","CheckOut":"2026-07-02","HotelCodes":"1218373","GuestNationality":"IN","PaxRooms":[{"Adults":1,"Children":0,"ChildrenAges":[]}],"PreferredCurrency":"INR"}', response: "HotelResult[] with Rooms, TotalFare, BookingCode" },
+    { method: "POST", url: "/PreBook", desc: "Validate pricing and cancellation policy before booking", tag: "Search", params: '{"BookingCode":"xxx","PaymentMode":"Limit"}', response: "NetAmount, RoomRate, TaxBreakup, CancelPolicies" },
+    { method: "POST", url: "/Book", desc: "Confirm a hotel booking with passenger details", tag: "Booking", params: '{"BookingCode":"xxx","IsVoucherBooking":true,"GuestNationality":"IN","RequestedBookingMode":5,"NetAmount":1000,"HotelRoomsDetails":[...]}', response: "BookingId, ConfirmationNo, BookingRefNo" },
+    { method: "POST", url: "/GetBookingDetail", desc: "Retrieve booking details by BookingId", tag: "Booking", params: '{"BookingId":12345}', response: "HotelName, CheckIn, CheckOut, Rooms, PriceBreakup" },
+    { method: "POST", url: "/GenerateVoucher", desc: "Generate voucher for a confirmed booking", tag: "Booking", params: '{"BookingId":12345}', response: "VoucherStatus, ConfirmationNo, InvoiceNumber" },
+    { method: "POST", url: "/SendChangeRequest", desc: "Cancel or modify a booking", tag: "Booking", params: '{"BookingMode":5,"RequestType":4,"Remarks":"Customer requested","BookingId":12345}', response: "ChangeRequestId, ChangeRequestStatus" },
+    { method: "POST", url: "/GetChangeRequestStatus", desc: "Check status of a cancellation/modification", tag: "Booking", params: '{"BookingMode":5,"ChangeRequestId":67890}', response: "RefundedAmount, CancellationCharge, ChangeRequestStatus" },
   ],
 };
 
@@ -306,24 +306,27 @@ export default function ConfigPage() {
                     <span className="text-xs font-medium">CONFIG_ENCRYPTION_KEY</span>
                   </div>
                 </div>
-                <div className="p-3 bg-slate-50 rounded-xl">
-                  <h4 className="text-[10px] font-bold uppercase tracking-widest text-slate-400 mb-2">TBO Hotel (Search/Book)</h4>
-                  <div className="space-y-1">
-                    {[
-                      { label: "Endpoint", ok: envStatus.tboHotel.hasEndpoint },
-                      { label: "Booking Endpoint", ok: envStatus.tboHotel.hasBookingEndpoint },
-                      { label: "Client ID", ok: envStatus.tboHotel.hasClientId },
-                      { label: "Username (RasaT)", ok: envStatus.tboHotel.hasUsername },
-                      { label: "Password", ok: envStatus.tboHotel.hasPassword },
-                    ].map(v => (
-                      <div key={v.label} className="flex items-center gap-2">
-                        {v.ok ? <CheckCircle2 size={12} className="text-emerald-500" /> : <XCircle size={12} className="text-slate-300" />}
-                        <span className={`text-xs ${v.ok ? "text-slate-600" : "text-slate-300"}`}>{v.label}</span>
-                      </div>
-                    ))}
-                    {envStatus.tboHotel.forceMock && <p className="text-xs font-bold text-amber-600 mt-1">Force Mock: ON</p>}
+                  <div className="p-3 bg-slate-50 rounded-xl">
+                    <h4 className="text-[10px] font-bold uppercase tracking-widest text-slate-400 mb-2">TBO Hotel (Search/Book)</h4>
+                    <div className="space-y-1">
+                      {[
+                        { label: "Search/PreBook Endpoint", ok: envStatus.tboHotel.hasEndpoint, val: envStatus.tboHotel.endpointUrl },
+                        { label: "Booking Endpoint", ok: envStatus.tboHotel.hasBookingEndpoint, val: envStatus.tboHotel.bookingUrl },
+                        { label: "Client ID", ok: envStatus.tboHotel.hasClientId, val: null },
+                        { label: "Username (RasaT)", ok: envStatus.tboHotel.hasUsername, val: null },
+                        { label: "Password", ok: envStatus.tboHotel.hasPassword, val: null },
+                      ].map(v => (
+                        <div key={v.label} className="flex items-start gap-2">
+                          <span className="mt-0.5">{v.ok ? <CheckCircle2 size={12} className="text-emerald-500" /> : <XCircle size={12} className="text-slate-300" />}</span>
+                          <div>
+                            <span className={`text-xs ${v.ok ? "text-slate-600" : "text-slate-300"}`}>{v.label}</span>
+                            {v.val && <p className="text-[10px] font-mono text-slate-400 break-all">{v.val}</p>}
+                          </div>
+                        </div>
+                      ))}
+                      {envStatus.tboHotel.forceMock && <p className="text-xs font-bold text-amber-600 mt-1">Force Mock: ON</p>}
+                    </div>
                   </div>
-                </div>
                 <div className="p-3 bg-slate-50 rounded-xl">
                   <h4 className="text-[10px] font-bold uppercase tracking-widest text-slate-400 mb-2">TBO Hotel (Static Data)</h4>
                   <div className="space-y-1">
@@ -529,7 +532,7 @@ export default function ConfigPage() {
           {/* Hotel Booking Flow */}
           <div className="bg-white rounded-2xl p-5 border border-slate-200">
             <h3 className="font-bold text-slate-900 mb-1">Hotel Booking Flow</h3>
-            <p className="text-xs text-slate-400 mb-4">Base URL: <span className="font-mono">https://affiliate.tektravels.com/HotelAPI</span> · Auth: RasaT</p>
+            <p className="text-xs text-slate-400 mb-4">Search/PreBook → <span className="font-mono">https://affiliate.tektravels.com/HotelAPI</span> · Book/Voucher/Cancel → <span className="font-mono">https://HotelBE.tektravels.com/hotelservice.svc/rest</span> · Auth: RasaT</p>
             <div className="flex items-center gap-2 mb-4 text-xs">
               <span className="px-2.5 py-1 bg-blue-50 text-blue-700 rounded-lg font-bold">Search</span>
               <ArrowRight size={12} className="text-slate-300" />
@@ -548,7 +551,7 @@ export default function ConfigPage() {
                 <div key={i} className="flex items-start gap-3 p-3 bg-slate-50 rounded-xl">
                   <span className={`text-xs font-bold px-2 py-0.5 rounded ${ep.method === "GET" ? "bg-emerald-100 text-emerald-700" : "bg-blue-100 text-blue-700"}`}>{ep.method}</span>
                   <div className="flex-1">
-                    <p className="font-mono text-sm text-slate-700">{ep.url}</p>
+                    <p className="font-mono text-sm text-slate-700">{ep.url} {(ep as any).tag === "Search" ? <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-blue-50 text-blue-600 ml-1">Search</span> : <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-green-50 text-green-600 ml-1">Booking</span>}</p>
                     <p className="text-xs text-slate-500 mt-1">{ep.desc}</p>
                     <div className="mt-2 grid grid-cols-2 gap-2">
                       <div><p className="text-[10px] font-bold uppercase text-slate-400">Request Body</p><pre className="text-xs text-slate-600 bg-white p-2 rounded mt-1 overflow-x-auto max-h-32">{ep.params}</pre></div>
@@ -672,7 +675,7 @@ export default function ConfigPage() {
               <div><label className="text-[10px] font-bold uppercase tracking-widest text-slate-400 mb-1 block">Label</label><input value={form.label} onChange={(e) => setForm({ ...form, label: e.target.value })} className="w-full px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm" /></div>
               <div className="grid grid-cols-2 gap-3">
                 <div><label className="text-[10px] font-bold uppercase tracking-widest text-slate-400 mb-1 block">Base URL</label><input value={form.baseUrl} onChange={(e) => setForm({ ...form, baseUrl: e.target.value })} placeholder="https://affiliate.tektravels.com/HotelAPI" className="w-full px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm font-mono" /></div>
-                <div><label className="text-[10px] font-bold uppercase tracking-widest text-slate-400 mb-1 block">Booking URL</label><input value={form.bookingUrl} onChange={(e) => setForm({ ...form, bookingUrl: e.target.value })} placeholder="https://affiliate.tektravels.com/HotelAPI" className="w-full px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm font-mono" /></div>
+                <div><label className="text-[10px] font-bold uppercase tracking-widest text-slate-400 mb-1 block">Booking URL</label><input value={form.bookingUrl} onChange={(e) => setForm({ ...form, bookingUrl: e.target.value })} placeholder="https://HotelBE.tektravels.com/hotelservice.svc/rest" className="w-full px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm font-mono" /></div>
               </div>
               <div><label className="text-[10px] font-bold uppercase tracking-widest text-slate-400 mb-1 block">Static Data URL</label><input value={form.staticUrl} onChange={(e) => setForm({ ...form, staticUrl: e.target.value })} placeholder="http://api.tbotechnology.in/TBOHolidays_HotelAPI" className="w-full px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm font-mono" /></div>
               <div><label className="text-[10px] font-bold uppercase tracking-widest text-slate-400 mb-1 block">Client ID</label><input value={form.clientId} onChange={(e) => setForm({ ...form, clientId: e.target.value })} placeholder="ApiIntegrationNew" className="w-full px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm font-mono" /></div>

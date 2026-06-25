@@ -33,7 +33,9 @@ export async function GET() {
       hasEncryptionKey: !!process.env.CONFIG_ENCRYPTION_KEY,
       tboHotel: {
         hasEndpoint: !!process.env.TBO_ENDPOINT,
+        endpointUrl: process.env.TBO_ENDPOINT || "https://affiliate.tektravels.com/HotelAPI",
         hasBookingEndpoint: !!process.env.TBO_BOOKING_ENDPOINT,
+        bookingUrl: process.env.TBO_BOOKING_ENDPOINT || "https://HotelBE.tektravels.com/hotelservice.svc/rest",
         hasClientId: !!process.env.TBO_CLIENT_ID,
         hasUsername: !!process.env.TBO_USERNAME,
         hasPassword: !!process.env.TBO_PASSWORD,
@@ -66,6 +68,27 @@ export async function POST(req: NextRequest) {
 
     if (!provider) {
       return NextResponse.json({ error: "provider is required" }, { status: 400 });
+    }
+
+    // 🛡 API Config Guard — reject misconfigured endpoint URLs
+    if (provider === "tbo_hotel") {
+      if (rest.baseUrl && !rest.baseUrl.includes("affiliate.tektravels.com")) {
+        return NextResponse.json({
+          error: `INVALID_CONFIG: tbo_hotel baseUrl must point to affiliate.tektravels.com/HotelAPI. Got: ${rest.baseUrl}`,
+        }, { status: 422 });
+      }
+      if (rest.bookingUrl && !rest.bookingUrl.includes("HotelBE.tektravels.com")) {
+        return NextResponse.json({
+          error: `INVALID_CONFIG: tbo_hotel bookingUrl must point to HotelBE.tektravels.com/hotelservice.svc/rest. Got: ${rest.bookingUrl}`,
+        }, { status: 422 });
+      }
+    }
+    if (provider === "tbo_hotel_static") {
+      if (rest.staticUrl && !rest.staticUrl.includes("api.tbotechnology.in")) {
+        return NextResponse.json({
+          error: `INVALID_CONFIG: tbo_hotel_static staticUrl must point to api.tbotechnology.in/TBOHolidays_HotelAPI. Got: ${rest.staticUrl}`,
+        }, { status: 422 });
+      }
     }
 
     const headersList = await headers();

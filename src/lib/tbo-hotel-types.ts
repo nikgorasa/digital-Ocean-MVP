@@ -162,8 +162,8 @@ export interface TBOHotelPassenger {
   PaxType: number;
   LeadPassenger: boolean;
   Age: number;
-  Email: string;
-  Phoneno: string;
+  Email?: string;
+  Phoneno?: string;
   PassportNo?: string;
   PassportExpiry?: string;
   PAN?: string;
@@ -237,9 +237,7 @@ export interface TBOHotelBookingDetailPassenger {
 }
 
 export interface TBOHotelBookingDetailRoom {
-  RoomId: string;
-  RoomName: string;
-  BookingCode: string;
+  RoomTypeName: string;
   HotelPassenger: TBOHotelBookingDetailPassenger[];
   DayRates: TBOHotelDayRate[][];
   TotalFare: number;
@@ -247,43 +245,44 @@ export interface TBOHotelBookingDetailRoom {
   MealType: string;
   IsRefundable: boolean;
   CancelPolicies: TBOHotelCancelPolicy[];
-  Supplements: TBOHotelSupplement[][];
+  Supplements: TBOHotelSupplement[];
+  PriceBreakUp: TBOHotelBookingDetailPriceBreakUp;
 }
 
-export interface TBOHotelBookingDetailPriceBreakup {
+export interface TBOHotelBookingDetailPriceBreakUp {
   RoomRate: number;
   RoomTax: number;
-  ExtraGuestCharges: number;
-  ChildCharges: number;
-  ServiceFee: number;
-  AgentCommission: number;
-  TDS: number;
-  NetAmount: number;
-  NetTax: number;
-  TaxBreakup: TBOHotelTaxBreakup[];
+  RoomExtraGuestCharges: number;
+  RoomChildCharges: number;
 }
 
-export interface TBOHotelBookingDetailData {
-  BookingId: number;
+export interface TBOHotelBookingDetailResult {
+  ResponseStatus: number;
+  Error: TBOError;
+  Status: number;
+  HotelBookingStatus: string;
   ConfirmationNo: string;
   BookingRefNo: string;
-  InvoiceNumber: string;
-  HotelBookingStatus: string;
+  BookingId: number;
+  InvoiceNo: string;
   HotelName: string;
   HotelCode: string;
   Currency: string;
-  CheckIn: string;
-  CheckOut: string;
+  CheckInDate: string;
+  CheckOutDate: string;
   GuestNationality: string;
   IsVoucherBooking: boolean;
   Rooms: TBOHotelBookingDetailRoom[];
-  PriceBreakup: TBOHotelBookingDetailPriceBreakup;
-  Amenities: string[];
+  Amenities?: string[];
+  NetAmount: number;
+  NetTax: number;
+  City?: string;
+  StarRating?: string;
+  AddressLine1?: string;
 }
 
 export interface TBOHotelBookingDetailResponse {
-  Status: TBOStatus;
-  BookingDetail: TBOHotelBookingDetailData;
+  GetBookingDetailResult: TBOHotelBookingDetailResult;
 }
 
 export interface TBOHotelCountry {

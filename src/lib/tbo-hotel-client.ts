@@ -16,6 +16,7 @@ import type {
   TBOHotelGenerateVoucherOutput,
   TBOHotelCancelOutput,
   TBOHotelCancelStatusOutput,
+  TBOHotelPassenger,
 } from "./tbo-hotel-types";
 import * as api from "./tbo-hotel-api";
 import * as mock from "./tbo-hotel-mock";
@@ -580,28 +581,32 @@ export async function bookHotel(params: {
       const clientRef = `gorasa_${Date.now()}`;
       const req: TBOHotelBookRequest = {
         BookingCode: params.bookingCode,
-        IsVoucherBooking: true,
+        IsVoucherBooking: false,
         GuestNationality: params.guestNationality,
         RequestedBookingMode: HOTEL_BOOKING_MODE,
         NetAmount: params.netAmount,
         ClientReferenceId: clientRef,
         EndUserIp: getEndUserIp(),
-        HotelRoomsDetails: params.hotelRoomsDetails.map(rd => ({
-          HotelPassenger: rd.passengers.map(p => ({
-            Title: p.title,
-            FirstName: p.firstName,
-            LastName: p.lastName,
-            PaxType: p.paxType,
-            LeadPassenger: p.leadPassenger,
-            Age: p.age,
-            Email: p.email,
-            Phoneno: p.phone,
-            PAN: p.pan || undefined,
-            AddressLine1: p.addressLine1 || undefined,
-            City: p.city || undefined,
-            CountryCode: p.countryCode || undefined,
-            Nationality: p.nationality || undefined,
-          })),
+        TokenId: await ensureToken(),
+  HotelRoomsDetails: params.hotelRoomsDetails.map(rd => ({
+          HotelPassenger: rd.passengers.map(p => {
+      const passenger: TBOHotelPassenger = {
+        Title: p.title,
+        FirstName: p.firstName,
+        LastName: p.lastName,
+        PaxType: p.paxType,
+        LeadPassenger: p.leadPassenger,
+        Age: p.age,
+      };
+            if (p.email && p.email.trim()) passenger.Email = p.email;
+            if (p.phone && p.phone.trim()) passenger.Phoneno = p.phone;
+            if (p.pan && p.pan.trim()) passenger.PAN = p.pan;
+            if (p.addressLine1 && p.addressLine1.trim()) passenger.AddressLine1 = p.addressLine1;
+            if (p.city && p.city.trim()) passenger.City = p.city;
+            if (p.countryCode && p.countryCode.trim()) passenger.CountryCode = p.countryCode;
+            if (p.nationality && p.nationality.trim()) passenger.Nationality = p.nationality;
+            return passenger as TBOHotelPassenger;
+          }),
         })),
       };
       const res = await api.bookHotel(req);
@@ -623,27 +628,30 @@ export async function bookHotel(params: {
 
   const mockReq: TBOHotelBookRequest = {
     BookingCode: params.bookingCode,
-    IsVoucherBooking: true,
+    IsVoucherBooking: false,
     GuestNationality: params.guestNationality,
     RequestedBookingMode: HOTEL_BOOKING_MODE,
     NetAmount: params.netAmount,
     ClientReferenceId: `gorasa_${Date.now()}`,
     HotelRoomsDetails: params.hotelRoomsDetails.map(rd => ({
-      HotelPassenger: rd.passengers.map(p => ({
+      HotelPassenger: rd.passengers.map(p => {
+      const passenger: TBOHotelPassenger = {
         Title: p.title,
         FirstName: p.firstName,
         LastName: p.lastName,
         PaxType: p.paxType,
         LeadPassenger: p.leadPassenger,
         Age: p.age,
-        Email: p.email,
-        Phoneno: p.phone,
-        PAN: p.pan || undefined,
-        AddressLine1: p.addressLine1 || undefined,
-        City: p.city || undefined,
-        CountryCode: p.countryCode || undefined,
-        Nationality: p.nationality || undefined,
-      })),
+      };
+        if (p.email && p.email.trim()) passenger.Email = p.email;
+        if (p.phone && p.phone.trim()) passenger.Phoneno = p.phone;
+        if (p.pan && p.pan.trim()) passenger.PAN = p.pan;
+        if (p.addressLine1 && p.addressLine1.trim()) passenger.AddressLine1 = p.addressLine1;
+        if (p.city && p.city.trim()) passenger.City = p.city;
+        if (p.countryCode && p.countryCode.trim()) passenger.CountryCode = p.countryCode;
+        if (p.nationality && p.nationality.trim()) passenger.Nationality = p.nationality;
+        return passenger as TBOHotelPassenger;
+      }),
     })),
   };
   const mockRes = mock.mockBook(mockReq);
@@ -669,19 +677,19 @@ export async function getBookingDetail(params: {
         TraceId: _lastTraceId || undefined,
       };
       const res = await api.getBookingDetail(req);
-      if (res.Status?.Code === 200 && res.BookingDetail) {
-        const bd = res.BookingDetail;
+      const result = res.GetBookingDetailResult;
+      if (result.ResponseStatus === 1) {
         return {
-          bookingId: bd.BookingId,
-          confirmationNo: bd.ConfirmationNo,
-          invoiceNumber: bd.InvoiceNumber,
-          hotelName: bd.HotelName,
-          hotelCode: bd.HotelCode,
-          checkIn: bd.CheckIn,
-          checkOut: bd.CheckOut,
-          status: bd.HotelBookingStatus,
-          rooms: (bd.Rooms || []).map(r => ({
-            roomName: r.RoomName,
+          bookingId: result.BookingId,
+          confirmationNo: result.ConfirmationNo,
+          invoiceNumber: result.InvoiceNo,
+          hotelName: result.HotelName,
+          hotelCode: result.HotelCode,
+          checkIn: result.CheckInDate,
+          checkOut: result.CheckOutDate,
+          status: result.HotelBookingStatus,
+          rooms: (result.Rooms || []).map(r => ({
+            roomName: r.RoomTypeName,
             passengers: (r.HotelPassenger || []).map(p => ({
               title: p.Title,
               firstName: p.FirstName,
@@ -692,37 +700,37 @@ export async function getBookingDetail(params: {
             totalTax: r.TotalTax,
           })),
           priceBreakup: {
-            roomRate: bd.PriceBreakup.RoomRate,
-            roomTax: bd.PriceBreakup.RoomTax,
-            extraGuestCharges: bd.PriceBreakup.ExtraGuestCharges,
-            childCharges: bd.PriceBreakup.ChildCharges,
-            netAmount: bd.PriceBreakup.NetAmount,
+            roomRate: result.Rooms?.[0]?.PriceBreakUp?.RoomRate || 0,
+            roomTax: result.Rooms?.[0]?.PriceBreakUp?.RoomTax || 0,
+            extraGuestCharges: result.Rooms?.[0]?.PriceBreakUp?.RoomExtraGuestCharges || 0,
+            childCharges: result.Rooms?.[0]?.PriceBreakUp?.RoomChildCharges || 0,
+            netAmount: result.NetAmount,
           },
         };
       }
-      throw new Error(`Booking detail failed: ${res.Status?.Description || "Not found"}`);
+      throw new Error(`Booking detail failed`);
     } catch (e) {
       console.warn("TBO hotel booking detail failed, fallback to mock:", e);
     }
   }
 
   const mockRes = mock.mockBookingDetail(params.bookingId);
-  if (!mockRes.BookingDetail) {
+  const result = mockRes.GetBookingDetailResult;
+  if (result.ResponseStatus !== 1) {
     throw new Error("Booking not found");
   }
 
-  const bd = mockRes.BookingDetail;
   return {
-    bookingId: bd.BookingId,
-    confirmationNo: bd.ConfirmationNo,
-    invoiceNumber: bd.InvoiceNumber,
-    hotelName: bd.HotelName,
-    hotelCode: bd.HotelCode,
-    checkIn: bd.CheckIn,
-    checkOut: bd.CheckOut,
-    status: bd.HotelBookingStatus,
-    rooms: (bd.Rooms || []).map(r => ({
-      roomName: r.RoomName,
+    bookingId: result.BookingId,
+    confirmationNo: result.ConfirmationNo,
+    invoiceNumber: result.InvoiceNo,
+    hotelName: result.HotelName,
+    hotelCode: result.HotelCode,
+    checkIn: result.CheckInDate,
+    checkOut: result.CheckOutDate,
+    status: result.HotelBookingStatus,
+    rooms: (result.Rooms || []).map(r => ({
+      roomName: r.RoomTypeName,
       passengers: (r.HotelPassenger || []).map(p => ({
         title: p.Title,
         firstName: p.FirstName,
@@ -733,11 +741,11 @@ export async function getBookingDetail(params: {
       totalTax: r.TotalTax,
     })),
     priceBreakup: {
-      roomRate: bd.PriceBreakup.RoomRate,
-      roomTax: bd.PriceBreakup.RoomTax,
-      extraGuestCharges: bd.PriceBreakup.ExtraGuestCharges,
-      childCharges: bd.PriceBreakup.ChildCharges,
-      netAmount: bd.PriceBreakup.NetAmount,
+      roomRate: result.Rooms?.[0]?.PriceBreakUp?.RoomRate || 0,
+      roomTax: result.Rooms?.[0]?.PriceBreakUp?.RoomTax || 0,
+      extraGuestCharges: result.Rooms?.[0]?.PriceBreakUp?.RoomExtraGuestCharges || 0,
+      childCharges: result.Rooms?.[0]?.PriceBreakUp?.RoomChildCharges || 0,
+      netAmount: result.NetAmount,
     },
   };
 }

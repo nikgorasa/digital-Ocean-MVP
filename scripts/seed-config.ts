@@ -9,7 +9,7 @@ async function seed() {
     update: {
       label: 'TBO Hotel (Search/Book)',
       baseUrl: 'https://affiliate.tektravels.com/HotelAPI',
-      bookingUrl: 'https://affiliate.tektravels.com/HotelAPI',
+      bookingUrl: 'https://HotelBE.tektravels.com/hotelservice.svc/rest',
       staticUrl: null,
       clientId: 'ApiIntegrationNew',
       encryptedUsername: encrypt('RasaT'),
@@ -24,7 +24,7 @@ async function seed() {
       provider: 'tbo_hotel',
       label: 'TBO Hotel (Search/Book)',
       baseUrl: 'https://affiliate.tektravels.com/HotelAPI',
-      bookingUrl: 'https://affiliate.tektravels.com/HotelAPI',
+      bookingUrl: 'https://HotelBE.tektravels.com/hotelservice.svc/rest',
       staticUrl: null,
       clientId: 'ApiIntegrationNew',
       encryptedUsername: encrypt('RasaT'),

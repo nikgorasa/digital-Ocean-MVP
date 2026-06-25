@@ -22,8 +22,8 @@ function uuid(): string {
 
 const TRACE_ID = uuid();
 
-function bookingCode(hotelCode: number, roomIdx: number): string {
-  return `${hotelCode}!TB!${roomIdx}!TB!${uuid().slice(0, 8)}!TB!AFF!`;
+function bookingCode(hotelCode: number, roomIdx: number, traceId: string): string {
+  return `${hotelCode}!TB!${roomIdx}!TB!${traceId}!TB!AFF!`;
 }
 
 function dayRate(price: number): TBOHotelDayRate {
@@ -293,6 +293,7 @@ function buildRoom(
   checkIn: string,
   checkOut: string,
   nights: number,
+  traceId: string,
 ): TBOHotelRoom {
   const dr: TBOHotelDayRate[] = [];
   for (let n = 0; n < nights; n++) {
@@ -301,7 +302,7 @@ function buildRoom(
 
   return {
     Name: [def.name],
-    BookingCode: bookingCode(hotelCode, roomIdx + 1),
+    BookingCode: bookingCode(hotelCode, roomIdx + 1, traceId),
     Inclusion: def.inclusion,
     DayRates: [dr],
     SelectedDateRange: `${checkIn} to ${checkOut}`,
@@ -350,29 +351,33 @@ export function mockSearchHotels(req: TBOHotelSearchRequest): TBOHotelSearchResp
     const fallbackCity = cityKey || "Unknown";
     const fallbackDefs = generateFallbackHotels(fallbackCity);
 
+    const traceId = uuid();
     const fallbackResults: TBOHotelResult[] = fallbackDefs.map(h => ({
       HotelCode: String(h.code),
       Currency: h.currency,
-      Rooms: h.rooms.map((r, ri) => buildRoom(r, h.code, ri, CheckIn, CheckOut, nights)),
+      Rooms: h.rooms.map((r, ri) => buildRoom(r, h.code, ri, CheckIn, CheckOut, nights, traceId)),
     }));
 
     return {
       Status: { Code: 200, Description: "Fallback" },
       HotelResult: fallbackResults,
       NoOfRooms: fallbackResults.reduce((s, r) => s + r.Rooms.length, 0),
+      TraceId: traceId,
     };
   }
 
+  const traceId = uuid();
   const results: TBOHotelResult[] = defs.map(h => ({
     HotelCode: String(h.code),
     Currency: h.currency,
-    Rooms: h.rooms.map((r, ri) => buildRoom(r, h.code, ri, CheckIn, CheckOut, nights)),
+    Rooms: h.rooms.map((r, ri) => buildRoom(r, h.code, ri, CheckIn, CheckOut, nights, traceId)),
   }));
 
   return {
     Status: { Code: 200, Description: "Successful" },
     HotelResult: results,
     NoOfRooms: results.reduce((s, r) => s + r.Rooms.length, 0),
+    TraceId: traceId,
   };
 }
 
@@ -462,7 +467,7 @@ const mockBookings = new Map<number, {
     roomId: string;
     roomName: string;
     bookingCode: string;
-    passengers: { title: string; firstName: string; lastName: string; paxType: number; lead: boolean; age: number; email: string; phone: string }[];
+    passengers: { title: string; firstName: string; lastName: string; paxType: number; lead: boolean; age: number; email: string | undefined; phone: string | undefined }[];
     totalFare: number;
     totalTax: number;
     mealType: string;
@@ -542,30 +547,48 @@ export function mockBookingDetail(bookingId: number): TBOHotelBookingDetailRespo
 
   if (!entry) {
     return {
-      Status: { Code: 200, Description: "Booking not found" },
-      BookingDetail: null as unknown as TBOHotelBookingDetailResponse["BookingDetail"],
+      GetBookingDetailResult: {
+        ResponseStatus: 0,
+        Error: { ErrorCode: 1, ErrorMessage: "Booking not found" },
+        Status: 0,
+        HotelBookingStatus: "NotFound",
+        ConfirmationNo: "",
+        BookingRefNo: "",
+        BookingId: bookingId,
+        InvoiceNo: "",
+        HotelName: "",
+        HotelCode: "",
+        Currency: "",
+        CheckInDate: "",
+        CheckOutDate: "",
+        GuestNationality: "",
+        IsVoucherBooking: false,
+        Rooms: [],
+        NetAmount: 0,
+        NetTax: 0,
+      },
     };
   }
 
   return {
-    Status: { Code: 200, Description: "Successful" },
-    BookingDetail: {
-      BookingId: entry.bookingId,
+    GetBookingDetailResult: {
+      ResponseStatus: 1,
+      Error: { ErrorCode: 0, ErrorMessage: "" },
+      Status: 1,
+      HotelBookingStatus: entry.hotelBookingStatus,
       ConfirmationNo: entry.confirmationNo,
       BookingRefNo: entry.bookingRefNo,
-      InvoiceNumber: entry.invoiceNumber,
-      HotelBookingStatus: entry.hotelBookingStatus,
+      BookingId: entry.bookingId,
+      InvoiceNo: entry.invoiceNumber,
       HotelName: entry.hotelName,
       HotelCode: entry.hotelCode,
       Currency: entry.currency,
-      CheckIn: entry.checkIn || "2025-06-20",
-      CheckOut: entry.checkOut || "2025-06-22",
+      CheckInDate: entry.checkIn || "2025-06-20",
+      CheckOutDate: entry.checkOut || "2025-06-22",
       GuestNationality: entry.guestNationality,
-      IsVoucherBooking: true,
+      IsVoucherBooking: false,
       Rooms: entry.rooms.map(r => ({
-        RoomId: r.roomId,
-        RoomName: r.roomName,
-        BookingCode: r.bookingCode,
+        RoomTypeName: r.roomName,
         HotelPassenger: r.passengers.map(p => ({
           Title: p.title,
           FirstName: p.firstName,
@@ -573,8 +596,8 @@ export function mockBookingDetail(bookingId: number): TBOHotelBookingDetailRespo
           PaxType: p.paxType,
           LeadPassenger: p.lead,
           Age: p.age,
-          Email: p.email,
-          Phoneno: p.phone,
+          Email: p.email || "",
+          Phoneno: p.phone || "",
         })),
         DayRates: [[{ BasePrice: Math.round(r.totalFare / 2), ExtraGuest: 0, Child: 0 }]],
         TotalFare: r.totalFare,
@@ -588,19 +611,15 @@ export function mockBookingDetail(bookingId: number): TBOHotelBookingDetailRespo
           CancellationCharge: 100,
         }],
         Supplements: [],
+        PriceBreakUp: {
+          RoomRate: Math.round(r.totalFare / 2),
+          RoomTax: r.totalTax,
+          RoomExtraGuestCharges: 0,
+          RoomChildCharges: 0,
+        },
       })),
-      PriceBreakup: {
-        RoomRate: entry.netAmount,
-        RoomTax: 0,
-        ExtraGuestCharges: 0,
-        ChildCharges: 0,
-        ServiceFee: 0,
-        AgentCommission: -Math.round(entry.netAmount * 0.5),
-        TDS: Math.round(entry.netAmount * 0.05),
-        NetAmount: entry.netAmount,
-        NetTax: 0,
-        TaxBreakup: [{ ChargeType: "GST", Amount: Math.round(entry.netAmount * 0.06), Description: "GST" }],
-      },
+      NetAmount: entry.netAmount,
+      NetTax: 0,
       Amenities: entry.amenities,
     },
   };

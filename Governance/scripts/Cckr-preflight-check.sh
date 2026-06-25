@@ -34,7 +34,7 @@ ERRORS=0
 # ═══════════════════════════════════════════════════════
 # Check 1: Documentation Files Exist
 # ═══════════════════════════════════════════════════════
-print_status "CHECK 1/12: Required documentation files..."
+print_status "CHECK 1/13: Required documentation files..."
 
 REQUIRED_DOCS=(
     "$DOCS_DIR/Cckr-SESSION-LOG.md"
@@ -56,7 +56,7 @@ done
 # ═══════════════════════════════════════════════════════
 # Check 2: Read SESSION-LOG.md
 # ═══════════════════════════════════════════════════════
-print_status "CHECK 2/12: Last session context..."
+print_status "CHECK 2/13: Last session context..."
 
 SESSION="$DOCS_DIR/Cckr-SESSION-LOG.md"
 if [[ -f "$SESSION" ]]; then
@@ -70,7 +70,7 @@ fi
 # ═══════════════════════════════════════════════════════
 # Check 3: Config Reference
 # ═══════════════════════════════════════════════════════
-print_status "CHECK 3/12: Configuration..."
+print_status "CHECK 3/13: Configuration..."
 
 if [[ -f "$DOCS_DIR/Cckr-CONFIG-REFERENCE.md" ]]; then
     print_status "  ✓ Cckr-CONFIG-REFERENCE.md loaded"
@@ -82,7 +82,7 @@ fi
 # ═══════════════════════════════════════════════════════
 # Check 4: Environment Variables
 # ═══════════════════════════════════════════════════════
-print_status "CHECK 4/12: Environment variables..."
+print_status "CHECK 4/13: Environment variables..."
 
 ENV_FILE="$REPO_ROOT/.env.local"
 if [[ -f "$ENV_FILE" ]]; then
@@ -117,7 +117,7 @@ fi
 # ═══════════════════════════════════════════════════════
 # Check 5: TypeScript Compilation
 # ═══════════════════════════════════════════════════════
-print_status "CHECK 5/12: TypeScript compilation..."
+print_status "CHECK 5/13: TypeScript compilation..."
 
 if command -v npx >/dev/null 2>&1; then
     TS_ERRORS=$(npx tsc --noEmit 2>&1 | grep -c "error TS" || true)
@@ -137,7 +137,7 @@ fi
 # ═══════════════════════════════════════════════════════
 # Check 6: Git Status
 # ═══════════════════════════════════════════════════════
-print_status "CHECK 6/12: Git status..."
+print_status "CHECK 6/13: Git status..."
 
 if git status >/dev/null 2>&1; then
     print_status "  ✓ Git repository detected"
@@ -165,7 +165,7 @@ fi
 # ═══════════════════════════════════════════════════════
 # Check 7: Recent Commits
 # ═══════════════════════════════════════════════════════
-print_status "CHECK 7/12: Recent commits..."
+print_status "CHECK 7/13: Recent commits..."
 
 RECENT_COMMITS=$(git log --oneline -5 2>/dev/null || echo "No commits")
 print_status "  ✓ Recent commits:"
@@ -176,7 +176,7 @@ done
 # ═══════════════════════════════════════════════════════
 # Check 8: No stale Supabase imports
 # ═══════════════════════════════════════════════════════
-print_status "CHECK 8/12: No stale Supabase imports..."
+print_status "CHECK 8/13: No stale Supabase imports..."
 
 STALE_IMPORTS=$(grep -rn "@supabase/supabase-js\|@supabase/ssr\|@/lib/supabase-admin\|@/lib/supabase-server\|@/lib/supabase" src/ 2>/dev/null || true)
 if [[ -z "$STALE_IMPORTS" ]]; then
@@ -192,7 +192,7 @@ fi
 # ═══════════════════════════════════════════════════════
 # Check 9: vercel.json build command safety
 # ═══════════════════════════════════════════════════════
-print_status "CHECK 9/12: vercel.json build command..."
+print_status "CHECK 9/13: vercel.json build command..."
 
 VJSON="$REPO_ROOT/vercel.json"
 if [[ -f "$VJSON" ]]; then
@@ -209,7 +209,7 @@ fi
 # ═══════════════════════════════════════════════════════
 # Check 10: Prisma schema provider
 # ═══════════════════════════════════════════════════════
-print_status "CHECK 10/12: Prisma schema provider..."
+print_status "CHECK 10/13: Prisma schema provider..."
 
 PRISMA_SCHEMA="$REPO_ROOT/prisma/schema.prisma"
 if [[ -f "$PRISMA_SCHEMA" ]]; then
@@ -226,7 +226,7 @@ fi
 # ═══════════════════════════════════════════════════════
 # Check 11: Git email for deploy
 # ═══════════════════════════════════════════════════════
-print_status "CHECK 11/12: Git email..."
+print_status "CHECK 11/13: Git email..."
 
 GIT_EMAIL=$(git config user.email 2>/dev/null || echo "")
 BLOCKED_EMAILS=("nikhil@cryptomite.win" "noreply@github.com")
@@ -249,7 +249,7 @@ fi
 # ═══════════════════════════════════════════════════════
 # Check 12: Dual DB environment verification
 # ═══════════════════════════════════════════════════════
-print_status "CHECK 12/12: Dual DB environment..."
+print_status "CHECK 12/13: Dual DB environment..."
 
 DEV_ENV="$REPO_ROOT/.env.local"
 PROD_ENV="$REPO_ROOT/.env.production"
@@ -271,6 +271,22 @@ else
 fi
 
 # ═══════════════════════════════════════════════════════
+# Check 13: API Configuration Guard
+# ═══════════════════════════════════════════════════════
+print_status "CHECK 13/13: API configuration guard..."
+
+API_CONFIG_SCRIPT="$GOVERNANCE_ROOT/scripts/Cckr-api-config-check.sh"
+if [[ -f "$API_CONFIG_SCRIPT" ]]; then
+    if bash "$API_CONFIG_SCRIPT"; then
+        print_status "  ✓ API configuration valid"
+    else
+        ERRORS=$((ERRORS + 1))
+    fi
+else
+    print_warning "  ⚠ API config check script not found at $API_CONFIG_SCRIPT"
+fi
+
+# ═══════════════════════════════════════════════════════
 # FINAL RESULT
 # ═══════════════════════════════════════════════════════
 echo ""
@@ -281,7 +297,7 @@ if [[ "$ERRORS" -gt 0 ]]; then
     print_error "Fix all errors before starting work"
     exit 1
 else
-    print_status "✓ ALL 12 CHECKS PASSED"
+    print_status "✓ ALL 13 CHECKS PASSED"
     print_status "✓ Pre-flight validation complete"
     print_status ""
     print_status "Ready to start work. Remember:"

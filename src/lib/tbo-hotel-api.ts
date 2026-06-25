@@ -43,10 +43,9 @@ async function getStaticContext(): Promise<ApiContext> {
   return { baseUrl, authHeader };
 }
 
-async function getBookingContext(): Promise<ApiContext> {
+ async function getSearchContext(): Promise<ApiContext> {
   const cfg = await readConfig("tbo_hotel");
   const baseUrl = cfg.baseUrl || "https://affiliate.tektravels.com/HotelAPI";
-  const bookingUrl = cfg.bookingUrl || "https://affiliate.tektravels.com/HotelAPI";
   const username = cfg.username || "";
   const password = cfg.password || "";
   const hasAuth = !!(username && password);
@@ -54,6 +53,18 @@ async function getBookingContext(): Promise<ApiContext> {
     ? { Authorization: `Basic ${Buffer.from(`${username}:${password}`).toString("base64")}` }
     : {};
   return { baseUrl, authHeader };
+}
+
+async function getBookingActionContext(): Promise<ApiContext> {
+  const cfg = await readConfig("tbo_hotel");
+  const bookingUrl = cfg.bookingUrl || "https://HotelBE.tektravels.com/hotelservice.svc/rest";
+  const username = cfg.username || "";
+  const password = cfg.password || "";
+  const hasAuth = !!(username && password);
+  const authHeader = hasAuth
+    ? { Authorization: `Basic ${Buffer.from(`${username}:${password}`).toString("base64")}` }
+    : {};
+  return { baseUrl: bookingUrl, authHeader };
 }
 
 interface LogOptions {
@@ -266,36 +277,36 @@ export async function getHotelDetails(hotelCodes: string, logOpts?: LogOptions):
 }
 
 export async function searchHotels(req: TBOHotelSearchRequest, logOpts?: LogOptions): Promise<TBOHotelSearchResponse> {
-  const ctx = await getBookingContext();
+  const ctx = await getSearchContext();
   return searchPost<TBOHotelSearchResponse>(`${ctx.baseUrl}/Search`, req, ctx, logOpts);
 }
 
 export async function preBook(req: TBOHotelPreBookRequest): Promise<TBOHotelPreBookResponse> {
-  const ctx = await getBookingContext();
+  const ctx = await getSearchContext();
   return searchPost<TBOHotelPreBookResponse>(`${ctx.baseUrl}/PreBook`, req, ctx);
 }
 
 export async function bookHotel(req: TBOHotelBookRequest): Promise<TBOHotelBookResponse> {
-  const ctx = await getBookingContext();
-  return bookingPost<TBOHotelBookResponse>(`${ctx.baseUrl}/book`, req, ctx);
+  const ctx = await getBookingActionContext();
+  return bookingPost<TBOHotelBookResponse>(`${ctx.baseUrl}/book/`, req, ctx);
 }
 
 export async function getBookingDetail(req: TBOHotelBookingDetailRequest): Promise<TBOHotelBookingDetailResponse> {
-  const ctx = await getBookingContext();
-  return bookingPost<TBOHotelBookingDetailResponse>(`${ctx.baseUrl}/Getbookingdetail`, req, ctx);
+  const ctx = await getBookingActionContext();
+  return bookingPost<TBOHotelBookingDetailResponse>(`${ctx.baseUrl}/Getbookingdetail/`, req, ctx);
 }
 
 export async function generateVoucher(req: TBOHotelGenerateVoucherRequest): Promise<TBOHotelGenerateVoucherResponse> {
-  const ctx = await getBookingContext();
-  return bookingPost<TBOHotelGenerateVoucherResponse>(`${ctx.baseUrl}/GenerateVoucher`, req, ctx);
+  const ctx = await getBookingActionContext();
+  return bookingPost<TBOHotelGenerateVoucherResponse>(`${ctx.baseUrl}/GenerateVoucher/`, req, ctx);
 }
 
 export async function sendChangeRequest(req: TBOHotelSendChangeRequest): Promise<TBOHotelSendChangeResponse> {
-  const ctx = await getBookingContext();
-  return bookingPost<TBOHotelSendChangeResponse>(`${ctx.baseUrl}/SendChangeRequest`, req, ctx);
+  const ctx = await getBookingActionContext();
+  return bookingPost<TBOHotelSendChangeResponse>(`${ctx.baseUrl}/SendChangeRequest/`, req, ctx);
 }
 
 export async function getChangeRequestStatus(req: TBOHotelGetChangeRequestStatusRequest): Promise<TBOHotelGetChangeRequestStatusResponse> {
-  const ctx = await getBookingContext();
-  return bookingPost<TBOHotelGetChangeRequestStatusResponse>(`${ctx.baseUrl}/GetChangeRequestStatus`, req, ctx);
+  const ctx = await getBookingActionContext();
+  return bookingPost<TBOHotelGetChangeRequestStatusResponse>(`${ctx.baseUrl}/GetChangeRequestStatus/`, req, ctx);
 }
