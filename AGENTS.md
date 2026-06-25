@@ -149,12 +149,14 @@ The TBO Hotel API has **dual endpoint architecture**. Every change to API config
 ## Quick Reference
 
 ### Deploy
-```bash
-# DEV: push to main
-git push origin main
+> **Note:** `git push origin main` does NOT auto-deploy. There are no GitHub Actions workflows set up. All deployments require explicit `vercel deploy` CLI commands.
 
-# PROD: Vercel CLI
+```bash
+# DEV (cckr — linked via .vercel/project.json)
 vercel deploy --prod --yes --token=$VERCEL_TOKEN
+
+# PROD (cckr2 — requires --scope flag or separate link)
+vercel deploy --prod --yes --token=$VERCEL_TOKEN --scope="nikhil-gorasa-s-projects"
 ```
 
 ### Schema Change

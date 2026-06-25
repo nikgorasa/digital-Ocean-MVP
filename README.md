@@ -66,12 +66,14 @@ npm run dev
 
 ## Deploy
 
-```bash
-# DEV (auto-deploys on push to main)
-git push origin main
+> **Note:** `git push origin main` does NOT auto-deploy. There are no GitHub Actions workflows set up. All deployments require explicit `vercel deploy` CLI commands.
 
-# PROD (via Vercel CLI)
-vercel deploy --prod --yes --token=$VERCEL_TOKEN --scope="nikjp2021s-projects"
+```bash
+# DEV (cckr — linked via .vercel/project.json)
+vercel deploy --prod --yes --token=$VERCEL_TOKEN
+
+# PROD (cckr2 — requires --scope flag or separate link)
+vercel deploy --prod --yes --token=$VERCEL_TOKEN --scope="nikhil-gorasa-s-projects"
 ```
 
 ## Schema Changes

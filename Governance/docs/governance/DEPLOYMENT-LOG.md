@@ -10,5 +10,6 @@
 
 | Date | Environment | Status | URL | Notes |
 |------|---|---|---|---|
+| 2026-06-26 | DEV | ✅ Pushed | https://cckr.vercel.app | API config guardrails — dual-endpoint validation, seed defaults fix, governance scripts (d091a52) |
 | 2026-06-19 | DEV | ✅ Live | https://cckr.vercel.app | First deployment — Supabase removed, aqua-pony CockroachDB cluster |
 | 2026-06-17 | DEV | ✅ Live | https://cckr.vercel.app | Initial CockroachDB standalone deployment |

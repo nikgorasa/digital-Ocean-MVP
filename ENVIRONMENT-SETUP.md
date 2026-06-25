@@ -62,7 +62,7 @@ Navigate to: **Settings → Environments → [cckr / cckr2] → Environment vari
 Navigate to: **Settings → Environments → [cckr / cckr2] → Protection rules**
 
 ### CCKR (Staging)
-- ✅ **Required reviewers**: 0 (auto-deploy on push to main/develop)
+- ✅ **Required reviewers**: 0 (no auto-deploy — vercel deploy CLI required)
 - ✅ **Wait timer**: 0 minutes
 - ✅ **Deployment branches**: All branches (or specify: `main`, `develop`)
 
