@@ -1,8 +1,10 @@
 import { NextResponse } from "next/server";
 import * as leads from "@/lib/db/leads";
+import { requireAdmin } from "@/lib/auth-helpers";
 
 export async function GET() {
   try {
+    await requireAdmin();
     const data = await leads.findAll();
     return NextResponse.json(data);
   } catch (error) {

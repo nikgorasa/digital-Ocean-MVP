@@ -2,9 +2,11 @@ import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 import { upsertConfig, invalidateCache } from "@/lib/config-service";
 import { headers } from "next/headers";
+import { requireAdmin } from "@/lib/auth-helpers";
 
 export async function GET() {
   try {
+    await requireAdmin();
     const rows = await prisma.configProvider.findMany({
       orderBy: { provider: "asc" },
     });
@@ -63,6 +65,7 @@ export async function GET() {
 
 export async function POST(req: NextRequest) {
   try {
+    await requireAdmin();
     const body = await req.json();
     const { provider, username, password, staticUsername, staticPassword, ...rest } = body;
 
@@ -131,6 +134,7 @@ export async function POST(req: NextRequest) {
 
 export async function DELETE(req: NextRequest) {
   try {
+    await requireAdmin();
     const { searchParams } = new URL(req.url);
     const provider = searchParams.get("provider");
 

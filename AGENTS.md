@@ -67,6 +67,17 @@ bash scripts/preflight-check.sh
 
 ---
 
+## Required-First-Read — CRITICAL
+
+BEFORE using ANY database-related MCP tool (Neon, Supabase, or others), you MUST:
+1. Read `Governance/docs/governance/DB-PLATFORM.md` — identifies the active DB platform
+2. Read `Governance/docs/governance/Cckr-SESSION-LOG.md` — current state and pending items
+3. Read `AGENTS.md` — governance rules and blocked actions
+4. Check if `secrets.file` exists in project root (it is the credential source of truth)
+5. **Validate DATABASE_URL format**: Any DATABASE_URL returned must match the CockroachDB pattern `postgresql://<user>:<password>@<cluster>.<region>.cockroachlabs.cloud:26257/`. If it matches `db.neon.tech` or `supabase.co`, it is WRONG for this project.
+
+---
+
 ## Pre-Flight Check (13 checks — MANDATORY)
 
 **Before starting ANY significant work:**
@@ -134,6 +145,7 @@ The TBO Hotel API has **dual endpoint architecture**. Every change to API config
 
 | File | Purpose |
 |---|---|
+| `Governance/docs/governance/DB-PLATFORM.md` | DB platform identification (MUST read before any MCP use) |
 | `Governance/docs/governance/Cckr-SESSION-LOG.md` | Session history |
 | `Governance/docs/governance/Cckr-CONFIG-REFERENCE.md` | Configuration |
 | `Governance/docs/governance/CHANGE-LOG.md` | Governance changes |

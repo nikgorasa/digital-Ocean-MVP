@@ -1,11 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
 import * as rewards from "@/lib/db/rewards";
+import { requireAdmin } from "@/lib/auth-helpers";
 
 export async function GET(request: NextRequest) {
   const url = new URL(request.url);
   const all = url.searchParams.get("all") === "true";
 
   try {
+    await requireAdmin();
     const data = all ? await rewards.findAllAll() : await rewards.findAll();
     return NextResponse.json(data);
   } catch (error) {

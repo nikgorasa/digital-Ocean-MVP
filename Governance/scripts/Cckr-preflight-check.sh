@@ -257,14 +257,23 @@ PROD_ENV="$REPO_ROOT/.env.production"
 if [[ -f "$DEV_ENV" ]] && [[ -f "$PROD_ENV" ]]; then
     print_status "  ✓ Both .env.local and .env.production exist"
 
-    # Check they have different DATABASE_URL (via fingerprint)
-    DEV_FINGERPRINT=$(envsitter_fingerprint "$DEV_ENV" DATABASE_URL 2>/dev/null || echo "none")
-    PROD_FINGERPRINT=$(envsitter_fingerprint "$PROD_ENV" DATABASE_URL 2>/dev/null || echo "none")
+    # Check they have different DATABASE_URL (via sha256 hash, no values exposed)
+    DEV_VALUE=$(grep "^DATABASE_URL=" "$DEV_ENV" | cut -d= -f2-)
+    PROD_VALUE=$(grep "^DATABASE_URL=" "$PROD_ENV" | cut -d= -f2-)
 
-    if [[ "$DEV_FINGERPRINT" != "$PROD_FINGERPRINT" ]]; then
-        print_status "  ✓ DEV and PROD have different DATABASE_URL (isolated)"
+    if [[ -z "$DEV_VALUE" ]]; then
+        print_warning "  ⚠ DEV DATABASE_URL is empty"
+    elif [[ -z "$PROD_VALUE" ]]; then
+        print_warning "  ⚠ PROD DATABASE_URL is empty"
     else
-        print_warning "  ⚠ DEV and PROD may share the same DATABASE_URL"
+        DEV_HASH=$(echo "$DEV_VALUE" | sha256sum | cut -d' ' -f1)
+        PROD_HASH=$(echo "$PROD_VALUE" | sha256sum | cut -d' ' -f1)
+
+        if [[ "$DEV_HASH" != "$PROD_HASH" ]]; then
+            print_status "  ✓ DEV and PROD have different DATABASE_URL (isolated)"
+        else
+            print_warning "  ⚠ DEV and PROD may share the same DATABASE_URL"
+        fi
     fi
 else
     print_warning "  ⚠ Missing .env.local or .env.production"

@@ -5,9 +5,11 @@ import * as leads from "@/lib/db/leads";
 import * as bookings from "@/lib/db/bookings";
 import * as companies from "@/lib/db/companies";
 import { prisma } from "@/lib/prisma";
+import { requireAdmin } from "@/lib/auth-helpers";
 
 export async function GET() {
   try {
+    await requireAdmin();
     const [usersResult, activePackages, allLeads, bookingsCount, totalRevenue, companiesCount] = await Promise.all([
       users.findAll({ limit: 9999 }),
       packages.countActive(),

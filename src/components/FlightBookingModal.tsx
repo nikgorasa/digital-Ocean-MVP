@@ -285,10 +285,7 @@ export default function FlightBookingModal({
 
       const saveRes = await fetch("/api/bookings", {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "x-user-email": user.email,
-        },
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           type: "FLIGHT",
           itemName: `${flight.airline} • ${flight.origin} → ${flight.destination}`,
@@ -323,7 +320,7 @@ export default function FlightBookingModal({
         try {
           await fetch("/api/profile", {
             method: "PATCH",
-            headers: { "Content-Type": "application/json", "x-user-email": user.email },
+            headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
               passengers: [{
                 id: Date.now().toString(),
@@ -874,7 +871,7 @@ export default function FlightBookingModal({
               </div>
             </div>
 
-            <CheckoutButton bookingId={bookingId} amount={totalPayable} userEmail={email} />
+            <CheckoutButton bookingId={bookingId} amount={totalPayable} />
 
             <button onClick={handleClose} className="w-full mt-3 py-2.5 text-sm text-slate-500 hover:text-slate-700 cursor-pointer">
               Pay Later

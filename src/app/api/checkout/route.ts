@@ -1,13 +1,15 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createCheckout, PAYMENT_CONFIG } from "@/lib/payment";
-import * as users from "@/lib/db/users";
+import { getCurrentUser } from "@/lib/auth-helpers";
 import { prisma } from "@/lib/prisma";
+import { z } from "zod";
 
-async function getUserFromRequest(request: Request) {
-  const userEmail = request.headers.get("x-user-email");
-  if (!userEmail) return null;
-  return users.findByEmail(userEmail);
-}
+const checkoutSchema = z.object({
+  bookingId: z.string().min(1, "bookingId is required"),
+  gateway: z.enum(["razorpay", "phonepe"]).optional(),
+  acceptPriceChange: z.boolean().optional(),
+  mockScenario: z.enum(["success", "failure", "timeout", "random"]).optional(),
+});
 
 async function getBooking(bookingId: string) {
   return prisma.booking.findUnique({
@@ -62,18 +64,21 @@ function revalidatePrice(booking: { price: number }): { available: boolean; newP
 
 export async function POST(request: NextRequest) {
   try {
-    const user = await getUserFromRequest(request);
+    const user = await getCurrentUser();
     if (!user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
     const body = await request.json();
-    const { bookingId, gateway, acceptPriceChange } = body;
-
-    if (!bookingId) {
-      return NextResponse.json({ error: "bookingId is required" }, { status: 400 });
+    const parsed = checkoutSchema.safeParse(body);
+    if (!parsed.success) {
+      return NextResponse.json(
+        { error: parsed.error.issues[0].message },
+        { status: 400 }
+      );
     }
 
+    const { bookingId, gateway, acceptPriceChange } = parsed.data;
     const selectedGateway = gateway || PAYMENT_CONFIG.gateway;
     const booking = await getBooking(bookingId);
 
@@ -131,7 +136,7 @@ export async function POST(request: NextRequest) {
       bookingId,
       amount: revalidation.newPrice,
       gateway: selectedGateway,
-      userEmail: (user as { email: string }).email,
+      userEmail: user.email,
       appUrl,
     });
 

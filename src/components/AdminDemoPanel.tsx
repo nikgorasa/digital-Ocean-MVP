@@ -37,9 +37,7 @@ export default function AdminDemoPanel() {
     if (!user) return;
     setLoading(true);
     try {
-      const res = await fetch("/api/bookings", {
-        headers: { "x-user-email": user.email },
-      });
+      const res = await fetch("/api/bookings");
       const data = await res.json();
       if (Array.isArray(data)) setBookings(data);
     } catch {
@@ -59,7 +57,7 @@ export default function AdminDemoPanel() {
     try {
       const res = await fetch("/api/checkout", {
         method: "POST",
-        headers: { "Content-Type": "application/json", "x-user-email": user!.email },
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ bookingId, mockScenario: scenario }),
       });
       const data = await res.json();

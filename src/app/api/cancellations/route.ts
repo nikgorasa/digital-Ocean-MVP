@@ -1,5 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { getCurrentUser } from "@/lib/auth-helpers";
+import { z } from "zod";
+
+const cancellationSchema = z.object({
+  bookingId: z.string().min(1, "bookingId is required"),
+  reason: z.string().min(1, "reason is required"),
+});
 
 function calculateMockRefund(bookingPrice: number, bookedAt: Date): {
   refundAmount: number;
@@ -28,12 +35,21 @@ function calculateMockRefund(bookingPrice: number, bookedAt: Date): {
 
 export async function POST(request: NextRequest) {
   try {
-    const body = await request.json();
-    const { bookingId, userId, reason } = body;
-
-    if (!bookingId || !userId || !reason) {
-      return NextResponse.json({ error: "bookingId, userId, and reason are required" }, { status: 400 });
+    const user = await getCurrentUser();
+    if (!user) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
+
+    const body = await request.json();
+    const parsed = cancellationSchema.safeParse(body);
+    if (!parsed.success) {
+      return NextResponse.json(
+        { error: parsed.error.issues[0].message },
+        { status: 400 }
+      );
+    }
+
+    const { bookingId, reason } = parsed.data;
 
     const existing = await prisma.cancellationRequest.findFirst({ where: { bookingId } });
     if (existing) {
@@ -43,6 +59,10 @@ export async function POST(request: NextRequest) {
     const booking = await prisma.booking.findUnique({ where: { id: bookingId } });
     if (!booking) {
       return NextResponse.json({ error: "Booking not found" }, { status: 404 });
+    }
+
+    if (booking.userId !== user.id) {
+      return NextResponse.json({ error: "You can only cancel your own bookings" }, { status: 403 });
     }
 
     if (booking.status !== "CONFIRMED") {
@@ -57,7 +77,7 @@ export async function POST(request: NextRequest) {
     const cancellation = await prisma.cancellationRequest.create({
       data: {
         bookingId,
-        userId,
+        userId: user.id,
         reason,
         status: "COMPLETED",
         processedBy: "SYSTEM",

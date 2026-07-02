@@ -1,11 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
 import { readConfig } from "@/lib/config-service";
+import { requireAdmin } from "@/lib/auth-helpers";
 
 export async function POST(
   req: NextRequest,
   { params }: { params: Promise<{ provider: string }> },
 ) {
   try {
+    await requireAdmin();
     const { provider } = await params;
 
     if (!["tbo_hotel", "tbo_hotel_static", "tbo_flight"].includes(provider)) {

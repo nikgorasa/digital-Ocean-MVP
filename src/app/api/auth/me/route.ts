@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { auth } from "@/lib/auth";
+import { sanitizeUser } from "@/lib/auth-helpers";
 import { headers } from "next/headers";
 
 export async function GET() {
@@ -15,7 +16,7 @@ export async function GET() {
       });
 
       if (dbUser) {
-        return NextResponse.json(dbUser);
+        return NextResponse.json(sanitizeUser(dbUser as Record<string, unknown>));
       }
     }
 

@@ -1,8 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
 import * as pricing from "@/lib/db/pricing";
+import { requireAdmin } from "@/lib/auth-helpers";
 
 export async function GET() {
   try {
+    await requireAdmin();
     const data = await pricing.findAll();
     return NextResponse.json(data);
   } catch (error) {

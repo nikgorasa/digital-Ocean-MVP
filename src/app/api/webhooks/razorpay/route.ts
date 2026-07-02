@@ -7,30 +7,31 @@ export async function POST(request: NextRequest) {
     const rawBody = await request.text();
     const signature = request.headers.get("X-Razorpay-Signature") || "";
 
-    if (!PAYMENT_CONFIG.mock && !signature) {
+    if (!signature) {
       return NextResponse.json({ error: "Missing signature" }, { status: 400 });
     }
 
-    let body: any;
+    let body: Record<string, unknown>;
     try {
       body = JSON.parse(rawBody);
     } catch {
       return NextResponse.json({ error: "Invalid JSON" }, { status: 400 });
     }
 
-    const event = body.event;
+    const event = (body as { event?: string }).event;
     if (event !== "payment.captured" && event !== "payment.authorized") {
       return NextResponse.json({ received: true }, { status: 200 });
     }
 
-    const paymentEntity = body.payload?.payment?.entity;
+    const paymentEntity = (body as { payload?: { payment?: { entity?: Record<string, unknown> } } })
+      .payload?.payment?.entity;
     if (!paymentEntity) {
       return NextResponse.json({ received: true }, { status: 200 });
     }
 
     const result = await handleRazorpayWebhook({
-      orderId: paymentEntity.order_id,
-      paymentId: paymentEntity.id,
+      orderId: paymentEntity.order_id as string,
+      paymentId: paymentEntity.id as string,
       signature,
       rawBody,
     });

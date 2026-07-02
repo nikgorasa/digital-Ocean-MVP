@@ -8,7 +8,6 @@ interface CheckoutButtonProps {
   bookingId?: string;
   amount: number;
   gateway?: "razorpay" | "phonepe";
-  userEmail: string;
   mockScenario?: "success" | "failure" | "timeout" | "random";
   onPaymentStart?: () => void;
   onPaymentSuccess?: () => void;
@@ -20,7 +19,6 @@ export default function CheckoutButton({
   bookingId,
   amount,
   gateway = "razorpay",
-  userEmail,
   mockScenario,
   onPaymentStart,
   onPaymentSuccess,
@@ -38,10 +36,7 @@ export default function CheckoutButton({
     try {
       const res = await fetch("/api/checkout", {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "x-user-email": userEmail,
-        },
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ bookingId, gateway, mockScenario }),
       });
 
@@ -52,10 +47,8 @@ export default function CheckoutButton({
       }
 
       if (data.checkoutUrl) {
-        // Mock mode: redirect to success page
         window.location.href = data.checkoutUrl;
       } else if (data.success) {
-        // Direct success (mock mode without redirect)
         onPaymentSuccess?.();
       }
     } catch (err) {

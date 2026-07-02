@@ -1,24 +1,31 @@
 import { NextResponse } from "next/server";
 import { createTicket, getAllTickets, getUserTickets, getTicketStats } from "@/lib/ticket/serverManager";
+import { getCurrentUser, requireAdmin } from "@/lib/auth-helpers";
 
 export async function GET(request: Request) {
   try {
+    const user = await getCurrentUser();
+    if (!user) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
     const { searchParams } = new URL(request.url);
-    const userId = searchParams.get("userId");
     const stats = searchParams.get("stats");
 
     if (stats === "true") {
+      await requireAdmin();
       const ticketStats = await getTicketStats();
       return NextResponse.json(ticketStats);
     }
 
-    if (userId) {
-      const tickets = await getUserTickets(userId);
-      return NextResponse.json(tickets);
+    const isAdmin = user.role === "ADMIN" || user.role === "SUPER_ADMIN" || user.role === "CUSTOMER_SUPPORT";
+    if (isAdmin) {
+      const allTickets = await getAllTickets();
+      return NextResponse.json(allTickets);
     }
 
-    const tickets = await getAllTickets();
-    return NextResponse.json(tickets);
+    const userTickets = await getUserTickets(user.id);
+    return NextResponse.json(userTickets);
   } catch (error) {
     console.error("Failed to fetch tickets:", error);
     return NextResponse.json({ error: "Failed to fetch tickets" }, { status: 500 });
@@ -27,13 +34,17 @@ export async function GET(request: Request) {
 
 export async function POST(request: Request) {
   try {
+    const user = await getCurrentUser();
+    if (!user) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
     const body = await request.json();
+    const { subject, description, category, priority, userPhone, bookingRef } = body;
 
-    const { subject, description, category, priority, userId, userName, userEmail, userPhone, bookingRef } = body;
-
-    if (!subject || !description || !category || !userId || !userName || !userEmail) {
+    if (!subject || !description || !category) {
       return NextResponse.json(
-        { error: "Subject, description, category, userId, userName, and userEmail are required" },
+        { error: "Subject, description, and category are required" },
         { status: 400 }
       );
     }
@@ -42,12 +53,12 @@ export async function POST(request: Request) {
       subject,
       description,
       category,
-      priority,
-      userId,
-      userName,
-      userEmail,
-      userPhone,
-      bookingRef,
+      priority: priority || "medium",
+      userId: user.id,
+      userName: user.name,
+      userEmail: user.email,
+      userPhone: userPhone || null,
+      bookingRef: bookingRef || null,
     });
 
     return NextResponse.json(ticket, { status: 201 });

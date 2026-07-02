@@ -1,5 +1,7 @@
 export const PAYMENT_CONFIG = {
-  mock: process.env.PAYMENT_MOCK !== "false",
+  mock: process.env.NODE_ENV === "production"
+    ? process.env.PAYMENT_MOCK === "true"
+    : process.env.PAYMENT_MOCK !== "false",
   gateway: (process.env.PAYMENT_GATEWAY || "razorpay") as "razorpay" | "phonepe",
   razorpay: {
     keyId: process.env.RAZORPAY_KEY_ID || "",

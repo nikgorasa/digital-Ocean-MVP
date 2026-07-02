@@ -1,8 +1,10 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { requireAdmin } from "@/lib/auth-helpers";
 
 export async function GET() {
   try {
+    await requireAdmin();
     const rates = await prisma.corporateRate.findMany({
       include: { company: { select: { name: true } } },
       orderBy: { createdAt: 'desc' },
@@ -15,6 +17,7 @@ export async function GET() {
 
 export async function POST(request: Request) {
   try {
+    await requireAdmin();
     const body = await request.json();
     const { companyId, category, destination, discountType, discountValue, maxDiscount, isActive } = body;
 

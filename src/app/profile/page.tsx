@@ -78,7 +78,7 @@ export default function ProfilePage() {
     try {
       const res = await fetch("/api/profile", {
         method: "PATCH",
-        headers: { "Content-Type": "application/json", "x-user-email": user?.email || "" },
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify(data),
       });
       if (!res.ok) throw new Error("Failed to save");
@@ -94,7 +94,7 @@ export default function ProfilePage() {
   useEffect(() => {
     if (!user?.email) return;
     setLoading(true);
-    fetch("/api/profile", { headers: { "x-user-email": user.email } })
+    fetch("/api/profile")
       .then((res) => res.json())
       .then((data) => {
         if (data.passengers) setPassengers(data.passengers);

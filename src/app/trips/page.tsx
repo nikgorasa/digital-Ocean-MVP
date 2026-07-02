@@ -107,9 +107,7 @@ export default function TripsPage() {
   useEffect(() => {
     if (user) {
       setLoading(true);
-      fetch("/api/bookings", {
-        headers: { "x-user-email": user.email },
-      })
+      fetch("/api/bookings")
         .then((res) => res.json())
         .then((data) => {
           if (Array.isArray(data)) {
@@ -364,10 +362,7 @@ export default function TripsPage() {
                                 try {
                                   const res = await fetch("/api/checkout", {
                                     method: "POST",
-                                    headers: {
-                                      "Content-Type": "application/json",
-                                      "x-user-email": user.email,
-                                    },
+                                    headers: { "Content-Type": "application/json" },
                                     body: JSON.stringify({ bookingId: booking.id }),
                                   });
                                   const data = await res.json();
@@ -729,10 +724,7 @@ export default function TripsPage() {
             try {
               const res = await fetch("/api/checkout", {
                 method: "POST",
-                headers: {
-                  "Content-Type": "application/json",
-                  "x-user-email": user.email,
-                },
+                headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({
                   bookingId: priceChangeModal.bookingId,
                   acceptPriceChange: true,

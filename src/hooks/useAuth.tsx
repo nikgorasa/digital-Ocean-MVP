@@ -56,27 +56,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         const session = await authClient.getSession();
         if (session?.data?.user) {
           await fetchUserProfile();
-        } else {
-          // Check for demo user
-          const cached = localStorage.getItem("gorasa_demo_user");
-          if (cached) {
-            try {
-              const { email } = JSON.parse(cached);
-              const res = await fetch("/api/auth/login", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ email }),
-              });
-              if (res.ok) {
-                const userData = await res.json();
-                setUser(userData);
-              } else {
-                localStorage.removeItem("gorasa_demo_user");
-              }
-            } catch {
-              localStorage.removeItem("gorasa_demo_user");
-            }
-          }
         }
       } catch (error) {
         console.error("Session check failed:", error);
@@ -102,45 +81,37 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     });
 
     if (error) {
-      // If Better Auth fails, try demo mode
-      const res = await fetch("/api/auth/login", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email }),
-      });
-
-      if (res.ok) {
-        const userData = await res.json();
-        setUser(userData);
-        return;
-      }
-
-      const apiErr = await res.json().catch(() => ({}));
-      throw new Error(apiErr.error || error.message);
+      throw new Error(error.message || "Authentication failed");
     }
 
-    // If auth succeeds, fetch user profile
     await fetchUserProfile();
   };
 
   const signInDemo = async (email: string) => {
-    const res = await fetch("/api/auth/login", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ email }),
-    });
+    // Demo login uses the password associated with each demo account
+    const DEMO_PASSWORDS: Record<string, string> = {
+      "hmittal@gorasa.in": "Admin@123",
+      "admin@gorasa.in": "Admin@123",
+      "sales@gorasa.in": "Sales@123",
+      "neha@corp.in": "User@123",
+      "amit@example.com": "User@123",
+      "priya@example.com": "User@123",
+      "support@gorasa.in": "Support@123",
+    };
 
-    if (!res.ok) {
-      const err = await res.json().catch(() => ({}));
-      throw new Error(err.error || "Demo login failed");
+    const password = DEMO_PASSWORDS[email];
+    if (!password) {
+      throw new Error("Demo login not available for this account");
     }
 
-    const userData = await res.json();
-    setUser(userData);
-    localStorage.setItem(
-      "gorasa_demo_user",
-      JSON.stringify({ email: userData.email })
-    );
+    const { error } = await authClient.signIn.email({
+      email,
+      password,
+    });
+
+    if (error) throw new Error(error.message || "Demo login failed");
+
+    await fetchUserProfile();
   };
 
   const signUpWithEmail = async (

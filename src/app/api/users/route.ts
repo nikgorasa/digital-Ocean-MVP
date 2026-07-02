@@ -1,8 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
 import * as users from "@/lib/db/users";
+import { requireAdmin, sanitizeUser } from "@/lib/auth-helpers";
 
 export async function GET(request: NextRequest) {
   try {
+    await requireAdmin();
+
     const { searchParams } = new URL(request.url);
     const search = searchParams.get("search") || "";
     const role = searchParams.get("role") || "";
@@ -17,14 +20,22 @@ export async function GET(request: NextRequest) {
       users.countByRole("CUSTOMER"),
     ]);
 
+    const sanitizedUsers = result.users.map((u) => sanitizeUser(u as Record<string, unknown>));
+
     return NextResponse.json({
-      users: result.users,
+      users: sanitizedUsers,
       total: result.total,
       counts: { active: activeCount, admins: adminCount, customers: customerCount },
       page,
       limit,
     });
   } catch (error) {
+    if (error instanceof Error && error.message === "Forbidden") {
+      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    }
+    if (error instanceof Error && error.message === "Unauthorized") {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
     console.error("Users fetch error:", error);
     return NextResponse.json({ error: "Failed to fetch users" }, { status: 500 });
   }
@@ -32,6 +43,8 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
+    await requireAdmin();
+
     const body = await request.json();
     const { email, name, role, companyId } = body;
 
@@ -51,8 +64,14 @@ export async function POST(request: NextRequest) {
       companyId: companyId || null,
     });
 
-    return NextResponse.json(user, { status: 201 });
+    return NextResponse.json(sanitizeUser(user as Record<string, unknown>), { status: 201 });
   } catch (error) {
+    if (error instanceof Error && error.message === "Forbidden") {
+      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    }
+    if (error instanceof Error && error.message === "Unauthorized") {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
     console.error("User create error:", error);
     return NextResponse.json({ error: "Invalid request body" }, { status: 400 });
   }
@@ -60,6 +79,8 @@ export async function POST(request: NextRequest) {
 
 export async function PATCH(request: NextRequest) {
   try {
+    await requireAdmin();
+
     const body = await request.json();
     const { id, role, isActive, name, email } = body;
 
@@ -74,8 +95,14 @@ export async function PATCH(request: NextRequest) {
     if (email !== undefined) updateData.email = email;
 
     const user = await users.update(id, updateData);
-    return NextResponse.json(user);
+    return NextResponse.json(sanitizeUser(user as Record<string, unknown>));
   } catch (error) {
+    if (error instanceof Error && error.message === "Forbidden") {
+      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    }
+    if (error instanceof Error && error.message === "Unauthorized") {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
     console.error("User update error:", error);
     return NextResponse.json({ error: "Failed to update user" }, { status: 500 });
   }

@@ -8,7 +8,6 @@ interface CheckoutButtonProps {
   bookingId: string;
   amount: number;
   gateway?: "razorpay" | "phonepe";
-  userEmail: string;
   onPaymentStart?: () => void;
   onPaymentError?: (error: string) => void;
   className?: string;
@@ -18,7 +17,6 @@ export default function CheckoutButton({
   bookingId,
   amount,
   gateway = "razorpay",
-  userEmail,
   onPaymentStart,
   onPaymentError,
   className = "",
@@ -32,10 +30,7 @@ export default function CheckoutButton({
     try {
       const res = await fetch("/api/checkout", {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "x-user-email": userEmail,
-        },
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ bookingId, gateway }),
       });
 

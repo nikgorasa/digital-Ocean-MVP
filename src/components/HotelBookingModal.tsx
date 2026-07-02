@@ -261,10 +261,7 @@ export default function HotelBookingModal({
 
       const saveRes = await fetch("/api/bookings", {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "x-user-email": user.email,
-        },
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           type: "HOTEL",
           itemName: hotel.name,
@@ -304,7 +301,7 @@ export default function HotelBookingModal({
         try {
           const profileRes = await fetch("/api/profile", {
             method: "PATCH",
-            headers: { "Content-Type": "application/json", "x-user-email": user.email },
+            headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
               passengers: [{
                 id: Date.now().toString(),
@@ -696,7 +693,6 @@ export default function HotelBookingModal({
             <CheckoutButton
               bookingId={bookingId}
               amount={totalPayable}
-              userEmail={email}
             />
 
             <button

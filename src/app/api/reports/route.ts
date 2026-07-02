@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { requireAdmin } from "@/lib/auth-helpers";
 
 function normalizeType(raw: string): string {
   const t = raw.toUpperCase().trim();
@@ -22,6 +23,7 @@ function calcCostBreakdown(originalPrice: number, discountApplied: number, promo
 
 export async function GET(request: NextRequest) {
   try {
+    await requireAdmin();
     const { searchParams } = new URL(request.url);
     const period = searchParams.get("period") || "monthly";
     const type = searchParams.get("type") || "all";
