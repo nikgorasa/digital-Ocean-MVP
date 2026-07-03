@@ -1,7 +1,7 @@
 # GoRASA CockroachDB Standalone — SESSION-LOG
 
 > **Purpose:** Living document tracking all sessions, changes, deployments, and learnings.
-> **Last updated:** 2026-07-03 (Session 7 — Security Hardening + Auth + Email Notifications)
+> **Last updated:** 2026-07-03 (Session 8 — Corporate Booking Flow + Email Notifications)
 
 ---
 
@@ -33,35 +33,53 @@ Each environment connects to a **different CockroachDB cluster**. Zero shared da
 
 ## Sessions
 
-### Session 2026-07-03 (Session 7) — Security Hardening + Auth Setup
+### Session 2026-07-03 (Session 8) — Corporate Booking Flow + Email Notifications
 
-**Objective:** Fix all 14 critical/high security vulnerabilities, set up Better Auth with passwords, deploy to DEV.
+**Objective:** Implement corporate credit-based booking (wallet, invoices, TBO direct booking), wire email notifications, enable Better Auth email verification + password reset.
 
 **Changes:**
-- SEC-01: Middleware validates session cookie on all /api/* routes (public routes whitelisted)
-- SEC-02: requireAdmin() added to 15+ admin API routes
-- SEC-03: Login requires password in production, sanitized responses
-- SEC-04: Removed all 17 x-user-email header usages, replaced with session-based auth
-- SEC-05: Zod validation on checkout, bookings, cancellations
-- SEC-06: Webhook signature always required, mock defaults to false in production
-- SEC-07: Security headers (X-Frame-Options, HSTS, CSP, etc) in next.config.ts
-- SEC-08: Deleted /api/debug-ip, fixed cron auth bypass
-- SEC-09: sanitizeUser() helper, applied to all user-returning routes
-- SEC-10: Fixed mass assignment in corporate-rates/[id], rewards/[id], leads/[id]
-- Created Better Auth tables (session, account, verification) in DEV + PROD CockroachDB
-- Set passwords for all 7 users in both clusters
-- Demo login now goes through Better Auth (no more insecure bypass)
-- Payment config: mock=false in production by default
-- Deployed to DEV: https://cckr.vercel.app
 
-**Files changed:** 44 files, 517 insertions, 348 deletions
-**Verification:** TypeScript 0 errors, Build clean, Post-task 9/9, Preflight 13/13
-**Deployment:** DEV live at cckr.vercel.app
+**Email Notifications (wired into booking flow):**
+- Booking confirmation email sent after Razorpay/PhonePe webhook confirms payment
+- Payment reminder sent for bookings expiring in next 12 hours (cron)
+- Cancellation email sent when user cancels booking
+- Better Auth email verification enabled (sendOnSignUp)
+- Better Auth password reset enabled (sendResetPassword)
+- Added Forgot Password link to login modal
+
+**Corporate Booking Flow — Phase 1 (Data Model):**
+- Enhanced Invoice model: companyId, amount, taxAmount, totalAmount, status, dueDate, paidAt, paidAmount, paymentRef, notes
+- Created WalletLedger table for transaction history
+- Added paymentMethod, companyId, corporateDiscount to Booking
+- Added creditLimit to Company
+- Applied to DEV + PROD via direct SQL
+
+**Corporate Booking Flow — Phase 2 (API + Checkout):**
+- Added requireAdmin() to all companies routes (GET, POST, PATCH, DELETE)
+- Created /api/wallet/ledger — paginated wallet transaction history
+- Created /api/wallet/topup — atomic wallet top-up with ledger entry
+- Corporate checkout: detects user.companyId, applies CorporateRate discount, checks wallet balance, atomic transaction (deduct + ledger + confirm + payment + invoice), invoice due date +45 days
+- Invoice APIs: GET /api/invoices (paginated, filtered), GET /api/invoices/stats (aggregated), PATCH /api/invoices/[id] (mark paid)
+
+**Corporate Booking Flow — Phase 3 (UI):**
+- HotelBookingModal: detects companyId, shows corporate summary instead of payment gateway
+- FlightBookingModal: same corporate checkout flow
+- Confirmation shows invoice number, corporate discount, remaining wallet credit
+- Trips page: "Charged to Company" badge, corporate info banner in booking details
+- Admin invoices page at /admin/invoices: date range filtering, stats cards, company breakdown, invoice table, mark-paid action, pagination
+
+**Corporate Booking Flow — Phase 4 (Cancellation):**
+- Corporate cancellation refund goes back to company wallet (atomic transaction with WalletLedger entry)
+- Associated invoice auto-cancelled
+
+**Files changed:** 55+ files across 8 commits
+**Verification:** TypeScript 0 errors, Build clean, Post-task 9/9
+**Deployment:** DEV + PROD live
 
 **Next steps:**
-- INFRA-01: Set Vercel PROD env vars
-- CORE-01: Wire real payment gateway
-- CORE-02: Wire email notifications
+- CORE-01: Wire real payment gateway (needs merchant credentials)
+- QA-01: E2E test setup
+- INFRA-02/03: Error monitoring, custom domain
 
 ---
 

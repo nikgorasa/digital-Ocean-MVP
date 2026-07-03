@@ -12,15 +12,15 @@
 |------|------|------|----------|-------------|--------|
 | 2026-06-17 | 10:00 | SCHEMA | api_logs | Created api_logs table for TBO API logging | 20260617_api_logs.sql |
 
-## 2026-06-23 — ConfigProvider + ConfigAuditLog
+## 2026-07-03 — Corporate Booking Flow Schema Changes
 
 **Type:** Migration (DDL)
-**Status:** Applied to DEV ✓
+**Status:** Applied to DEV + PROD ✓
 
 **Changes:**
-- `ConfigProvider` — stores per-provider API config with AES-256-GCM encrypted credentials
-- `ConfigAuditLog` — append-only audit trail for config changes
+- `Invoice` — enhanced with companyId, amount, taxAmount, totalAmount, status, dueDate, paidAt, paidAmount, paymentRef, notes, timestamps
+- `WalletLedger` — new table for corporate wallet transaction history (id, companyId, type, amount, balanceAfter, referenceType, referenceId, description, performedBy, createdAt)
+- `Booking` — added paymentMethod, companyId, corporateDiscount
+- `Company` — added creditLimit
 
-**Migration file:** `Governance/migrations/20260623_config_provider.sql`
-
-**Applied via:** Node.js pg client against DEV cluster
+**Applied via:** Direct SQL on both DEV + PROD CockroachDB clusters
