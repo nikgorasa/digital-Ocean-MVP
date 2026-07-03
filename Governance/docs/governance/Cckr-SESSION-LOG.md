@@ -1,7 +1,7 @@
 # GoRASA CockroachDB Standalone — SESSION-LOG
 
 > **Purpose:** Living document tracking all sessions, changes, deployments, and learnings.
-> **Last updated:** 2026-07-03 (Session 7 — Security Hardening + Auth Setup)
+> **Last updated:** 2026-07-03 (Session 7 — Security Hardening + Auth + Email Notifications)
 
 ---
 
