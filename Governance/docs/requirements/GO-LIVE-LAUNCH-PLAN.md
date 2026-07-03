@@ -1,6 +1,6 @@
 # GoRASA — Go-Live Launch Plan
 
-**Version:** 1.0
+**Version:** 1.1
 **Date:** 2026-07-03
 **Status:** Pre-Launch
 
@@ -10,10 +10,11 @@
 
 | Metric | Value |
 |---|---|
-| **Total GitHub Issues** | 31 (20 closed, 11 open) |
+| **Total Issues** | 35 (22 closed, 13 open) |
 | **Security Issues** | 10/10 closed ✅ |
 | **Corporate Flow Issues** | 7/7 closed ✅ |
-| **Commits This Session** | 15 |
+| **Special Tariff Issues** | 3/3 closed ✅ |
+| **Cashfree Integration** | 0/2 (blocker) |
 | **TypeScript Errors** | 0 |
 | **Build Status** | Clean ✅ |
 | **Post-Task Checks** | 9/9 ✅ |
@@ -29,7 +30,7 @@
 
 | # | Problem | Impact | Status |
 |---|---|---|---|
-| P1 | **No real payment gateway** — Current code has Razorpay/PhonePe but you use Cashfree. Need to integrate Cashfree API. | Non-corporate users can't pay. Revenue = ₹0. | Needs Cashfree integration |
+| P1 | **No real payment gateway** — Need Cashfree integration (CASH-01 client, CASH-02 webhook). Razorpay/PhonePe removed from scope. | Non-corporate users can't pay. Revenue = ₹0. | CASH-01, CASH-02 — not started |
 | P2 | **No error monitoring** — No Sentry, no Vercel error tracking. Production errors are invisible. | Cannot detect or debug production issues. | Needs setup |
 | P3 | **No custom domain** — PROD at `project-yidb6.vercel.app` looks unprofessional. | Brand trust, SEO, email deliverability all suffer. | Needs domain purchase |
 | P4 | **Google OAuth not configured** — Auth.ts has Google provider but credentials may be stale/missing. | Users expecting Google sign-in will see errors. | Needs verification |
@@ -131,7 +132,7 @@
 - [ ] **Monitor 24h** — check error rates, performance, user feedback
 - [ ] **Review CockroachDB metrics** — RU consumption, query performance
 - [ ] **Verify email delivery** — all transactional emails working
-- [ ] **Check payment webhooks** — Razorpay/PhonePe callbacks arriving
+- [ ] **Check payment webhooks** — Cashfree callbacks arriving
 - [ ] **Document any issues** — update MISTAKE-LOG.md
 - [ ] **Retrospective** — what worked, what didn't, what to improve
 

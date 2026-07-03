@@ -309,6 +309,10 @@ Each environment connects to a **different CockroachDB cluster**. Zero shared da
 
 ## Next Steps
 
-1. Set actual CockroachDB connection strings in `.env.local` (DEV) and `.env.production` (PROD)
-2. Monitor CockroachDB free tier usage
-3. Keep schema in sync between DEV and PROD when making changes
+1. **CASH-01/CASH-02** (CRITICAL) — Implement Cashfree payment gateway (client + webhook)
+2. **LAUNCH-01** — Rerun final security review gate (all SEC issues done)
+3. **QA-01** — Set up Playwright E2E tests for core booking flows
+4. **INFRA-02** — Error monitoring (Sentry or Vercel)
+5. **UX-01/UX-02** — User dashboard + SEO meta tags
+6. **LAUNCH-02** — Deploy to production (after Cashfree done)
+7. Keep schema in sync between DEV and PROD when making changes
