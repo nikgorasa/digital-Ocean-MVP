@@ -3,6 +3,7 @@ import { createCheckout, PAYMENT_CONFIG } from "@/lib/payment";
 import { getCurrentUser } from "@/lib/auth-helpers";
 import { prisma } from "@/lib/prisma";
 import { z } from "zod";
+import { getCorporateDiscount } from "@/lib/pricing";
 
 const checkoutSchema = z.object({
   bookingId: z.string().min(1, "bookingId is required"),
@@ -24,6 +25,7 @@ async function getBooking(bookingId: string) {
       itemName: true,
       validatedPrice: true,
       priceRevalidatedAt: true,
+      userId: true,
     },
   });
 }
@@ -62,6 +64,13 @@ function revalidatePrice(booking: { price: number }): { available: boolean; newP
   return { available: true, newPrice: booking.price };
 }
 
+function generateInvoiceNumber(): string {
+  const date = new Date();
+  const prefix = `INV${date.getFullYear()}${String(date.getMonth() + 1).padStart(2, "0")}`;
+  const random = Math.random().toString(36).substring(2, 8).toUpperCase();
+  return `${prefix}-${random}`;
+}
+
 export async function POST(request: NextRequest) {
   try {
     const user = await getCurrentUser();
@@ -79,7 +88,6 @@ export async function POST(request: NextRequest) {
     }
 
     const { bookingId, gateway, acceptPriceChange } = parsed.data;
-    const selectedGateway = gateway || PAYMENT_CONFIG.gateway;
     const booking = await getBooking(bookingId);
 
     if (!booking) {
@@ -102,6 +110,118 @@ export async function POST(request: NextRequest) {
         }, { status: 400 });
       }
     }
+
+    // ── CORPORATE CHECKOUT ──────────────────────────────────────────
+    if (user.companyId) {
+      const company = await prisma.company.findUnique({
+        where: { id: user.companyId },
+      });
+
+      if (!company || !company.isActive) {
+        return NextResponse.json(
+          { error: "Your company account is inactive. Contact support." },
+          { status: 403 }
+        );
+      }
+
+      // Apply corporate discount
+      const category = booking.type === "HOTEL" ? "HOTEL" : booking.type === "FLIGHT" ? "FLIGHT" : "ALL";
+      const corporateDiscount = await getCorporateDiscount(
+        user.companyId,
+        category,
+        undefined,
+        booking.price
+      );
+
+      const finalAmount = corporateDiscount.finalPrice;
+
+      // Check wallet balance
+      if (company.walletBalance < finalAmount) {
+        const shortfall = finalAmount - company.walletBalance;
+        return NextResponse.json({
+          error: "Insufficient company credit",
+          shortfall,
+          walletBalance: company.walletBalance,
+          required: finalAmount,
+        }, { status: 400 });
+      }
+
+      // Atomic: deduct wallet + confirm booking + create invoice + create payment
+      const dueDate = new Date();
+      dueDate.setDate(dueDate.getDate() + 45);
+      const invoiceNumber = generateInvoiceNumber();
+
+      const [updatedCompany] = await prisma.$transaction([
+        // Deduct wallet
+        prisma.company.update({
+          where: { id: user.companyId },
+          data: { walletBalance: { decrement: finalAmount } },
+        }),
+        // Wallet ledger entry
+        prisma.walletLedger.create({
+          data: {
+            companyId: user.companyId,
+            type: "DEDUCTION",
+            amount: -finalAmount,
+            balanceAfter: company.walletBalance - finalAmount,
+            referenceType: "BOOKING",
+            referenceId: bookingId,
+            description: `Booking: ${booking.itemName}`,
+            performedBy: user.id,
+          },
+        }),
+        // Confirm booking
+        prisma.booking.update({
+          where: { id: bookingId },
+          data: {
+            status: "CONFIRMED",
+            paymentStatus: "COMPLETED",
+            paymentMethod: "corporate_wallet",
+            confirmedAt: new Date(),
+            companyId: user.companyId,
+            corporateDiscount: corporateDiscount.discountAmount,
+          },
+        }),
+        // Create payment record
+        prisma.payment.create({
+          data: {
+            bookingId,
+            amount: finalAmount,
+            method: "corporate_wallet",
+            gateway: "corporate",
+            status: "COMPLETED",
+          },
+        }),
+        // Create invoice
+        prisma.invoice.create({
+          data: {
+            companyId: user.companyId,
+            bookingId,
+            number: invoiceNumber,
+            amount: booking.price,
+            taxAmount: 0,
+            totalAmount: finalAmount,
+            status: "PENDING",
+            dueDate,
+          },
+        }),
+      ]);
+
+      return NextResponse.json({
+        success: true,
+        bookingId,
+        paymentMethod: "corporate_wallet",
+        corporateDiscount: corporateDiscount.discountAmount,
+        corporateRuleName: corporateDiscount.ruleName,
+        finalAmount,
+        walletBalance: updatedCompany.walletBalance,
+        invoiceNumber,
+        dueDate: dueDate.toISOString(),
+      });
+    }
+
+    // ── STANDARD GATEWAY CHECKOUT ───────────────────────────────────
+    const selectedGateway = gateway || PAYMENT_CONFIG.gateway;
 
     const revalidation = revalidatePrice(booking);
 
