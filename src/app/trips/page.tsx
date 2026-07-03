@@ -10,7 +10,7 @@ import WhatsAppModal from "@/components/WhatsAppModal";
 import { useAuth } from "@/hooks/useAuth";
 import { motion } from "motion/react";
 import { formatCurrency, formatDate, formatTravelDates } from "@/lib";
-import { Plane, Package, CreditCard, MapPin, Calendar, Users, FileText, X, Ticket, Receipt, MessageSquare, Search, Clock, AlertTriangle, Loader2 } from "lucide-react";
+import { Plane, Package, CreditCard, MapPin, Calendar, Users, FileText, X, Ticket, Receipt, MessageSquare, Search, Clock, AlertTriangle, Loader2, Building2 } from "lucide-react";
 import PriceChangeModal from "@/components/PriceChangeModal";
 
 interface Booking {
@@ -22,6 +22,8 @@ interface Booking {
   originalPrice?: number;
   discountApplied: number;
   promoCost: number;
+  corporateDiscount: number;
+  paymentMethod?: string;
   status: string;
   pnr?: string;
   seatOrRoom?: string;
@@ -328,6 +330,12 @@ export default function TripsPage() {
                             <span className={`text-xs font-bold px-3 py-1 rounded-full ${getStatusColor(booking.status)}`}>
                               {booking.status === "EXPIRED" ? "Incomplete · Pay Later" : booking.status}
                             </span>
+                            {booking.paymentMethod === "corporate_wallet" && (
+                              <span className="flex items-center gap-1 text-[10px] text-blue-600 font-medium mt-1">
+                                <Building2 size={10} />
+                                Charged to Company
+                              </span>
+                            )}
                             {booking.status === "PENDING" && booking.expiresAt && (() => {
                               const remaining = getTimeRemaining(booking.expiresAt);
                               if (remaining) {
@@ -527,6 +535,17 @@ export default function TripsPage() {
               </div>
 
               <div className="pt-4 border-t border-slate-200">
+                {selectedBooking.paymentMethod === "corporate_wallet" && (
+                  <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-xl">
+                    <div className="flex items-center gap-2 mb-1">
+                      <Building2 size={14} className="text-blue-600" />
+                      <span className="text-xs font-bold text-blue-900">Corporate Booking</span>
+                    </div>
+                    <p className="text-xs text-blue-700">
+                      Charged to company account. Invoice due in 45 days.
+                    </p>
+                  </div>
+                )}
                 <div className="flex justify-between items-center">
                   <div>
                     {selectedBooking.originalPrice && selectedBooking.originalPrice > selectedBooking.price && (

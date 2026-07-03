@@ -90,6 +90,38 @@ export async function POST(request: NextRequest) {
       data: { status: "CANCELLED", paymentStatus: "REFUNDED" },
     });
 
+    // Corporate refund: credit back to company wallet
+    if (booking.paymentMethod === "corporate_wallet" && booking.companyId) {
+      const company = await prisma.company.findUnique({ where: { id: booking.companyId } });
+      if (company) {
+        const newBalance = company.walletBalance + refundAmount;
+        await prisma.$transaction([
+          prisma.company.update({
+            where: { id: booking.companyId },
+            data: { walletBalance: newBalance },
+          }),
+          prisma.walletLedger.create({
+            data: {
+              companyId: booking.companyId,
+              type: "REFUND",
+              amount: refundAmount,
+              balanceAfter: newBalance,
+              referenceType: "BOOKING",
+              referenceId: bookingId,
+              description: `Refund: ${booking.itemName} (${refundPercentage}% of ₹${booking.price})`,
+              performedBy: "SYSTEM",
+            },
+          }),
+        ]);
+      }
+    }
+
+    // Cancel associated invoice
+    await prisma.invoice.updateMany({
+      where: { bookingId },
+      data: { status: "CANCELLED" },
+    });
+
     // Send cancellation email
     try {
       const template = emailTemplates.bookingCancelled({
