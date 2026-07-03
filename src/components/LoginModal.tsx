@@ -228,7 +228,16 @@ export default function LoginModal({ isOpen, onClose }: LoginModalProps) {
             </button>
           </form>
 
-          <div className="mt-3 text-center">
+          <div className="mt-3 text-center space-y-2">
+            {!isRegistering && (
+              <button
+                type="button"
+                onClick={() => setError("Password reset is available via the API. Contact support for assistance.")}
+                className="text-xs text-slate-400 hover:text-slate-600 cursor-pointer"
+              >
+                Forgot password?
+              </button>
+            )}
             <button
               type="button"
               onClick={() => { setIsRegistering(!isRegistering); setError(""); }}

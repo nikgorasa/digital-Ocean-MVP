@@ -3,6 +3,7 @@ import { PAYMENT_CONFIG } from "./config";
 import * as razorpay from "./razorpay-client";
 import * as phonepe from "./phonepe-client";
 import type { CheckoutResponse, WebhookResult, PaymentStatus, RefundResult } from "./types";
+import { sendEmail, emailTemplates } from "@/lib/email";
 
 export async function createCheckout(params: {
   bookingId: string;
@@ -115,6 +116,27 @@ export async function handleRazorpayWebhook(params: {
     },
   });
 
+  // Send confirmation email
+  try {
+    const booking = await prisma.booking.findUnique({
+      where: { id: payment.bookingId },
+      include: { user: { select: { email: true, name: true } } },
+    });
+    if (booking?.user?.email) {
+      const template = emailTemplates.bookingConfirmation({
+        guestName: booking.user.name || "Guest",
+        hotelName: booking.itemName,
+        checkIn: typeof booking.travelDates === "string" ? booking.travelDates : "TBD",
+        checkOut: "",
+        confirmationNo: booking.pnr || payment.bookingId,
+        amount: booking.price,
+      });
+      await sendEmail({ to: booking.user.email, subject: template.subject, html: template.html });
+    }
+  } catch (e) {
+    console.error("[Email] Failed to send booking confirmation:", e);
+  }
+
   return { success: true, bookingId: payment.bookingId, paymentId: params.paymentId };
 }
 
@@ -149,6 +171,27 @@ export async function handlePhonePeWebhook(params: {
         confirmedAt: new Date(),
       },
     });
+
+    // Send confirmation email
+    try {
+      const booking = await prisma.booking.findUnique({
+        where: { id: payment.bookingId },
+        include: { user: { select: { email: true, name: true } } },
+      });
+      if (booking?.user?.email) {
+        const template = emailTemplates.bookingConfirmation({
+          guestName: booking.user.name || "Guest",
+          hotelName: booking.itemName,
+          checkIn: typeof booking.travelDates === "string" ? booking.travelDates : "TBD",
+          checkOut: "",
+          confirmationNo: booking.pnr || payment.bookingId,
+          amount: booking.price,
+        });
+        await sendEmail({ to: booking.user.email, subject: template.subject, html: template.html });
+      }
+    } catch (e) {
+      console.error("[Email] Failed to send booking confirmation:", e);
+    }
 
     return { success: true, bookingId: payment.bookingId };
   }

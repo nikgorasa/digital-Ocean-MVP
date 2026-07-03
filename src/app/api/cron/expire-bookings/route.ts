@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { sendEmail, emailTemplates } from "@/lib/email";
 
 export async function GET(request: NextRequest) {
   const authHeader = request.headers.get("authorization");
@@ -18,7 +19,34 @@ export async function GET(request: NextRequest) {
 
   try {
     const now = new Date();
+    const twelveHoursFromNow = new Date(now.getTime() + 12 * 60 * 60 * 1000);
 
+    // Send reminders for bookings expiring in the next 12 hours
+    const expiringBookings = await prisma.booking.findMany({
+      where: {
+        status: "PENDING",
+        expiresAt: { gt: now, lt: twelveHoursFromNow },
+      },
+      include: { user: { select: { email: true, name: true } } },
+    });
+
+    for (const booking of expiringBookings) {
+      if (booking.user?.email) {
+        try {
+          const template = emailTemplates.paymentReminder({
+            guestName: booking.user.name || "Guest",
+            hotelName: booking.itemName,
+            amount: booking.price,
+            bookingId: booking.id,
+          });
+          await sendEmail({ to: booking.user.email, subject: template.subject, html: template.html });
+        } catch (e) {
+          console.error("[Email] Failed to send reminder for booking:", booking.id, e);
+        }
+      }
+    }
+
+    // Expire overdue bookings
     const result = await prisma.booking.updateMany({
       where: {
         status: "PENDING",
@@ -33,6 +61,7 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({
       success: true,
       expiredCount: result.count,
+      remindersSent: expiringBookings.length,
       timestamp: now.toISOString(),
     });
   } catch (error) {

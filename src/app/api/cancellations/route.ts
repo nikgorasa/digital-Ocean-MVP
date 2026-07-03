@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getCurrentUser } from "@/lib/auth-helpers";
 import { z } from "zod";
+import { sendEmail, emailTemplates } from "@/lib/email";
 
 const cancellationSchema = z.object({
   bookingId: z.string().min(1, "bookingId is required"),
@@ -88,6 +89,18 @@ export async function POST(request: NextRequest) {
       where: { id: bookingId },
       data: { status: "CANCELLED", paymentStatus: "REFUNDED" },
     });
+
+    // Send cancellation email
+    try {
+      const template = emailTemplates.bookingCancelled({
+        guestName: user.name || "Guest",
+        hotelName: booking.itemName,
+        reason,
+      });
+      await sendEmail({ to: user.email, subject: template.subject, html: template.html });
+    } catch (e) {
+      console.error("[Email] Failed to send cancellation email:", e);
+    }
 
     return NextResponse.json({
       ...cancellation,
