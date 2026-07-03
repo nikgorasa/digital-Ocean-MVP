@@ -1,7 +1,7 @@
 # GoRASA CockroachDB Standalone — SESSION-LOG
 
 > **Purpose:** Living document tracking all sessions, changes, deployments, and learnings.
-> **Last updated:** 2026-07-03 (Session 8 — Corporate Booking Flow + Email Notifications)
+> **Last updated:** 2026-07-03 (Session 9 — TARIFF-01/02/03: hotelCode Pricing Rules + Seed)
 
 ---
 
@@ -32,6 +32,47 @@ Each environment connects to a **different CockroachDB cluster**. Zero shared da
 ---
 
 ## Sessions
+
+### Session 2026-07-03 (Session 9) — TARIFF-01/02/03: hotelCode Pricing Rules + Seed
+
+**Objective:** Implement 3 GitHub issues for the Special Tariff system — hotelCode-based pricing rule matching, real TBO Delhi hotel codes, 7% flat markup.
+
+**TARIFF-01 — hotelCode field + matching logic:**
+- Added `hotelCode String?` field to PricingRule Prisma schema with `@map("hotelCode")`
+- Added `hotelCode?: string` to `PricingContext` interface in `types.ts`
+- Updated `matchesRule()` in `pricing-service.ts` — hotelCode match takes priority; hotelName only checked when hotelCode absent
+- Updated `tbo-hotel-client.ts` to pass `h.HotelCode` into pricing context
+- Updated POST `/api/pricing-rules` and PATCH `/api/pricing-rules/[id]` to accept hotelCode
+- Updated admin UI (`page.tsx` + `pricing-rules-page.tsx`): form fields, display badges, edit/view modals
+
+**TARIFF-02 — Seed 7 real Delhi hotel codes:**
+- Built script to fetch real hotel codes from TBO static API via Delhi city lookup (country → city → hotel code list → search)
+- Authenticated via Basic Auth against both static (`TBOStaticAPITest`) and search (`RasaT`) endpoints
+- Extracted top 7 cheapest Delhi hotels with availability
+- Created `scripts/seed-pricing-rules.ts` — upserts 7 rules with 7% flat PERCENT markup, priority 100, category ALL
+- Applied `hotelCode` column via direct SQL to DEV + PROD
+- Ran seed against DEV + PROD
+
+**TARIFF-03 — Verification:**
+- TypeScript: 0 errors. Build: clean. Post-task: 9/9. Pre-flight: 13/13.
+
+**Seed hotels (Delhi NCR):**
+
+| Hotel Code | Hotel Name | Markup |
+|---|---|---|
+| 1031455 | Midtown Hotel | 7% |
+| 1031524 | Hotel Delhi 37 | 7% |
+| 1031428 | Jukaso Inn Down Town | 7% |
+| 1014919 | Hotel Africa Avenue G K 1 | 7% |
+| 1016775 | Park Ascent | 7% |
+| 1016351 | Eros Hotel New Delhi by IHG | 7% |
+| 1031465 | Majestic Palace | 7% |
+
+**Files changed:** 9 files + 1 new script
+**Verification:** TypeScript 0 errors, Build clean, Post-task 9/9
+**Commit:** `dbc8c65`
+
+---
 
 ### Session 2026-07-03 (Session 8) — Corporate Booking Flow + Email Notifications
 

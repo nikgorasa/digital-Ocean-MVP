@@ -24,3 +24,19 @@
 - `Company` — added creditLimit
 
 **Applied via:** Direct SQL on both DEV + PROD CockroachDB clusters
+
+---
+
+## 2026-07-03 — hotelCode Column on PricingRule
+
+**Type:** Schema (DDL)
+**Status:** Applied to DEV + PROD ✓
+
+**Changes:**
+- `PricingRule` — added `"hotelCode" TEXT` column for TBO hotel code matching
+
+**Seed data:**
+- 7 pricing rules inserted (Midtown Hotel, Hotel Delhi 37, Jukaso Inn Down Town, Hotel Africa Avenue G K 1, Park Ascent, Eros Hotel New Delhi, Majestic Palace)
+- All 7% flat PERCENT markup, category ALL, priority 100
+
+**Applied via:** Direct SQL on both DEV + PROD CockroachDB clusters
