@@ -231,9 +231,13 @@ ELSE:
 ### 6.2 New Page: `/admin/invoices`
 
 - Table: Invoice ID, Company, Booking Ref, Amount, Due Date, Status, Age
-- Filters: status (PENDING/PAID/OVERDUE), company, date range
-- Actions: Mark as Paid, Add notes, Export CSV
-- Stats: Total outstanding, overdue amount, avg days to pay
+- **Date range picker** — custom start/end date filter (not just preset ranges)
+- Filters: status (PENDING/PAID/OVERDUE), company, booking type (HOTEL/FLIGHT)
+- Quick filters: This Week, This Month, Last 30 Days, Last 90 Days, Custom Range
+- Actions: Mark as Paid, Add notes, Export CSV, Print invoice
+- Stats cards (filtered by date range): Total invoiced, Total collected, Outstanding, Overdue, Avg days to pay
+- Group by: Company, Status, Month
+- Column sorting and pagination
 
 ### 6.3 Modified: `/admin/b2b`
 
