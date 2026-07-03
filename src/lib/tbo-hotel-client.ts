@@ -122,6 +122,7 @@ async function toDisplay(
   const pricing = await calculatePrice(minFare, {
     category: "HOTEL",
     destination: context?.destination,
+    hotelCode: h.HotelCode,
     hotelName: details.name || context?.hotelName,
   });
 

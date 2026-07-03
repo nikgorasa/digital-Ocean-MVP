@@ -5,13 +5,14 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
   try {
     const { id } = await params;
     const body = await request.json();
-    const { name, type, category, destination, hotelName, airlineCode, markupType, markupValue, markupPercent, minPrice, maxPrice, priority, isActive, validFrom, validTo } = body;
+    const { name, type, category, destination, hotelCode, hotelName, airlineCode, markupType, markupValue, markupPercent, minPrice, maxPrice, priority, isActive, validFrom, validTo } = body;
 
     const updateData: Record<string, unknown> = { updatedAt: new Date().toISOString() };
     if (name !== undefined) updateData.name = name;
     if (type !== undefined) updateData.type = type;
     if (category !== undefined) updateData.category = category;
     if (destination !== undefined) updateData.destination = destination;
+    if (hotelCode !== undefined) updateData.hotelCode = hotelCode;
     if (hotelName !== undefined) updateData.hotelName = hotelName;
     if (airlineCode !== undefined) updateData.airlineCode = airlineCode;
     if (markupType !== undefined) updateData.markupType = markupType;

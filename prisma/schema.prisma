@@ -120,6 +120,7 @@ model PricingRule {
   id            String    @id @default(cuid())
   type          String
   destination   String?
+  hotelCode     String?   @map("hotelCode")
   hotelName     String?
   markupPercent Float
   isActive      Boolean   @default(true)

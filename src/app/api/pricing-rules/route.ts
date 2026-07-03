@@ -16,7 +16,7 @@ export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
     const {
-      name, type, category, destination, hotelName, airlineCode, roomType,
+      name, type, category, destination, hotelCode, hotelName, airlineCode, roomType,
       markupType, markupValue, minPrice, maxPrice, priority, isActive,
       validFrom, validTo,
     } = body;
@@ -33,6 +33,7 @@ export async function POST(request: NextRequest) {
       type,
       category: category || "ALL",
       destination: destination || null,
+      hotelCode: hotelCode || null,
       hotelName: hotelName || null,
       airlineCode: airlineCode || null,
       roomType: roomType || null,

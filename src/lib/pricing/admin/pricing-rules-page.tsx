@@ -11,6 +11,7 @@ interface PricingRule {
   type: string;
   category: string;
   destination: string | null;
+  hotelCode: string | null;
   hotelName: string | null;
   airlineCode: string | null;
   roomType: string | null;
@@ -41,6 +42,7 @@ export default function PricingRulesPage() {
     type: "GLOBAL",
     category: "ALL",
     destination: "",
+    hotelCode: "",
     hotelName: "",
     airlineCode: "",
     roomType: "",
@@ -97,6 +99,7 @@ export default function PricingRulesPage() {
       const payload = {
         ...newRule,
         destination: newRule.destination || null,
+        hotelCode: newRule.hotelCode || null,
         hotelName: newRule.hotelName || null,
         airlineCode: newRule.airlineCode || null,
         roomType: newRule.roomType || null,
@@ -112,7 +115,7 @@ export default function PricingRulesPage() {
       });
       if (res.ok) {
         setNewRule({
-          name: "", type: "GLOBAL", category: "ALL", destination: "", hotelName: "",
+          name: "", type: "GLOBAL", category: "ALL", destination: "", hotelCode: "", hotelName: "",
           airlineCode: "", roomType: "", markupType: "PERCENT", markupValue: 15,
           minPrice: "", maxPrice: "", priority: 0, validFrom: "", validTo: "",
         });
@@ -361,6 +364,7 @@ export default function PricingRulesPage() {
                   </div>
                   <div className="flex items-center gap-3 mt-1 text-xs text-slate-400">
                     {rule.destination && <span>📍 {rule.destination}</span>}
+                    {rule.hotelCode && <span>🔢 Code: {rule.hotelCode}</span>}
                     {rule.hotelName && <span>🏨 {rule.hotelName}</span>}
                     {rule.airlineCode && <span>✈️ {rule.airlineCode}</span>}
                     {rule.minPrice && <span>Min: ₹{rule.minPrice}</span>}

@@ -28,7 +28,8 @@ async function getActiveRules(): Promise<any[]> {
 function matchesRule(rule: any, ctx: PricingContext): boolean {
   if (rule.category !== "ALL" && rule.category !== ctx.category) return false;
   if (rule.destination && rule.destination !== ctx.destination) return false;
-  if (rule.hotelName && rule.hotelName !== ctx.hotelName) return false;
+  if (rule.hotelCode && rule.hotelCode !== ctx.hotelCode) return false;
+  if (!rule.hotelCode && rule.hotelName && rule.hotelName !== ctx.hotelName) return false;
   if (rule.airlineCode && rule.airlineCode !== ctx.airlineCode) return false;
   if (rule.roomType && rule.roomType !== ctx.roomType) return false;
 

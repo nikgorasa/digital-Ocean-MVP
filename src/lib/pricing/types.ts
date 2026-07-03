@@ -1,6 +1,7 @@
 export interface PricingContext {
   category: "HOTEL" | "FLIGHT" | "PACKAGE";
   destination?: string;
+  hotelCode?: string;
   hotelName?: string;
   airlineCode?: string;
   roomType?: string;
