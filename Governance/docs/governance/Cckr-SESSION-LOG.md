@@ -1,7 +1,7 @@
 # GoRASA CockroachDB Standalone — SESSION-LOG
 
 > **Purpose:** Living document tracking all sessions, changes, deployments, and learnings.
-> **Last updated:** 2026-06-25 (Session 5 — Session Log Review + Governance Compliance)
+> **Last updated:** 2026-07-03 (Session 7 — Security Hardening + Auth Setup)
 
 ---
 
@@ -32,6 +32,38 @@ Each environment connects to a **different CockroachDB cluster**. Zero shared da
 ---
 
 ## Sessions
+
+### Session 2026-07-03 (Session 7) — Security Hardening + Auth Setup
+
+**Objective:** Fix all 14 critical/high security vulnerabilities, set up Better Auth with passwords, deploy to DEV.
+
+**Changes:**
+- SEC-01: Middleware validates session cookie on all /api/* routes (public routes whitelisted)
+- SEC-02: requireAdmin() added to 15+ admin API routes
+- SEC-03: Login requires password in production, sanitized responses
+- SEC-04: Removed all 17 x-user-email header usages, replaced with session-based auth
+- SEC-05: Zod validation on checkout, bookings, cancellations
+- SEC-06: Webhook signature always required, mock defaults to false in production
+- SEC-07: Security headers (X-Frame-Options, HSTS, CSP, etc) in next.config.ts
+- SEC-08: Deleted /api/debug-ip, fixed cron auth bypass
+- SEC-09: sanitizeUser() helper, applied to all user-returning routes
+- SEC-10: Fixed mass assignment in corporate-rates/[id], rewards/[id], leads/[id]
+- Created Better Auth tables (session, account, verification) in DEV + PROD CockroachDB
+- Set passwords for all 7 users in both clusters
+- Demo login now goes through Better Auth (no more insecure bypass)
+- Payment config: mock=false in production by default
+- Deployed to DEV: https://cckr.vercel.app
+
+**Files changed:** 44 files, 517 insertions, 348 deletions
+**Verification:** TypeScript 0 errors, Build clean, Post-task 9/9, Preflight 13/13
+**Deployment:** DEV live at cckr.vercel.app
+
+**Next steps:**
+- INFRA-01: Set Vercel PROD env vars
+- CORE-01: Wire real payment gateway
+- CORE-02: Wire email notifications
+
+---
 
 ### Session 2026-06-25 (Session 5) — Session Log Review + Governance Compliance Correction
 
