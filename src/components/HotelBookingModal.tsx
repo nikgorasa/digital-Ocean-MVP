@@ -27,7 +27,7 @@ interface HotelBookingModalProps {
   hotel: TBODisplayHotel;
   room: TBODisplayRoom;
   sessionId: string;
-  user: { id: string; email: string; name: string } | null;
+  user: { id: string; email: string; name: string; companyId?: string } | null;
   location: string;
   checkIn: string;
   checkOut: string;
@@ -60,10 +60,21 @@ export default function HotelBookingModal({
   const [promoError, setPromoError] = useState("");
   const [discountApplied, setDiscountApplied] = useState(0);
   const [couponCodeUsed, setCouponCodeUsed] = useState("");
-  const [errorMessage, setErrorMessage] = useState("");
   const [bookingId, setBookingId] = useState<string | null>(null);
   const [confirmation, setConfirmation] = useState<{
-    bookingId: string; pnr: string; confirmationNo: string; status: string;
+    bookingId?: string;
+    pnr?: string;
+    confirmationNo?: string;
+    status?: string;
+  } | null>(null);
+  const [errorMessage, setErrorMessage] = useState("");
+  const [isCorporateBooking, setIsCorporateBooking] = useState(false);
+  const [corporateLoading, setCorporateLoading] = useState(false);
+  const [corporateResult, setCorporateResult] = useState<{
+    invoiceNumber?: string;
+    walletBalance?: number;
+    corporateDiscount?: number;
+    corporateRuleName?: string;
   } | null>(null);
 
   const isInternational = hotel.hotelCode >= 10000000;
@@ -323,6 +334,46 @@ export default function HotelBookingModal({
     } catch (err) {
       setErrorMessage("Something went wrong. Please try again.");
       setStep("error");
+    }
+  };
+
+  const handleCorporateConfirm = async () => {
+    if (!bookingId) return;
+    setCorporateLoading(true);
+    setErrorMessage("");
+    try {
+      const res = await fetch("/api/checkout", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ bookingId }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setErrorMessage(data.error || "Corporate booking failed");
+        setStep("error");
+        return;
+      }
+      if (data.success) {
+        setIsCorporateBooking(true);
+        setCorporateResult({
+          invoiceNumber: data.invoiceNumber,
+          walletBalance: data.walletBalance,
+          corporateDiscount: data.corporateDiscount,
+          corporateRuleName: data.corporateRuleName,
+        });
+        setConfirmation({
+          bookingId: data.bookingId,
+          pnr: confirmation?.pnr,
+          confirmationNo: confirmation?.confirmationNo,
+          status: "Confirmed",
+        });
+        setStep("done");
+      }
+    } catch (err) {
+      setErrorMessage("Something went wrong. Please try again.");
+      setStep("error");
+    } finally {
+      setCorporateLoading(false);
     }
   };
 
@@ -690,10 +741,41 @@ export default function HotelBookingModal({
               </div>
             </div>
 
-            <CheckoutButton
-              bookingId={bookingId}
-              amount={totalPayable}
-            />
+            {user?.companyId ? (
+              <>
+                <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 mb-4 text-left">
+                  <div className="flex items-center gap-2 mb-2">
+                    <Building2 size={16} className="text-blue-600" />
+                    <span className="text-sm font-bold text-blue-900">Corporate Booking</span>
+                  </div>
+                  <p className="text-xs text-blue-700">
+                    This booking will be charged to your company account. Payment will be settled within 45 days.
+                  </p>
+                </div>
+                <button
+                  onClick={handleCorporateConfirm}
+                  disabled={corporateLoading}
+                  className="w-full py-3.5 bg-emerald-600 text-white rounded-xl font-bold hover:bg-emerald-700 transition-colors disabled:opacity-50 cursor-pointer flex items-center justify-center gap-2"
+                >
+                  {corporateLoading ? (
+                    <>
+                      <Loader2 size={18} className="animate-spin" />
+                      Confirming...
+                    </>
+                  ) : (
+                    <>
+                      <CheckCircle size={18} />
+                      Confirm Booking — {formatCurrency(totalPayable)}
+                    </>
+                  )}
+                </button>
+              </>
+            ) : (
+              <CheckoutButton
+                bookingId={bookingId}
+                amount={totalPayable}
+              />
+            )}
 
             <button
               onClick={handleClose}
@@ -710,7 +792,11 @@ export default function HotelBookingModal({
               <CheckCircle size={32} className="text-emerald-600" />
             </div>
             <h3 className="text-xl font-bold text-slate-900 mb-1">Booking Confirmed!</h3>
-            <p className="text-sm text-slate-500 mb-6">Your hotel booking has been confirmed.</p>
+            <p className="text-sm text-slate-500 mb-6">
+              {isCorporateBooking
+                ? "Your corporate booking has been confirmed and charged to your company account."
+                : "Your hotel booking has been confirmed."}
+            </p>
 
             <div className="bg-slate-50 rounded-xl p-4 space-y-3 text-left mb-6">
               <div className="flex justify-between items-center">
@@ -729,6 +815,28 @@ export default function HotelBookingModal({
                 <span className="text-xs text-slate-500">Hotel</span>
                 <span className="text-sm font-bold text-slate-900">{hotel.name}</span>
               </div>
+              {isCorporateBooking && corporateResult && (
+                <>
+                  {corporateResult.corporateDiscount && corporateResult.corporateDiscount > 0 && (
+                    <div className="flex justify-between items-center">
+                      <span className="text-xs text-slate-500">Corporate Discount</span>
+                      <span className="text-sm font-bold text-green-600">-{formatCurrency(corporateResult.corporateDiscount)}</span>
+                    </div>
+                  )}
+                  {corporateResult.invoiceNumber && (
+                    <div className="flex justify-between items-center">
+                      <span className="text-xs text-slate-500">Invoice</span>
+                      <span className="text-sm font-bold font-mono text-blue-600">{corporateResult.invoiceNumber}</span>
+                    </div>
+                  )}
+                  {corporateResult.walletBalance !== undefined && (
+                    <div className="flex justify-between items-center">
+                      <span className="text-xs text-slate-500">Remaining Credit</span>
+                      <span className="text-sm font-bold text-slate-900">{formatCurrency(corporateResult.walletBalance)}</span>
+                    </div>
+                  )}
+                </>
+              )}
             </div>
 
             <p className="text-xs text-slate-400 mb-4">A confirmation has been saved to My Trips.</p>

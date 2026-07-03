@@ -71,7 +71,7 @@ interface FlightBookingModalProps {
   isOpen: boolean;
   onClose: () => void;
   flight: Flight;
-  user: { id: string; email: string; name: string } | null;
+  user: { id: string; email: string; name: string; companyId?: string } | null;
   date: string;
   passengerCount: number;
 }
@@ -107,7 +107,15 @@ export default function FlightBookingModal({
   const [errorMessage, setErrorMessage] = useState("");
   const [bookingId, setBookingId] = useState<string | null>(null);
   const [confirmation, setConfirmation] = useState<{
-    pnr: string; status: string;
+    pnr?: string;
+    status?: string;
+  } | null>(null);
+  const [isCorporateBooking, setIsCorporateBooking] = useState(false);
+  const [corporateLoading, setCorporateLoading] = useState(false);
+  const [corporateResult, setCorporateResult] = useState<{
+    invoiceNumber?: string;
+    walletBalance?: number;
+    corporateDiscount?: number;
   } | null>(null);
 
   // SSR Add-ons state
@@ -341,6 +349,43 @@ export default function FlightBookingModal({
     } catch {
       setErrorMessage("Something went wrong. Please try again.");
       setStep("error");
+    }
+  };
+
+  const handleCorporateConfirm = async () => {
+    if (!bookingId) return;
+    setCorporateLoading(true);
+    setErrorMessage("");
+    try {
+      const res = await fetch("/api/checkout", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ bookingId }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setErrorMessage(data.error || "Corporate booking failed");
+        setStep("error");
+        return;
+      }
+      if (data.success) {
+        setIsCorporateBooking(true);
+        setCorporateResult({
+          invoiceNumber: data.invoiceNumber,
+          walletBalance: data.walletBalance,
+          corporateDiscount: data.corporateDiscount,
+        });
+        setConfirmation({
+          pnr: confirmation?.pnr,
+          status: "Confirmed",
+        });
+        setStep("done");
+      }
+    } catch {
+      setErrorMessage("Something went wrong. Please try again.");
+      setStep("error");
+    } finally {
+      setCorporateLoading(false);
     }
   };
 
@@ -871,7 +916,38 @@ export default function FlightBookingModal({
               </div>
             </div>
 
-            <CheckoutButton bookingId={bookingId} amount={totalPayable} />
+            {user?.companyId ? (
+              <>
+                <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 mb-4 text-left">
+                  <div className="flex items-center gap-2 mb-2">
+                    <Building2 size={16} className="text-blue-600" />
+                    <span className="text-sm font-bold text-blue-900">Corporate Booking</span>
+                  </div>
+                  <p className="text-xs text-blue-700">
+                    This booking will be charged to your company account. Payment will be settled within 45 days.
+                  </p>
+                </div>
+                <button
+                  onClick={handleCorporateConfirm}
+                  disabled={corporateLoading}
+                  className="w-full py-3.5 bg-emerald-600 text-white rounded-xl font-bold hover:bg-emerald-700 transition-colors disabled:opacity-50 cursor-pointer flex items-center justify-center gap-2"
+                >
+                  {corporateLoading ? (
+                    <>
+                      <Loader2 size={18} className="animate-spin" />
+                      Confirming...
+                    </>
+                  ) : (
+                    <>
+                      <CheckCircle size={18} />
+                      Confirm Booking — {formatCurrency(totalPayable)}
+                    </>
+                  )}
+                </button>
+              </>
+            ) : (
+              <CheckoutButton bookingId={bookingId} amount={totalPayable} />
+            )}
 
             <button onClick={handleClose} className="w-full mt-3 py-2.5 text-sm text-slate-500 hover:text-slate-700 cursor-pointer">
               Pay Later
@@ -886,7 +962,33 @@ export default function FlightBookingModal({
               <CheckCircle size={32} className="text-green-600" />
             </div>
             <h3 className="text-xl font-bold text-slate-900 mb-1">Booking Confirmed!</h3>
-            <p className="text-sm text-slate-500 mb-6">Your flight has been booked successfully.</p>
+            <p className="text-sm text-slate-500 mb-6">
+              {isCorporateBooking
+                ? "Your corporate flight booking has been confirmed and charged to your company account."
+                : "Your flight has been booked successfully."}
+            </p>
+            {isCorporateBooking && corporateResult && (
+              <div className="bg-slate-50 rounded-xl p-4 space-y-2 text-left mb-6">
+                {corporateResult.corporateDiscount && corporateResult.corporateDiscount > 0 && (
+                  <div className="flex justify-between items-center">
+                    <span className="text-xs text-slate-500">Corporate Discount</span>
+                    <span className="text-sm font-bold text-green-600">-{formatCurrency(corporateResult.corporateDiscount)}</span>
+                  </div>
+                )}
+                {corporateResult.invoiceNumber && (
+                  <div className="flex justify-between items-center">
+                    <span className="text-xs text-slate-500">Invoice</span>
+                    <span className="text-sm font-bold font-mono text-blue-600">{corporateResult.invoiceNumber}</span>
+                  </div>
+                )}
+                {corporateResult.walletBalance !== undefined && (
+                  <div className="flex justify-between items-center">
+                    <span className="text-xs text-slate-500">Remaining Credit</span>
+                    <span className="text-sm font-bold text-slate-900">{formatCurrency(corporateResult.walletBalance)}</span>
+                  </div>
+                )}
+              </div>
+            )}
             <button onClick={handleClose} className="w-full py-3 bg-brand-saffron text-white rounded-xl font-bold hover:bg-brand-burnt cursor-pointer active:scale-[0.98]">Done</button>
           </div>
         )}
