@@ -29,7 +29,7 @@
 
 | # | Problem | Impact | Status |
 |---|---|---|---|
-| P1 | **No real payment gateway** — Razorpay/PhonePe merchant account not configured. All non-corporate payments are mock. | Users can "book" but no money moves. Revenue = ₹0. | Needs credentials |
+| P1 | **No real payment gateway** — Current code has Razorpay/PhonePe but you use Cashfree. Need to integrate Cashfree API. | Non-corporate users can't pay. Revenue = ₹0. | Needs Cashfree integration |
 | P2 | **No error monitoring** — No Sentry, no Vercel error tracking. Production errors are invisible. | Cannot detect or debug production issues. | Needs setup |
 | P3 | **No custom domain** — PROD at `project-yidb6.vercel.app` looks unprofessional. | Brand trust, SEO, email deliverability all suffer. | Needs domain purchase |
 | P4 | **Google OAuth not configured** — Auth.ts has Google provider but credentials may be stale/missing. | Users expecting Google sign-in will see errors. | Needs verification |
@@ -74,11 +74,13 @@
 
 ### Phase 2: Payments (Day 2-3)
 
-- [ ] **Set up Razorpay merchant account** (if not done)
-- [ ] **Set up Razorpay webhooks** — point to `https://<domain>/api/webhooks/razorpay`
-- [ ] **Add Razorpay credentials to Vercel env** — `RAZORPAY_KEY_ID`, `RAZORPAY_KEY_SECRET`, `RAZORPAY_WEBHOOK_SECRET`
-- [ ] **Test payment flow on Razorpay sandbox** — create order, complete payment, verify webhook
-- [ ] **Set `PAYMENT_MOCK=false`** in production (already done)
+- [ ] **Get Cashfree test credentials** from merchant dashboard (App ID, Secret Key)
+- [ ] **Build Cashfree client** — `src/lib/payment/cashfree-client.ts`
+- [ ] **Create order API** — `POST /api/cashfree/create-order`
+- [ ] **Payment webhook** — `POST /api/webhooks/cashfree` with HMAC signature verification
+- [ ] **Update checkout flow** — redirect to Cashfree hosted checkout
+- [ ] **Add Cashfree env vars** — `CASHFREE_APP_ID`, `CASHFREE_SECRET_KEY`, `CASHFREE_WEBHOOK_SECRET`
+- [ ] **Test on Cashfree sandbox** — create order, complete payment, verify webhook
 - [ ] **Test corporate flow end-to-end** — assign user to company, top up wallet, book hotel, verify wallet deduction + invoice
 - [ ] **Verify email delivery** — booking confirmation, cancellation, password reset
 
@@ -93,14 +95,17 @@
 - [ ] **Cross-browser testing** — Chrome, Safari, Firefox, mobile
 - [ ] **Load test** — verify CockroachDB handles concurrent bookings
 
-### Phase 4: SEO & Content (Day 4-5)
+### Phase 4: SEO & Analytics (Day 4-5)
 
 - [ ] **Add meta tags** — title, description, OG image per page
 - [ ] **Add sitemap.xml** — auto-generated from routes
 - [ ] **Add robots.txt** — allow crawling
 - [ ] **Add structured data** — Organization, WebSite, Product schemas
 - [ ] **Verify all pages render correctly** — no 404s, no broken images
-- [ ] **Remove demo login from production** — or gate behind env var
+- [ ] **Remove demo login from production** — gate behind `NODE_ENV !== "production"` or remove entirely
+- [ ] **Set up PostHog** — analytics events for key user actions
+- [ ] **Set up Google Tag Manager** — container snippet in layout
+- [ ] **Set up Meta Pixel** — for Facebook/Instagram ad tracking
 
 ### Phase 5: Final Review (Day 5)
 
@@ -132,33 +137,34 @@
 
 ---
 
-## 4. Open Questions for You
+## 4. Open Questions — ANSWERED
 
-| # | Question | Why It Matters |
+| # | Question | Answer |
 |---|---|---|
-| Q1 | **Do you have a Razorpay/PhonePe merchant account?** | Without it, non-corporate users can't pay. Corporate flow works but regular users are stuck. |
-| Q2 | **What domain do you want?** (`gorasa.in`, `bookgorasa.in`, etc.) | Affects all env vars, OAuth config, email templates. |
-| Q3 | **Should demo login be removed from production?** | Currently hardcoded passwords are visible in client JS. |
-| Q4 | **Do you want to launch with corporate-only first?** | Corporate flow is complete and doesn't need payment gateway. |
-| Q5 | **What's your CockroachDB RU budget?** | Free tier is 50M RUs/month. Need to know if you're on free or paid. |
-| Q6 | **Should I set up Sentry now or defer?** | Sentry is free for 5K events/month. Quick to set up. |
+| Q1 | **Cashfree test credentials?** | ✅ User has Cashfree merchant account. Sandbox at merchant.cashfree.com |
+| Q2 | **Custom domain?** | Deferred — can use `project-yidb6.vercel.app` for initial launch |
+| Q3 | **Demo login in production?** | ✅ Remove from production |
+| Q4 | **Corporate-only first?** | Corporate + special tariff offering for selected hotels (fixed promotion deals) |
+| Q5 | **CockroachDB budget?** | Serverless pay-as-you-go (no free/paid distinction) |
+| Q6 | **Sentry?** | ❌ Skip — not needed now |
+| Q7 | **Analytics?** | PostHog + Google Tag Manager + Meta Pixel (not Vercel Analytics) |
 
 ---
 
 ## 5. Execution Timeline
 
 ```
-Day 1-2:  Infrastructure (domain, DNS, env vars, Sentry, Analytics)
-Day 2-3:  Payments (Razorpay setup, credentials, webhook, sandbox test)
+Day 1-2:  Infrastructure (env vars, analytics setup)
+Day 2-3:  Payments (Cashfree integration — client, order creation, webhook, sandbox test)
 Day 3-4:  Testing (Playwright E2E, cross-browser, load test)
-Day 4-5:  SEO (meta tags, sitemap, structured data, demo login cleanup)
+Day 4-5:  SEO + Analytics (meta tags, sitemap, PostHog, GTM, Meta Pixel, demo login removal)
 Day 5:    Final review + Launch
 Day 5-6:  Post-launch monitoring
 ```
 
-**Estimated time to go-live: 5 days** (if payment gateway credentials are available immediately).
+**Estimated time to go-live: 5 days** (if Cashfree credentials are available immediately).
 
-**If no payment gateway: Launch corporate-only in 2 days** — corporate flow is complete, no gateway needed.
+**If no Cashfree credentials: Launch corporate-only in 2 days** — corporate flow is complete, no gateway needed.
 
 ---
 
