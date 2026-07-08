@@ -53,8 +53,8 @@ export default function Navbar({
   const navLinkClass = (href: string) =>
     `flex items-center space-x-1.3 py-2 text-sm font-medium transition-colors ${
       isActive(href)
-        ? "text-brand-saffron font-bold"
-        : "text-slate-600 hover:text-orange-600"
+        ? "text-white font-bold"
+        : "text-white/70 hover:text-white"
     }`;
 
   useEffect(() => {
@@ -81,7 +81,7 @@ export default function Navbar({
   }, [mobileMenuOpen]);
 
   return (
-    <nav aria-label="Main navigation" className="fixed top-0 left-0 right-0 z-50 bg-white/80 backdrop-blur-md border-b border-slate-200">
+    <nav aria-label="Main navigation" className="fixed top-0 left-0 right-0 z-50 bg-[#163A32] border-b border-white/10">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center h-16">
           {/* Logo */}
@@ -182,14 +182,14 @@ export default function Navbar({
               >
                 <div className="flex flex-col items-end">
                   <motion.span
-                    whileHover={{ color: "#ea580c" }}
-                    className="text-xs font-semibold text-slate-800 cursor-pointer"
+                    whileHover={{ color: "#ffffff" }}
+                    className="text-xs font-semibold text-white/90 cursor-pointer"
                   >
                     {user.name}
                   </motion.span>
                   <button
                     onClick={signOut}
-                    className="text-[10px] text-slate-400 underline uppercase tracking-widest flex items-center cursor-pointer hover:text-red-500"
+                    className="text-[10px] text-white/50 underline uppercase tracking-widest flex items-center cursor-pointer hover:text-white"
                   >
                     <LogOut className="w-3 h-3 mr-0.5" />
                     Logout
@@ -198,7 +198,7 @@ export default function Navbar({
                 <motion.div
                   whileHover={{ scale: 1.1, rotate: 5 }}
                   whileTap={{ scale: 0.95 }}
-                  className="h-8 w-8 rounded-full bg-gradient-to-br from-orange-500 to-amber-500 flex items-center justify-center text-white text-sm font-bold shadow-sm cursor-pointer"
+                  className="h-8 w-8 rounded-full bg-gradient-to-br from-emerald-400 to-emerald-600 flex items-center justify-center text-white text-sm font-bold shadow-sm cursor-pointer"
                 >
                   {user.name?.charAt(0)?.toUpperCase()}
                 </motion.div>
@@ -208,7 +208,7 @@ export default function Navbar({
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.92 }}
                 onClick={onLoginClick}
-                className="bg-slate-900 text-white px-5 py-2 rounded-full text-sm font-medium hover:bg-slate-800 transition-colors shadow-lg shadow-slate-200 cursor-pointer"
+                className="bg-white text-[#163A32] px-5 py-2 rounded-full text-sm font-medium hover:bg-white/90 transition-colors shadow-lg cursor-pointer"
               >
                 Sign In
               </motion.button>
@@ -219,7 +219,7 @@ export default function Navbar({
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
               aria-label={mobileMenuOpen ? "Close navigation menu" : "Open navigation menu"}
               aria-expanded={mobileMenuOpen}
-              className="md:hidden p-3 min-w-[44px] min-h-[44px] flex items-center justify-center text-slate-600 cursor-pointer rounded-xl hover:bg-slate-100 transition-colors"
+              className="md:hidden p-3 min-w-[44px] min-h-[44px] flex items-center justify-center text-white/70 cursor-pointer rounded-xl hover:bg-white/10 transition-colors"
             >
               {mobileMenuOpen ? <X size={20} /> : <Menu size={20} />}
             </button>
@@ -234,13 +234,13 @@ export default function Navbar({
             initial={{ opacity: 0, height: 0 }}
             animate={{ opacity: 1, height: "auto" }}
             exit={{ opacity: 0, height: 0 }}
-            className="md:hidden bg-white border-b border-slate-200 overflow-hidden"
+            className="md:hidden bg-[#163A32] border-b border-white/10 overflow-hidden"
           >
             <div className="px-4 py-3 space-y-1">
               <Link
                 href="/"
                 onClick={() => setMobileMenuOpen(false)}
-                className="flex items-center gap-2 px-3 py-2.5 rounded-lg text-sm font-medium text-slate-600 hover:bg-slate-100"
+                className="flex items-center gap-2 px-3 py-2.5 rounded-lg text-sm font-medium text-white/70 hover:bg-white/10"
               >
                 <Home size={18} />
                 Home
@@ -250,7 +250,7 @@ export default function Navbar({
                   key={item.href}
                   href={item.href}
                   onClick={() => setMobileMenuOpen(false)}
-                  className="flex items-center gap-2 px-3 py-2.5 rounded-lg text-sm font-medium text-slate-600 hover:bg-slate-100"
+                  className="flex items-center gap-2 px-3 py-2.5 rounded-lg text-sm font-medium text-white/70 hover:bg-white/10"
                 >
                   {NAV_ICONS[item.icon] || item.icon}
                   {item.label}
@@ -260,7 +260,7 @@ export default function Navbar({
                 <Link
                   href="/profile"
                   onClick={() => setMobileMenuOpen(false)}
-                  className="flex items-center gap-2 px-3 py-2.5 rounded-lg text-sm font-medium text-slate-600 hover:bg-slate-100"
+                  className="flex items-center gap-2 px-3 py-2.5 rounded-lg text-sm font-medium text-white/70 hover:bg-white/10"
                 >
                   <UserCheck size={18} />
                   Profile & Loyalty
@@ -268,8 +268,8 @@ export default function Navbar({
               )}
               {isAdmin && (
                 <>
-                  <div className="h-px bg-slate-200 my-2" />
-                  <p className="px-3 text-[10px] font-bold uppercase tracking-widest text-slate-400">
+                  <div className="h-px bg-white/10 my-2" />
+                  <p className="px-3 text-[10px] font-bold uppercase tracking-widest text-white/40">
                     Admin
                   </p>
                   {adminItems.map((item) => (
@@ -277,7 +277,7 @@ export default function Navbar({
                       key={item.href}
                       href={item.href}
                       onClick={() => setMobileMenuOpen(false)}
-                      className="flex items-center gap-2 px-3 py-2.5 rounded-lg text-sm font-medium text-slate-500 hover:bg-slate-100"
+                      className="flex items-center gap-2 px-3 py-2.5 rounded-lg text-sm font-medium text-white/50 hover:bg-white/10"
                     >
                       {NAV_ICONS[item.icon] || item.icon}
                       {item.label}
