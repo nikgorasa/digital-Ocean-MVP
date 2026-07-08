@@ -15,6 +15,8 @@ model User {
   name          String
   role          String                @default("CUSTOMER")
   avatar        String?
+  emailVerified Boolean?
+  image         String?
   companyId     String?
   walletBalance Float                 @default(0)
   loyaltyPoints Int                   @default(0)
