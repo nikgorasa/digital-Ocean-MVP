@@ -1,7 +1,7 @@
 # GoRASA CockroachDB Standalone — SESSION-LOG
 
 > **Purpose:** Living document tracking all sessions, changes, deployments, and learnings.
-> **Last updated:** 2026-07-03 (Session 9 — TARIFF-01/02/03: hotelCode Pricing Rules + Seed)
+> **Last updated:** 2026-07-08 (Session 10 — Deploy TARIFF-01/02/03 to CCKR + Git push & cleanup)
 
 ---
 
@@ -71,6 +71,37 @@ Each environment connects to a **different CockroachDB cluster**. Zero shared da
 **Files changed:** 9 files + 1 new script
 **Verification:** TypeScript 0 errors, Build clean, Post-task 9/9
 **Commit:** `dbc8c65`
+
+---
+
+### Session 2026-07-08 (Session 10) — Deploy TARIFF-01/02/03 to CCKR + Git push & cleanup
+
+**Objective:** Push all changes to GitHub, deploy to CCKR DEV (cckr.vercel.app), clean up stale branches.
+
+**Actions:**
+- Pushed all branches (including stale `master` — immediately deleted from remote + local)
+- Deployed to CCKR via `vercel deploy --prod --yes`
+- Build succeeded (47s, compiled successfully, TypeScript 0 errors)
+- Site aliased to `https://cckr.vercel.app`
+- TARIFF-01/02/03 (commit `dbc8c65`) now live on CCKR
+
+**Deployment details:**
+- **Deployment ID:** `dpl_45h9jd3RTpPARCuZ64WJt7tWKPtR`
+- **Inspector:** https://vercel.com/nikhil-gorasa-s-projects/cckr/45h9jd3RTpPARCuZ64WJt7tWKPtR
+- **Next.js:** 16.2.7 (Turbopack)
+- **Prisma:** Generated v6.19.3
+
+**Post-task:** 9/9 passed
+**Pre-flight:** 13/13 passed (prior to deploy)
+
+**Go-Live Readiness Check (from assessment):**
+- SEC-01 through SEC-10: All verified ✅
+- TARIFF-01/02/03: Deployed ✅
+- Corporate flow: All 7 issues closed ✅
+- CASH-01/02 (#39, #40): BLOCKER — not started
+- LAUNCH-01 (#28): BLOCKER — depends on Cashfree
+- QA-01 (#26): HIGH — no E2E tests
+- UX-01/UX-02 (#24, #25): HIGH — no dashboard or SEO
 
 ---
 
@@ -278,6 +309,7 @@ Each environment connects to a **different CockroachDB cluster**. Zero shared da
 
 | Date | Environment | Status | URL | Notes |
 |------|---|---|---|---|
+| 2026-07-08 | DEV | ✅ Live | cckr.vercel.app | Deploy TARIFF-01/02/03, corporate flow, SEC hardening |
 | 2026-06-19 | DEV | ✅ Live | cckr.vercel.app | Full cleanup, dual DB isolation |
 | 2026-06-15 | DEV | ✅ Live | cckr.vercel.app | Initial deployment |
 
