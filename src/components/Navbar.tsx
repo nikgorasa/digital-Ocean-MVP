@@ -164,8 +164,8 @@ export default function Navbar({
                 onClick={toggleDemoMode}
                 className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold transition-all cursor-pointer ${
                   demoMode
-                    ? "bg-purple-100 text-purple-700 border border-purple-300"
-                    : "bg-slate-100 text-slate-500 border border-slate-200 hover:bg-slate-200"
+                    ? "bg-purple-400/20 text-purple-200 border border-purple-400/30"
+                    : "bg-white/10 text-white/60 border border-white/20 hover:bg-white/20"
                 }`}
                 title={demoMode ? "Demo Mode ON — Click to disable" : "Demo Mode OFF — Click to enable (skip real APIs)"}
               >

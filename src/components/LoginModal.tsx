@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import { motion, AnimatePresence } from "motion/react";
 import { useAuth } from "@/hooks/useAuth";
 import { X, Mail, Lock, User } from "lucide-react";
@@ -11,57 +11,14 @@ interface LoginModalProps {
   onClose: () => void;
 }
 
-interface DemoUser {
-  id: string;
-  email: string;
-  name: string;
-  role: string;
-}
-
 export default function LoginModal({ isOpen, onClose }: LoginModalProps) {
-  const { signInWithGoogle, signInWithEmail, signInDemo, signUpWithEmail } = useAuth();
+  const { signInWithGoogle, signInWithEmail, signUpWithEmail } = useAuth();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [name, setName] = useState("");
   const [isRegistering, setIsRegistering] = useState(false);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
-  const [demoUsers, setDemoUsers] = useState<DemoUser[]>([]);
-  const [roleConfig, setRoleConfig] = useState<Record<string, { label: string; color: string }>>({});
-
-  useEffect(() => {
-    fetch("/api/roles")
-      .then(r => r.json())
-      .then(data => {
-        if (Array.isArray(data)) {
-          const map: Record<string, { label: string; color: string }> = {};
-          data.forEach((r: { id: string; label: string; color: string }) => { map[r.id] = { label: r.label, color: r.color }; });
-          setRoleConfig(map);
-        }
-      })
-      .catch(() => {});
-  }, []);
-
-  const DEMO_FALLBACK: DemoUser[] = [
-    { id: "1", name: "Harsh Mittal", email: "hmittal@gorasa.in", role: "SUPER_ADMIN" },
-    { id: "2", name: "Admin User", email: "admin@gorasa.in", role: "ADMIN" },
-    { id: "3", name: "Sales User", email: "sales@gorasa.in", role: "SALES" },
-    { id: "4", name: "Neha Corporate", email: "neha@corp.in", role: "CORPORATE_USER" },
-    { id: "5", name: "Amit Customer", email: "amit@example.com", role: "CUSTOMER" },
-    { id: "6", name: "Priya Customer", email: "priya@example.com", role: "CUSTOMER" },
-    { id: "7", name: "Support Agent", email: "support@gorasa.in", role: "CUSTOMER_SUPPORT" },
-  ];
-
-  useEffect(() => {
-    if (isOpen) {
-      fetch("/api/users/demo")
-        .then((res) => res.json())
-        .then((data) => {
-          setDemoUsers(Array.isArray(data) && data.length > 0 ? data : DEMO_FALLBACK);
-        })
-        .catch(() => setDemoUsers(DEMO_FALLBACK));
-    }
-  }, [isOpen]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -90,19 +47,6 @@ export default function LoginModal({ isOpen, onClose }: LoginModalProps) {
       await signInWithGoogle();
     } catch (err: any) {
       setError(err.message || "Google sign-in failed");
-      setLoading(false);
-    }
-  };
-
-  const handleDemoLogin = async (demoEmail: string) => {
-    setError("");
-    setLoading(true);
-    try {
-      await signInDemo(demoEmail);
-      onClose();
-    } catch (err: any) {
-      setError(err.message || "Demo login failed");
-    } finally {
       setLoading(false);
     }
   };
@@ -245,32 +189,6 @@ export default function LoginModal({ isOpen, onClose }: LoginModalProps) {
             >
               {isRegistering ? "Already have an account? Sign in" : "Don't have an account? Register"}
             </button>
-          </div>
-
-          {/* Demo Users — fetched from database */}
-          <div className="mt-6 pt-5 border-t border-slate-100">
-            <p className="text-xs text-slate-400 mb-3 text-center font-medium">Quick demo access</p>
-            <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-              {demoUsers.map((demo) => {
-                const config = roleConfig[demo.role] || roleConfig.CUSTOMER;
-                return (
-                  <button
-                    key={demo.email}
-                    onClick={() => handleDemoLogin(demo.email)}
-                    disabled={loading}
-                    className="relative py-2.5 px-2 border border-slate-200 hover:border-brand-saffron/30 hover:bg-orange-50/30 rounded-xl text-center transition-all cursor-pointer disabled:opacity-50 group"
-                  >
-                    <div className={`w-1.5 h-1.5 ${config.color} rounded-full mx-auto mb-1`} />
-                    <div className="text-[11px] font-bold text-slate-700 leading-tight">
-                      {config.label}
-                    </div>
-                    <div className="text-[10px] text-slate-400 truncate mt-0.5">
-                      {demo.name}
-                    </div>
-                  </button>
-                );
-              })}
-            </div>
           </div>
         </motion.div>
       </motion.div>
