@@ -1,7 +1,7 @@
 # GoRASA CockroachDB Standalone — SESSION-LOG
 
 > **Purpose:** Living document tracking all sessions, changes, deployments, and learnings.
-> **Last updated:** 2026-07-08 (Session 10 — Deploy TARIFF-01/02/03 to CCKR + Git push & cleanup)
+> **Last updated:** 2026-07-08 (Session 11 — Admin bookings page + auth session fix)
 
 ---
 
@@ -71,6 +71,36 @@ Each environment connects to a **different CockroachDB cluster**. Zero shared da
 **Files changed:** 9 files + 1 new script
 **Verification:** TypeScript 0 errors, Build clean, Post-task 9/9
 **Commit:** `dbc8c65`
+
+---
+
+### Session 2026-07-08 (Session 11) — Admin bookings page + auth session fix
+
+**Objective:** Build admin bookings page with search/filters/pagination/detail modal, fix auth session resolution on Vercel.
+
+**Changes:**
+
+**Admin bookings page:**
+- Built `src/app/admin/bookings/page.tsx` (579 lines) — search by PNR/name/email, status/type/payment status filters, paginated table, detail modal, stats cards
+- Built `src/app/api/admin/bookings/route.ts` (62 lines) — paginated query with filters
+- Added `findAllPaginated()` and `aggregateRevenue()` to `src/lib/db/bookings.ts`
+- Inserted NavigationItem: `/admin/bookings`, Ticket icon, sortorder 8, admin section
+
+**Auth session fix (BLOCKER resolved):**
+- Root cause: `BETTER_AUTH_URL` Vercel project env var was not set, so `baseURL` in `src/lib/auth.ts` fell through to the `.env.production` value `https://project-yidb6.vercel.app` — cookies set with that domain were not sent to `cckr.vercel.app`
+- Fix: Set Vercel project env var `BETTER_AUTH_URL=https://cckr.vercel.app` (Production)
+- After redeploy (`--force` to bypass cache), `auth.api.getSession()` returns valid sessions, `/api/auth/me` and `/api/admin/bookings` both work
+- Verified via debug endpoint: session resolves with admin user (Priya Sharma, role: ADMIN)
+
+**Files changed:** 4 source files + debug endpoint (removed after diagnosis)
+
+**Verification:**
+- `auth.api.getSession()` returns valid session with `BETTER_AUTH_URL=https://cckr.vercel.app` ✅
+- `/api/auth/me` returns admin user data ✅
+- `/api/admin/bookings` returns 19 bookings with pagination and stats ✅
+- TypeScript: 0 errors. Build: clean. Post-task: 9/9.
+
+**Commits:** `2d208b6`, `1533a0f`, `15487a2`
 
 ---
 
@@ -309,6 +339,7 @@ Each environment connects to a **different CockroachDB cluster**. Zero shared da
 
 | Date | Environment | Status | URL | Notes |
 |------|---|---|---|---|
+| 2026-07-08 | DEV | ✅ Live | cckr.vercel.app | Admin bookings page + auth session fix |
 | 2026-07-08 | DEV | ✅ Live | cckr.vercel.app | Deploy TARIFF-01/02/03, corporate flow, SEC hardening |
 | 2026-06-19 | DEV | ✅ Live | cckr.vercel.app | Full cleanup, dual DB isolation |
 | 2026-06-15 | DEV | ✅ Live | cckr.vercel.app | Initial deployment |
@@ -347,4 +378,5 @@ Each environment connects to a **different CockroachDB cluster**. Zero shared da
 4. **INFRA-02** — Error monitoring (Sentry or Vercel)
 5. **UX-01/UX-02** — User dashboard + SEO meta tags
 6. **LAUNCH-02** — Deploy to production (after Cashfree done)
-7. Keep schema in sync between DEV and PROD when making changes
+7. **AUTH-01** — Document `BETTER_AUTH_URL` requirement in env setup docs (must match Vercel project URL)
+8. Keep schema in sync between DEV and PROD when making changes
