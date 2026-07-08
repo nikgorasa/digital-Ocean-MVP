@@ -7,7 +7,7 @@ import { getCorporateDiscount } from "@/lib/pricing";
 
 const checkoutSchema = z.object({
   bookingId: z.string().min(1, "bookingId is required"),
-  gateway: z.enum(["razorpay", "phonepe"]).optional(),
+  gateway: z.enum(["zaakpay"]).optional(),
   acceptPriceChange: z.boolean().optional(),
   mockScenario: z.enum(["success", "failure", "timeout", "random"]).optional(),
 });

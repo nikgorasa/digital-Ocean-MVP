@@ -1,3 +1,8 @@
-export { createCheckout, handleRazorpayWebhook, handlePhonePeWebhook, getPaymentStatus, processRefund } from "./payment-service";
+export { createCheckout, handleZaakpayWebhook, getPaymentStatus, processRefund } from "./payment-service";
 export { PAYMENT_CONFIG } from "./config";
-export type { CheckoutRequest, CheckoutResponse, WebhookResult, PaymentStatus, RefundResult } from "./types";
+export { createOrder, verifyWebhookSignature, fetchPaymentStatus, createRefund } from "./zaakpay-client";
+export type {
+  CheckoutRequest, CheckoutResponse,
+  WebhookResult, PaymentStatus, RefundResult,
+  ZaakpayOrderResponse, ZaakpayWebhookBody, ZaakpayCheckStatusResponse
+} from "./types";

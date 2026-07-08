@@ -11,19 +11,18 @@ function PaymentSuccessContent() {
   const isMock = searchParams.get("mock") === "true";
   const mockAmount = searchParams.get("amount");
 
-  // In mock mode, auto-confirm by calling webhook
   useEffect(() => {
     if (isMock && orderId && bookingId) {
       const amount = mockAmount ? Number(mockAmount) * 100 : 100;
-      fetch("/api/webhooks/razorpay", {
+      fetch("/api/webhooks/zaakpay", {
         method: "POST",
-        headers: { "Content-Type": "application/json", "X-Razorpay-Signature": "mock" },
+        headers: { "Content-Type": "application/json", "X-Zaakpay-Signature": "mock" },
         body: JSON.stringify({
-          event: "payment.captured",
-          payload: {
-            payment: { entity: { id: `mock_pay_${Date.now()}`, order_id: orderId, amount, status: "captured", method: "upi" } },
-            order: { entity: { id: orderId, amount, receipt: bookingId } },
-          },
+          merchantTransactionId: orderId,
+          transactionId: `mock_txn_${Date.now()}`,
+          status: 0,
+          responseCode: "0",
+          responseMessage: "Success",
         }),
       }).catch(console.error);
     }
@@ -35,7 +34,7 @@ function PaymentSuccessContent() {
         <div className="text-center">
           <p className="text-slate-500 mb-4">Payment processing...</p>
           <p className="text-xs text-slate-400">If you were redirected here from a booking, please check My Trips.</p>
-          <a href="/trips" className="mt-4 inline-block px-6 py-2 bg-blue-600 text-white rounded-xl text-sm font-medium hover:bg-blue-700">
+          <a href="/trips" className="mt-4 inline-block px-6 py-2 bg-emerald-600 text-white rounded-xl text-sm font-medium hover:bg-emerald-700">
             Go to My Trips
           </a>
         </div>

@@ -7,7 +7,7 @@ import { formatCurrency } from "@/lib";
 interface CheckoutButtonProps {
   bookingId?: string;
   amount: number;
-  gateway?: "razorpay" | "phonepe";
+  gateway?: "zaakpay";
   mockScenario?: "success" | "failure" | "timeout" | "random";
   onPaymentStart?: () => void;
   onPaymentSuccess?: () => void;
@@ -18,7 +18,7 @@ interface CheckoutButtonProps {
 export default function CheckoutButton({
   bookingId,
   amount,
-  gateway = "razorpay",
+  gateway = "zaakpay",
   mockScenario,
   onPaymentStart,
   onPaymentSuccess,

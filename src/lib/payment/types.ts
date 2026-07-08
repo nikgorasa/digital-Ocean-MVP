@@ -1,6 +1,8 @@
 export interface CheckoutRequest {
   bookingId: string;
-  gateway?: "razorpay" | "phonepe";
+  gateway?: "zaakpay";
+  returnUrl?: string;
+  cancelUrl?: string;
 }
 
 export interface CheckoutResponse {
@@ -19,6 +21,7 @@ export interface PaymentStatus {
   amount: number;
   gateway: string;
   paymentId?: string;
+  merchantTxnId?: string;
   createdAt: string;
 }
 
@@ -28,48 +31,28 @@ export interface RefundResult {
   amount: number;
 }
 
-export interface RazorpayOrder {
-  id: string;
+export interface ZaakpayOrderResponse {
+  status: number;
+  msg: string;
+  merchantTransactionId: string;
+}
+
+export interface ZaakpayWebhookBody {
+  merchantId: string;
+  merchantTransactionId: string;
+  transactionId: string;
   amount: number;
-  currency: string;
-  status: string;
-  receipt: string;
+  status: number;
+  responseCode: string;
+  responseMessage: string;
 }
 
-export interface RazorpayWebhookBody {
-  event: string;
-  payload: {
-    payment: {
-      entity: {
-        id: string;
-        order_id: string;
-        amount: number;
-        status: string;
-        method: string;
-      };
-    };
-    order: {
-      entity: {
-        id: string;
-        amount: number;
-        receipt: string;
-      };
-    };
-  };
-}
-
-export interface PhonePePaymentResponse {
-  success: boolean;
-  code: string;
+export interface ZaakpayCheckStatusResponse {
+  status: number;
   data: {
-    merchantId: string;
+    state: string;
+    amount: number;
     transactionId: string;
-    paymentLink: string;
+    merchantTransactionId: string;
   };
-}
-
-export interface PhonePeCallbackBody {
-  response: string;
-  encryptedPayload: string;
-  encryptedChecksum: string;
 }

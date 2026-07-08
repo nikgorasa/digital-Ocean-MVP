@@ -1,14 +1,13 @@
 import { prisma } from "@/lib/prisma";
 import { PAYMENT_CONFIG } from "./config";
-import * as razorpay from "./razorpay-client";
-import * as phonepe from "./phonepe-client";
+import * as zaakpay from "./zaakpay-client";
 import type { CheckoutResponse, WebhookResult, PaymentStatus, RefundResult } from "./types";
 import { sendEmail, emailTemplates } from "@/lib/email";
 
 export async function createCheckout(params: {
   bookingId: string;
   amount: number;
-  gateway: "razorpay" | "phonepe";
+  gateway: "zaakpay";
   userEmail: string;
   appUrl?: string;
 }): Promise<CheckoutResponse> {
@@ -43,123 +42,51 @@ export async function createCheckout(params: {
     },
   });
 
-  let checkoutUrl: string;
-  let orderId: string;
-
   const appUrl = params.appUrl || PAYMENT_CONFIG.appUrl;
+  const returnUrl = `${appUrl}/payment/success?bookingId=${params.bookingId}`;
+  const cancelUrl = `${appUrl}/payment/failed?bookingId=${params.bookingId}`;
 
-  if (params.gateway === "phonepe") {
-    const redirectUrl = `${appUrl}/payment/success?bookingId=${params.bookingId}`;
-    const callbackUrl = `${appUrl}/api/webhooks/phonepe`;
-    const result = await phonepe.createPayment({
-      amount: params.amount,
-      transactionId: payment.id,
-      redirectUrl,
-      callbackUrl,
-    });
-    checkoutUrl = result.paymentLink;
-    orderId = result.transactionId;
-  } else {
-    const result = await razorpay.createOrder({
-      amount: params.amount,
-      receipt: params.bookingId,
-      appUrl,
-    });
-    checkoutUrl = result.checkoutUrl;
-    orderId = result.id;
-  }
+  const result = await zaakpay.createOrder({
+    amount: params.amount,
+    transactionId: payment.id,
+    customerEmail: params.userEmail,
+    returnUrl,
+    cancelUrl,
+  });
 
   await prisma.payment.update({
     where: { id: payment.id },
-    data: { orderId },
+    data: { orderId: result.merchantTxnId },
   });
 
-  return { checkoutUrl, orderId };
+  return { checkoutUrl: result.checkoutUrl, orderId: result.merchantTxnId };
 }
 
-export async function handleRazorpayWebhook(params: {
-  orderId: string;
-  paymentId: string;
-  signature: string;
+export async function handleZaakpayWebhook(params: {
+  merchantTransactionId: string;
+  transactionId: string;
+  status: number;
+  responseCode: string;
+  responseMessage: string;
   rawBody: string;
 }): Promise<WebhookResult> {
-  if (!PAYMENT_CONFIG.mock) {
-    const valid = razorpay.verifySignature(params.rawBody, params.signature);
-    if (!valid) {
-      throw new Error("Invalid Razorpay signature");
-    }
-  }
-
   const payment = await prisma.payment.findFirst({
-    where: { orderId: params.orderId },
+    where: { orderId: params.merchantTransactionId },
   });
 
   if (!payment) {
-    throw new Error("Payment not found for order: " + params.orderId);
+    throw new Error("Payment not found for transaction: " + params.merchantTransactionId);
   }
 
-  await prisma.payment.update({
-    where: { id: payment.id },
-    data: {
-      status: "COMPLETED",
-      paymentId: params.paymentId,
-      signature: params.signature,
-    },
-  });
+  const isCompleted = params.status === 0;
+  const isFailed = params.status === -1 || params.status === 2 || params.status === 3;
 
-  await prisma.booking.update({
-    where: { id: payment.bookingId },
-    data: {
-      paymentStatus: "COMPLETED",
-      status: "CONFIRMED",
-      confirmedAt: new Date(),
-    },
-  });
-
-  // Send confirmation email
-  try {
-    const booking = await prisma.booking.findUnique({
-      where: { id: payment.bookingId },
-      include: { user: { select: { email: true, name: true } } },
-    });
-    if (booking?.user?.email) {
-      const template = emailTemplates.bookingConfirmation({
-        guestName: booking.user.name || "Guest",
-        hotelName: booking.itemName,
-        checkIn: typeof booking.travelDates === "string" ? booking.travelDates : "TBD",
-        checkOut: "",
-        confirmationNo: booking.pnr || payment.bookingId,
-        amount: booking.price,
-      });
-      await sendEmail({ to: booking.user.email, subject: template.subject, html: template.html });
-    }
-  } catch (e) {
-    console.error("[Email] Failed to send booking confirmation:", e);
-  }
-
-  return { success: true, bookingId: payment.bookingId, paymentId: params.paymentId };
-}
-
-export async function handlePhonePeWebhook(params: {
-  transactionId: string;
-  state: string;
-  payload: any;
-}): Promise<WebhookResult> {
-  const payment = await prisma.payment.findUnique({
-    where: { id: params.transactionId },
-  });
-
-  if (!payment) {
-    throw new Error("Payment not found: " + params.transactionId);
-  }
-
-  if (params.state === "COMPLETED") {
+  if (isCompleted) {
     await prisma.payment.update({
       where: { id: payment.id },
       data: {
         status: "COMPLETED",
         paymentId: params.transactionId,
-        metadata: params.payload,
       },
     });
 
@@ -172,7 +99,6 @@ export async function handlePhonePeWebhook(params: {
       },
     });
 
-    // Send confirmation email
     try {
       const booking = await prisma.booking.findUnique({
         where: { id: payment.bookingId },
@@ -193,21 +119,27 @@ export async function handlePhonePeWebhook(params: {
       console.error("[Email] Failed to send booking confirmation:", e);
     }
 
-    return { success: true, bookingId: payment.bookingId };
+    return { success: true, bookingId: payment.bookingId, paymentId: params.transactionId };
   }
 
-  await prisma.payment.update({
-    where: { id: payment.id },
-    data: {
-      status: "FAILED",
-      failureReason: `PhonePe state: ${params.state}`,
-    },
-  });
+  const failureReason = isFailed
+    ? `Zaakpay status: ${params.status} — ${params.responseMessage}`
+    : `Zaakpay unknown status: ${params.status}`;
 
-  await prisma.booking.update({
-    where: { id: payment.bookingId },
-    data: { paymentStatus: "FAILED" },
-  });
+  if (isFailed) {
+    await prisma.payment.update({
+      where: { id: payment.id },
+      data: {
+        status: "FAILED",
+        failureReason,
+      },
+    });
+
+    await prisma.booking.update({
+      where: { id: payment.bookingId },
+      data: { paymentStatus: "FAILED" },
+    });
+  }
 
   return { success: false, bookingId: payment.bookingId };
 }
@@ -219,7 +151,7 @@ export async function getPaymentStatus(bookingId: string): Promise<PaymentStatus
   });
 
   if (!payment) {
-    return { status: "PENDING", amount: 0, gateway: "razorpay", createdAt: "" };
+    return { status: "PENDING", amount: 0, gateway: "zaakpay", createdAt: "" };
   }
 
   return {
@@ -227,6 +159,7 @@ export async function getPaymentStatus(bookingId: string): Promise<PaymentStatus
     amount: payment.amount,
     gateway: payment.gateway,
     paymentId: payment.paymentId ?? undefined,
+    merchantTxnId: payment.orderId ?? undefined,
     createdAt: payment.createdAt?.toISOString() || "",
   };
 }
@@ -250,8 +183,11 @@ export async function processRefund(
   if (!payment.paymentId) {
     throw new Error("No gateway payment ID for refund");
   }
+  if (!payment.orderId) {
+    throw new Error("No merchant transaction ID for refund");
+  }
 
-  const refund = await razorpay.createRefund(payment.paymentId, amount);
+  const refund = await zaakpay.createRefund(payment.orderId, amount);
 
   await prisma.payment.update({
     where: { id: paymentId },
@@ -267,5 +203,5 @@ export async function processRefund(
     data: { paymentStatus: "REFUNDED" },
   });
 
-  return { success: true, refundId: refund.id, amount: amount || payment.amount };
+  return { success: true, refundId: refund.refundId, amount: amount || payment.amount };
 }
