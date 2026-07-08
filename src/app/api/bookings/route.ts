@@ -19,6 +19,8 @@ const createBookingSchema = z.object({
   travelDates: z.union([z.string(), z.object({}).passthrough()]).optional(),
   paymentMethod: z.string().optional(),
   leadGuestPan: z.string().optional(),
+  supplierBookingRef: z.string().optional(),
+  metadata: z.union([z.string(), z.object({}).passthrough()]).optional(),
 });
 
 export async function GET() {
@@ -52,7 +54,7 @@ export async function POST(request: Request) {
       );
     }
 
-    const { type, itemName, providerOrAirline, price, originalPrice, discountApplied, promoCost, couponCodeUsed, pnr, seatOrRoom, paxCount, travelDates, paymentMethod, leadGuestPan } = parsed.data;
+    const { type, itemName, providerOrAirline, price, originalPrice, discountApplied, promoCost, couponCodeUsed, pnr, seatOrRoom, paxCount, travelDates, paymentMethod, leadGuestPan, supplierBookingRef, metadata } = parsed.data;
 
     const bookingId = crypto.randomUUID();
     const pnrCode = pnr || `GR${Date.now().toString(36).toUpperCase()}`;
@@ -73,6 +75,8 @@ export async function POST(request: Request) {
       paxCount: paxCount || 1,
       travelDates: typeof travelDates === "object" ? JSON.stringify(travelDates) : travelDates,
       leadGuestPan: leadGuestPan || null,
+      supplierBookingRef: supplierBookingRef || null,
+      metadata: typeof metadata === "object" ? metadata : metadata ? JSON.parse(metadata) : undefined,
       status: "PENDING",
     });
 

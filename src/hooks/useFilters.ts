@@ -72,7 +72,13 @@ export function useFlightFilters(): UseFiltersReturn<FlightFilters> {
       filters.departureTime.length > 0 ||
       filters.maxDuration < 24 ||
       filters.priceRange[0] > 0 ||
-      filters.priceRange[1] < 100000
+      filters.priceRange[1] < 100000 ||
+      filters.fareType.length > 0 ||
+      filters.refundableOnly ||
+      filters.baggageIncluded ||
+      filters.mealsIncluded ||
+      filters.loungeIncluded ||
+      filters.freeReissue
     );
   }, [filters]);
 
@@ -83,6 +89,12 @@ export function useFlightFilters(): UseFiltersReturn<FlightFilters> {
     if (filters.departureTime.length > 0) count++;
     if (filters.maxDuration < 24) count++;
     if (filters.priceRange[0] > 0 || filters.priceRange[1] < 100000) count++;
+    if (filters.fareType.length > 0) count++;
+    if (filters.refundableOnly) count++;
+    if (filters.baggageIncluded) count++;
+    if (filters.mealsIncluded) count++;
+    if (filters.loungeIncluded) count++;
+    if (filters.freeReissue) count++;
     return count;
   }, [filters]);
 

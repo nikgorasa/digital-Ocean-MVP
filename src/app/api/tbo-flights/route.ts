@@ -32,6 +32,7 @@ export async function POST(req: NextRequest) {
           InfantCount: infants || 0,
           JourneyType: journeyType || 1,
           PreferredDepartureTime: date,
+          CabinClass: body.cabinClass || "Economy",
           EndUserIp: endUserIp,
           forceMock: !!body.demo,
         });

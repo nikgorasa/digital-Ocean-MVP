@@ -411,37 +411,40 @@ export function mockPreBook(bookingCode: string): TBOHotelPreBookResponse {
   const room = hotel.rooms[0];
   const resp: TBOHotelPreBookResponse = {
     Status: { Code: 200, Description: "Successful" },
-    Amenities: room.amenities,
-    RateConditions: ["Non Refundable", "Booking amount non refundable"],
     ValidationInfo: {
       PanMandatory: false,
       PanPassport: false,
       PassportMandatory: hotelCode >= 10000000,
     },
-    HotelName: hotel.name,
-    HotelCode: String(hotel.code),
-    RoomRate: room.basePrice,
-    RoomTax: room.tax,
-    RoomExtraGuestCharges: 0,
-    RoomChildCharges: hotelCode >= 10000000 ? 200 : 0,
-    ServiceFee: 0,
-    AgentCommission: -Math.round(room.basePrice * 0.5),
-    TDS: Math.round(room.basePrice * 0.05),
-    NetAmount: room.basePrice + room.tax,
-    NetTax: room.tax,
-    TaxBreakup: [{ ChargeType: "GST", Amount: Math.round(room.tax * 0.6), Description: "GST" }],
-    RoomCombined: [
-      {
+    HotelResult: [{
+      HotelCode: String(hotel.code),
+      Currency: hotel.currency,
+      RateConditions: ["Non Refundable", "Booking amount non refundable"],
+      Rooms: [{
         Name: [room.name],
+        BookingCode: bookingCode,
         Supplier: "N/A",
         PassengerSlab: 1,
         Currency: hotel.currency,
         DayRates: [[{ BasePrice: room.basePrice, ExtraGuest: 0, Child: 0 }]],
         TotalFare: room.basePrice,
         TotalTax: room.tax,
-      },
-    ],
-    TraceId: TRACE_ID,
+        NetAmount: room.basePrice + room.tax,
+        NetTax: room.tax,
+        Inclusion: "",
+        MealType: room.mealType,
+        IsRefundable: room.refundable,
+        Amenities: room.amenities,
+        CancelPolicies: [{ FromDate: "", ChargeType: "Fixed", CancellationCharge: 0 }],
+        LastCancellationDeadline: "",
+        PriceBreakUp: [{
+          RoomRate: room.basePrice,
+          RoomTax: room.tax,
+          AgentCommission: -Math.round(room.basePrice * 0.5),
+          TaxBreakup: [{ TaxType: "GST", TaxableAmount: room.tax, TaxPercentage: 18, TaxAmount: Math.round(room.tax * 0.6) }],
+        }],
+      }],
+    }],
   };
 
   mockPreBookCache.set(bookingCode, resp);
@@ -484,12 +487,14 @@ export function mockBook(req: TBOHotelBookRequest): TBOHotelBookResponse {
   const invoiceNumber = `INV/25/${Math.floor(Math.random() * 10000)}`;
 
   const preBook = mockPreBookCache.get(req.BookingCode);
-  const hotelName = preBook?.HotelName || "Hotel";
-  const hotelCode = preBook?.HotelCode || "1279415";
+  const preBookHotel = preBook?.HotelResult?.[0];
+  const preBookRoom = preBookHotel?.Rooms?.[0];
+  const hotelName = preBookHotel?.HotelCode || "Hotel";
+  const hotelCode = preBookHotel?.HotelCode || "1279415";
 
   const rooms = req.HotelRoomsDetails.map((rd, ri) => ({
     roomId: `${hotelCode}${ri}${uuid().slice(0, 4)}`,
-    roomName: preBook?.RoomCombined[ri]?.Name[0] || `Room ${ri + 1}`,
+    roomName: preBookHotel?.Rooms?.[ri]?.Name?.[0] || `Room ${ri + 1}`,
     bookingCode: req.BookingCode,
     passengers: rd.HotelPassenger.map(p => ({
       title: p.Title,
@@ -501,10 +506,10 @@ export function mockBook(req: TBOHotelBookRequest): TBOHotelBookResponse {
       email: p.Email,
       phone: p.Phoneno,
     })),
-    totalFare: preBook?.RoomCombined[ri]?.TotalFare || 5000,
-    totalTax: preBook?.RoomCombined[ri]?.TotalTax || 1000,
-    mealType: preBook?.RoomCombined[ri] ? "Breakfast" : "Room_Only",
-    isRefundable: false,
+    totalFare: preBookHotel?.Rooms?.[ri]?.TotalFare || 5000,
+    totalTax: preBookHotel?.Rooms?.[ri]?.TotalTax || 1000,
+    mealType: preBookHotel?.Rooms?.[ri]?.MealType || "Room_Only",
+    isRefundable: preBookHotel?.Rooms?.[ri]?.IsRefundable || false,
   }));
 
   mockBookings.set(bookingId, {
@@ -515,13 +520,13 @@ export function mockBook(req: TBOHotelBookRequest): TBOHotelBookResponse {
     hotelBookingStatus: "Confirmed",
     hotelName,
     hotelCode,
-    currency: preBook?.RoomCombined[0]?.Currency || "INR",
+    currency: preBookHotel?.Currency || "INR",
     checkIn: "",
     checkOut: "",
     guestNationality: req.GuestNationality,
     netAmount: req.NetAmount,
     rooms,
-    amenities: preBook?.Amenities || [],
+    amenities: preBookRoom?.Amenities || [],
   });
 
   return {

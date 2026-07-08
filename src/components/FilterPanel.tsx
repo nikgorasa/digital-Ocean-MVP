@@ -11,6 +11,7 @@ import {
   MEAL_PLANS,
   AIRLINES,
   DEPARTURE_TIMES,
+  FARE_TYPES,
 } from "@/lib/ai/filters/types";
 
 interface FilterPanelProps {
@@ -194,6 +195,33 @@ export default function FilterPanel({
         {renderMultiSelect("Departure Time", DEPARTURE_TIMES, f.departureTime, (time) =>
           onChange({ ...f, departureTime: toggleArrayFilter(f.departureTime, time as string) })
         )}
+        {renderMultiSelect("Fare Type", FARE_TYPES, f.fareType, (fareType) =>
+          onChange({ ...f, fareType: toggleArrayFilter(f.fareType, fareType as string) })
+        )}
+        <div className="mb-4">
+          <label className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-2 block">
+            Included Features
+          </label>
+          <div className="space-y-2">
+            {[
+              { label: "Refundable Only", key: "refundableOnly" as const },
+              { label: "Baggage Included", key: "baggageIncluded" as const },
+              { label: "Meals Included", key: "mealsIncluded" as const },
+              { label: "Lounge Access", key: "loungeIncluded" as const },
+              { label: "Free Reissue", key: "freeReissue" as const },
+            ].map((option) => (
+              <label key={option.key} className="flex items-center gap-2 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={f[option.key]}
+                  onChange={(e) => onChange({ ...f, [option.key]: e.target.checked })}
+                  className="w-4 h-4 text-brand-saffron rounded focus:ring-brand-saffron"
+                />
+                <span className="text-sm text-slate-600">{option.label}</span>
+              </label>
+            ))}
+          </div>
+        </div>
       </>
     );
   };

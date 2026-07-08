@@ -17,6 +17,10 @@ export interface FlightResult {
   duration?: string;
   isRefundable?: boolean;
   tier?: string;
+  fareType?: string;
+  fareInclusions?: string[];
+  isLCC?: boolean;
+  isFreeMealAvailable?: boolean;
 }
 
 export function applyFlightFilters(
@@ -48,6 +52,46 @@ export function applyFlightFilters(
         }
       });
       if (!timeSlotMatch) return false;
+    }
+
+    // Fare type filter
+    if (filters.fareType.length > 0 && flight.fareType) {
+      if (!filters.fareType.includes(flight.fareType)) return false;
+    }
+
+    // Refundable only filter
+    if (filters.refundableOnly && !flight.isRefundable) {
+      return false;
+    }
+
+    // Baggage included filter
+    if (filters.baggageIncluded && flight.fareInclusions) {
+      const inclusions = flight.fareInclusions.join(" | ").toLowerCase();
+      if (!inclusions.includes("baggage")) return false;
+    }
+
+    // Meals included filter
+    if (filters.mealsIncluded) {
+      if (flight.isFreeMealAvailable) {
+        // Already flagged as free meal
+      } else if (flight.fareInclusions) {
+        const inclusions = flight.fareInclusions.join(" | ").toLowerCase();
+        if (!inclusions.includes("meal:included") && !inclusions.includes("meal - included")) return false;
+      } else {
+        return false;
+      }
+    }
+
+    // Lounge included filter
+    if (filters.loungeIncluded && flight.fareInclusions) {
+      const inclusions = flight.fareInclusions.join(" | ").toLowerCase();
+      if (!inclusions.includes("lounge")) return false;
+    }
+
+    // Free reissue filter
+    if (filters.freeReissue && flight.fareInclusions) {
+      const inclusions = flight.fareInclusions.join(" | ").toLowerCase();
+      if (!inclusions.includes("reissue fees free") && !inclusions.includes("reissue free")) return false;
     }
 
     return true;

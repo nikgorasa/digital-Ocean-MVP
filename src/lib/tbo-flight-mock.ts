@@ -170,25 +170,58 @@ function makeSegments(
   tripIndicator: number,
   segmentIndicator: number,
   flightDate: string,
-): TBOFlightSegment[] {
+): TBOFlightSegment[][] {
   return [
-    {
-      TripIndicator: tripIndicator,
-      SegmentIndicator: segmentIndicator,
-      Airline: cfg.airline,
-      AirlineCode: cfg.code,
-      Origin: origin,
-      Destination: dest,
-      DepTime: `${flightDate}T${cfg.dep}:00`,
-      ArrTime: `${flightDate}T${cfg.arr}:00`,
-      FlightNumber: cfg.flightNum,
-      OperatingCarrier: cfg.code,
-      Baggage: cfg.baggage,
-      CabinBaggage: cfg.cabinBaggage,
-      CabinClass: cfg.cabinClass,
-      BookingClass: cfg.bookingClass,
-      Duration: SECTORS[routeKey(origin, dest)]?.duration ?? "0hr",
-    },
+    [
+      {
+        TripIndicator: tripIndicator,
+        SegmentIndicator: segmentIndicator,
+        Airline: {
+          AirlineCode: cfg.code,
+          AirlineName: cfg.airline,
+          FlightNumber: cfg.flightNum,
+          FareClass: "RO",
+          OperatingCarrier: cfg.code,
+        },
+        Origin: {
+          Airport: {
+            AirportCode: origin,
+            AirportName: origin === "DEL" ? "Indira Gandhi Airport" : "Chhatrapati Shivaji Maharaj International Airport",
+            Terminal: "1",
+            CityCode: origin,
+            CityName: origin === "DEL" ? "Delhi" : "Mumbai",
+            CountryCode: "IN",
+            CountryName: "India",
+          },
+          DepTime: `${flightDate}T${cfg.dep}:00`,
+        },
+        Destination: {
+          Airport: {
+            AirportCode: dest,
+            AirportName: dest === "DEL" ? "Indira Gandhi Airport" : "Chhatrapati Shivaji Maharaj International Airport",
+            Terminal: "1",
+            CityCode: dest,
+            CityName: dest === "DEL" ? "Delhi" : "Mumbai",
+            CountryCode: "IN",
+            CountryName: "India",
+          },
+          ArrTime: `${flightDate}T${cfg.arr}:00`,
+        },
+        Duration: parseInt(SECTORS[routeKey(origin, dest)]?.duration ?? "60", 10),
+        Baggage: cfg.baggage,
+        CabinBaggage: cfg.cabinBaggage,
+        CabinClass: cfg.cabinClass === "1" ? 1 : 2,
+        NoOfSeatAvailable: 9,
+        GroundTime: 0,
+        Mile: 0,
+        StopOver: false,
+        FlightInfoIndex: "1",
+        Craft: "320",
+        IsETicketEligible: true,
+        FlightStatus: "Confirmed",
+        Status: "",
+      },
+    ],
   ];
 }
 
@@ -282,7 +315,7 @@ export function mockSearchFlights(params: {
       ResponseStatus: 1,
       Error: null,
       TraceId: TRACE_ID,
-      Results: results,
+      Results: [results],
     },
   };
 }
@@ -326,24 +359,24 @@ export function mockFareQuote(_traceId: string, resultIndex: string, origResults
   const result = origResults.find(r => r.ResultIndex === resultIndex);
   const triggerIndex = resultIndex;
   const isPriceChanged = priceChangedIndexes.has(triggerIndex);
-  let results: TBOFlightResult[] = [];
 
+  let fareResult: TBOFlightResult | undefined;
   if (result) {
     const r = { ...result };
     if (isPriceChanged) {
       r.Fare = { ...r.Fare, PublishedFare: Math.round(r.Fare.PublishedFare * 1.08), OfferedFare: Math.round(r.Fare.OfferedFare * 1.08), BaseFare: Math.round(r.Fare.BaseFare * 1.08) };
       r.FareBreakdown = r.FareBreakdown.map(fb => ({ ...fb, PublishedFare: Math.round(fb.PublishedFare * 1.08), OfferedFare: Math.round(fb.OfferedFare * 1.08), BaseFare: Math.round(fb.BaseFare * 1.08) }));
     }
-    results = [r];
+    fareResult = r;
   }
 
   return {
     Response: {
-      ResponseStatus: 1,
-      Error: null,
+      ResponseStatus: fareResult ? 1 : 3,
+      Error: fareResult ? null : { ErrorCode: 1001, ErrorMessage: "Result not found" },
       TraceId: TRACE_ID,
       IsPriceChanged: isPriceChanged,
-      Results: results,
+      Results: fareResult!,
     },
   };
 }
@@ -352,18 +385,18 @@ export function mockSSR(_traceId: string, resultIndex: string, origResults: TBOF
   const result = origResults.find(r => r.ResultIndex === resultIndex);
   const isLCC = result?.IsLCC ?? true;
 
-  const ssr: TBOFlightSSRData = {
-    Baggage: [
+  const ssr = {
+    Baggage: [[
       { WayType: 1, Code: "BK15", Weight: "15 KG", Currency: "INR", Price: 0, Origin: "DEL", Destination: "BOM", AirlineCode: "6E", FlightNumber: "6E-2137" },
       { WayType: 1, Code: "BK20", Weight: "20 KG", Currency: "INR", Price: 900, Origin: "DEL", Destination: "BOM", AirlineCode: "6E", FlightNumber: "6E-2137" },
       { WayType: 1, Code: "BK25", Weight: "25 KG", Currency: "INR", Price: 1800, Origin: "DEL", Destination: "BOM", AirlineCode: "6E", FlightNumber: "6E-2137" },
-    ],
-    MealDynamic: [
-      { WayType: 1, Code: "ML01", Description: "Vegetarian Meal", AirlineDescription: "Veg Meal", Quantity: 1, Price: 350, Currency: "INR" },
-      { WayType: 1, Code: "ML02", Description: "Non-Vegetarian Meal", AirlineDescription: "Non-Veg Meal", Quantity: 1, Price: 450, Currency: "INR" },
-      { WayType: 1, Code: "ML03", Description: "Special Meal", AirlineDescription: "Special Meal", Quantity: 1, Price: 600, Currency: "INR" },
-    ],
-    SeatDynamic: [
+    ]],
+    MealDynamic: [[
+      { WayType: 1, Code: "NoMeal", Description: 2, AirlineDescription: "", Quantity: 0, Price: 0, Currency: "INR", Origin: "DEL", Destination: "BOM", AirlineCode: "6E", FlightNumber: "6E-2137" },
+      { WayType: 1, Code: "VGML", Description: 2, AirlineDescription: "Veg Meal", Quantity: 1, Price: 350, Currency: "INR", Origin: "DEL", Destination: "BOM", AirlineCode: "6E", FlightNumber: "6E-2137" },
+      { WayType: 1, Code: "ML02", Description: 2, AirlineDescription: "Non-Veg Meal", Quantity: 1, Price: 450, Currency: "INR", Origin: "DEL", Destination: "BOM", AirlineCode: "6E", FlightNumber: "6E-2137" },
+    ]],
+    SeatDynamic: [[
       {
         SegmentSeatId: 1,
         RowSeats: {
@@ -377,7 +410,7 @@ export function mockSSR(_traceId: string, resultIndex: string, origResults: TBOF
           ],
         },
       },
-    ],
+    ]],
   };
 
   return {
@@ -386,7 +419,7 @@ export function mockSSR(_traceId: string, resultIndex: string, origResults: TBOF
       Error: null,
       TraceId: TRACE_ID,
       IsLCC: isLCC,
-      SSR: isLCC ? ssr : { Baggage: [], MealDynamic: [], SeatDynamic: [] },
+      ...(isLCC ? ssr : { Baggage: [[]], MealDynamic: [[]], SeatDynamic: [[]] }),
     },
   };
 }
@@ -409,7 +442,7 @@ const mockBookings = new Map<string, {
   isLCC: boolean;
   isDomestic: boolean;
   passengers: TBOFlightBookRequest["Passengers"];
-  segments: TBOFlightSegment[];
+  segments: TBOFlightSegment[][];
   fare: TBOFlightFare;
   fareBreakdown: TBOFlightFareBreakdown[];
 }>();
@@ -462,7 +495,7 @@ export function mockTicket(params: {
   BookingId?: string;
   isLCC: boolean;
   passengers: { PaxId: number; Title: string; FirstName: string; LastName: string }[];
-  segments: TBOFlightSegment[];
+  segments: TBOFlightSegment[][];
   fare: TBOFlightFare;
   fareBreakdown: TBOFlightFareBreakdown[];
 }): TBOFlightTicketResponse {
@@ -489,18 +522,20 @@ export function mockTicket(params: {
       ResponseStatus: 1,
       Error: null,
       TraceId: TRACE_ID,
-      IsPriceChanged: false,
-      PNR: pnr,
-      BookingId: bookingId,
-      FlightItinerary: {
-        BookingId: bookingId,
+      Response: {
         PNR: pnr,
-        IsLCC: params.isLCC,
-        IsDomestic: params.segments[0]?.Origin === "DEL" ? true : false,
-        Passenger: ticketedPassengers,
-        Segments: params.segments,
-        Fare: params.fare,
-        FareBreakdown: params.fareBreakdown,
+        BookingId: bookingId,
+        IsPriceChanged: false,
+        FlightItinerary: {
+          BookingId: bookingId,
+          PNR: pnr,
+          IsLCC: params.isLCC,
+          IsDomestic: params.segments[0]?.[0]?.Origin?.Airport?.AirportCode === "DEL" ? true : false,
+          Passenger: ticketedPassengers,
+          Segments: params.segments as any,
+          Fare: params.fare,
+          FareBreakdown: params.fareBreakdown,
+        },
       },
     },
   };
@@ -543,7 +578,7 @@ export function mockBookingDetail(req: { BookingId?: string; PNR?: string }): TB
             TicketStatus: "Ticketed",
           }],
         })),
-        Segments: entry.segments,
+        Segments: entry.segments as any,
         Fare: entry.fare,
         FareBreakdown: entry.fareBreakdown,
       },

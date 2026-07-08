@@ -8,7 +8,8 @@ import { useAuth } from "@/hooks/useAuth";
 import { useDemoMode } from "@/hooks/useDemoMode";
 import { motion, AnimatePresence } from "motion/react";
 import { formatCurrency } from "@/lib";
-import { Plane, Search, Calendar, Users, ArrowRight, Star, Clock, Luggage, X, Loader2, ChevronDown, Minus, Plus, User, AlertCircle, RefreshCw, SlidersHorizontal } from "lucide-react";
+import { parseFareType, parseFareInclusions, getFareTypeColor, formatFareType, type FareType } from "@/lib/fare-utils";
+import { Plane, Search, Calendar, Users, ArrowRight, Star, Clock, Luggage, X, Loader2, ChevronDown, Minus, Plus, User, AlertCircle, RefreshCw, SlidersHorizontal, Utensils, Armchair } from "lucide-react";
 import FlightBookingModal from "@/components/FlightBookingModal";
 import CitySearchDropdown from "@/components/CitySearchDropdown";
 import DateRangePicker from "@/components/DateRangePicker";
@@ -44,6 +45,15 @@ interface Flight {
   tax?: number;
   yqTax?: number;
   lastTicketDate?: string;
+  fareType?: FareType;
+  fareInclusions?: string[];
+  airlineRemark?: string;
+  fareClass?: string;
+  fareClassification?: { Type: string; Color: string };
+  isExclusiveFare?: boolean;
+  isFreeMealAvailable?: boolean;
+  validatingAirline?: string;
+  gstAllowed?: boolean;
 }
 
 const CABIN_OPTIONS = ["Economy", "Premium Economy", "Business", "First"] as const;
@@ -72,6 +82,7 @@ export default function FlightsPage() {
   const [results, setResults] = useState<Flight[]>([]);
   const [searched, setSearched] = useState(false);
   const [searching, setSearching] = useState(false);
+  const [searchTraceId, setSearchTraceId] = useState<string>("");
   const [searchError, setSearchError] = useState("");
   const [selectedFlight, setSelectedFlight] = useState<Flight | null>(null);
   const [showBookingModal, setShowBookingModal] = useState(false);
@@ -162,8 +173,18 @@ export default function FlightsPage() {
         tax: f.tax || 0,
         yqTax: f.yqTax || 0,
         lastTicketDate: f.lastTicketDate || "",
+        fareType: parseFareType(f.airlineRemark),
+        fareInclusions: f.fareInclusions || [],
+        airlineRemark: f.airlineRemark || "",
+        fareClass: f.segments?.[0]?.[0]?.Airline?.FareClass || "",
+        fareClassification: f.fareClassification,
+        isExclusiveFare: f.isExclusiveFare ?? false,
+        isFreeMealAvailable: f.isFreeMealAvailable ?? false,
+        validatingAirline: f.validatingAirline || "",
+        gstAllowed: f.gstAllowed ?? false,
       }));
       setResults(flights);
+      setSearchTraceId(data.traceId || "");
       setSearchError("");
       setSearched(true);
     } catch {
@@ -616,7 +637,7 @@ export default function FlightsPage() {
                           <div>
                             <p className="font-bold text-slate-900">{flight.airline}</p>
                             <p className="text-xs text-slate-500">{flight.flightNumber}</p>
-                            <div className="flex items-center gap-2 mt-1">
+                            <div className="flex items-center gap-2 mt-1 flex-wrap">
                               {flight.baggage && (
                                 <span className="text-[10px] text-slate-400 flex items-center gap-0.5">
                                   <Luggage size={10} /> {flight.baggage}
@@ -626,6 +647,35 @@ export default function FlightsPage() {
                                 <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-full bg-green-50 text-green-600">Refundable</span>
                               ) : (
                                 <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-full bg-red-50 text-red-500">Non-Refundable</span>
+                              )}
+                              {flight.fareType && flight.fareType !== "Unknown" && (
+                                <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded-full ${getFareTypeColor(flight.fareType)}`}>
+                                  {formatFareType(flight.fareType)}
+                                </span>
+                              )}
+                              {flight.isLCC && (
+                                <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-full bg-sky-50 text-sky-600">LCC</span>
+                              )}
+                            </div>
+                            <div className="flex items-center gap-1.5 mt-1">
+                              {flight.fareInclusions && flight.fareInclusions.length > 0 && (
+                                <>
+                                  {flight.fareInclusions.some(inc => inc.toLowerCase().includes("meal")) && (
+                                    <span className="text-[10px] text-emerald-600 flex items-center gap-0.5" title="Meal included">
+                                      <Utensils size={10} /> Meal
+                                    </span>
+                                  )}
+                                  {flight.fareInclusions.some(inc => inc.toLowerCase().includes("lounge")) && (
+                                    <span className="text-[10px] text-purple-600 flex items-center gap-0.5" title="Lounge access">
+                                      <Armchair size={10} /> Lounge
+                                    </span>
+                                  )}
+                                  {flight.fareInclusions.some(inc => inc.toLowerCase().includes("reissue fees free")) && (
+                                    <span className="text-[10px] text-teal-600 flex items-center gap-0.5" title="Free reissue">
+                                      <RefreshCw size={10} /> Free Reissue
+                                    </span>
+                                  )}
+                                </>
                               )}
                             </div>
                           </div>
@@ -716,10 +766,51 @@ export default function FlightsPage() {
                     </span>
                   </div>
                   <div className="p-3 bg-slate-50 rounded-xl">
-                    <p className="text-[10px] text-slate-400 uppercase">Aircraft</p>
-                    <p className="text-sm font-medium text-slate-900">Boeing 737</p>
+                    <p className="text-[10px] text-slate-400 uppercase">Fare Type</p>
+                    {selectedFlight.fareType && selectedFlight.fareType !== "Unknown" ? (
+                      <span className={`text-xs font-bold px-2 py-0.5 rounded-full ${getFareTypeColor(selectedFlight.fareType)}`}>
+                        {formatFareType(selectedFlight.fareType)}
+                      </span>
+                    ) : (
+                      <p className="text-sm font-medium text-slate-900">Standard</p>
+                    )}
                   </div>
                 </div>
+
+                {selectedFlight.fareInclusions && selectedFlight.fareInclusions.length > 0 && (
+                  <div className="p-4 bg-slate-50 rounded-xl">
+                    <p className="text-[10px] text-slate-400 uppercase mb-2">What's Included</p>
+                    <div className="space-y-1.5">
+                      {selectedFlight.fareInclusions.map((inc, idx) => (
+                        <div key={idx} className="flex items-center gap-2 text-xs text-slate-600">
+                          <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 flex-shrink-0" />
+                          {inc}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {selectedFlight.isRefundable !== undefined && (
+                  <div className="p-3 bg-slate-50 rounded-xl">
+                    <p className="text-[10px] text-slate-400 uppercase mb-1">Cancellation Policy</p>
+                    <p className="text-xs text-slate-600">
+                      {selectedFlight.isRefundable
+                        ? "This fare is refundable. Cancellation charges may apply as per airline policy."
+                        : "This fare is non-refundable. Changes may be subject to fees."}
+                    </p>
+                    {selectedFlight.penalty && (
+                      <p className="text-xs text-slate-500 mt-1">{selectedFlight.penalty}</p>
+                    )}
+                  </div>
+                )}
+
+                {selectedFlight.lastTicketDate && (
+                  <div className="p-3 bg-amber-50 rounded-xl">
+                    <p className="text-[10px] text-amber-600 uppercase mb-1">Last Ticket Date</p>
+                    <p className="text-xs font-medium text-amber-700">{selectedFlight.lastTicketDate}</p>
+                  </div>
+                )}
 
                 <div className="pt-4 border-t border-slate-200">
                   <div className="flex justify-between items-center mb-4">
@@ -756,6 +847,7 @@ export default function FlightsPage() {
           user={user}
           date={departDate}
           passengerCount={totalPassengers}
+          traceId={searchTraceId}
         />
       )}
 

@@ -5,6 +5,7 @@ import { motion } from "motion/react";
 import { formatCurrency } from "@/lib";
 import { useDemoMode } from "@/hooks/useDemoMode";
 import { useEscapeKey } from "@/hooks/useEscapeKey";
+import { parseFareType, parseFareInclusions, getFareTypeColor, formatFareType, type FareType } from "@/lib/fare-utils";
 import {
   X, Loader2, CheckCircle, AlertCircle, Plane,
   MapPin, Calendar, Phone, Mail, User, CreditCard, Clock, Luggage,
@@ -42,6 +43,14 @@ interface Flight {
   baseFare?: number;
   tax?: number;
   yqTax?: number;
+  fareType?: FareType;
+  fareInclusions?: string[];
+  airlineRemark?: string;
+  fareClass?: string;
+  isExclusiveFare?: boolean;
+  isFreeMealAvailable?: boolean;
+  validatingAirline?: string;
+  gstAllowed?: boolean;
 }
 
 interface SSRBaggage {
@@ -74,12 +83,13 @@ interface FlightBookingModalProps {
   user: { id: string; email: string; name: string; companyId?: string } | null;
   date: string;
   passengerCount: number;
+  traceId?: string;
 }
 
 type BookingStep = "form" | "addons" | "saving" | "checkout" | "done" | "error";
 
 export default function FlightBookingModal({
-  isOpen, onClose, flight, user, date, passengerCount,
+  isOpen, onClose, flight, user, date, passengerCount, traceId,
 }: FlightBookingModalProps) {
   const { demoMode } = useDemoMode();
   const [step, setStep] = useState<BookingStep>("form");
@@ -273,8 +283,6 @@ export default function FlightBookingModal({
     setStep("saving");
 
     try {
-      const pnrCode = `GR${Date.now().toString(36).toUpperCase()}`;
-
       const addOns: Record<string, unknown> = {};
       if (selectedBaggage) {
         const b = ssrBaggage.find(x => x.Code === selectedBaggage);
@@ -290,6 +298,85 @@ export default function FlightBookingModal({
         const s = ssrSeats.find(x => x.Code === selectedSeat);
         if (s) addOns.seat = { code: s.Code, seatNo: `${s.RowNo}${s.SeatNo}`, type: s.SeatType, price: s.Price };
       }
+
+      const passengers = [{
+        Title: "Mr",
+        FirstName: firstName.trim(),
+        LastName: lastName.trim(),
+        PaxType: 1,
+        DateOfBirth: dateOfBirth || "1990-01-01",
+        Gender: gender === "Female" ? 2 : 1,
+        AddressLine1: "",
+        City: "",
+        CountryCode: "IN",
+        CountryName: "India",
+        ContactNo: phone || "",
+        Email: email || user.email,
+        IsLeadPax: true,
+        Nationality: "IN",
+        Fare: {
+          BaseFare: flight.baseFare || 0,
+          Tax: flight.tax || 0,
+          TransactionFee: 0,
+          YQTax: flight.yqTax || 0,
+          AdditionalTxnFeeOfrd: 0,
+          AdditionalTxnFeePub: 0,
+          AirTransFee: 0,
+        },
+      }];
+
+      let tboBookingId: string | null = null;
+      let tboPnr: string | null = null;
+
+      if (!demoMode && traceId) {
+        // Step 1: FareQuote — validate real-time price
+        try {
+          const fqRes = await fetch("/api/tbo", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              action: "fare-quote",
+              params: { traceId, resultIndex: flight.id },
+            }),
+          });
+          const fqData = await fqRes.json();
+          if (fqData.isPriceChanged) {
+            // Price changed — could show confirmation dialog here
+            console.warn("Flight price changed:", fqData.fare);
+          }
+        } catch (e) {
+          console.warn("FareQuote failed, continuing:", e);
+        }
+
+        // Step 2: Book + Ticket via TBO
+        try {
+          const ticketRes = await fetch("/api/tbo", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              action: "ticket",
+              params: {
+                traceId,
+                resultIndex: flight.id,
+                passengers,
+                isLCC: flight.isLCC,
+                segments: [],
+                fare: { BaseFare: flight.baseFare, Tax: flight.tax, YQTax: flight.yqTax || 0 },
+                fareBreakdown: [],
+              },
+            }),
+          });
+          const ticketData = await ticketRes.json();
+          if (ticketData.bookingId || ticketData.results?.[0]?.bookingId) {
+            tboBookingId = ticketData.bookingId || ticketData.results?.[0]?.bookingId;
+            tboPnr = ticketData.pnr || ticketData.results?.[0]?.pnr || null;
+          }
+        } catch (e) {
+          console.warn("TBO ticket failed:", e);
+        }
+      }
+
+      const pnrCode = tboPnr || `GR${Date.now().toString(36).toUpperCase()}`;
 
       const saveRes = await fetch("/api/bookings", {
         method: "POST",
@@ -308,11 +395,16 @@ export default function FlightBookingModal({
           paxCount: passengerCount,
           travelDates: date || "TBD",
           leadGuestPan: pan || undefined,
-          status: "PENDING",
-          expiresAt: new Date(Date.now() + 2 * 60 * 60 * 1000).toISOString(), // 2 hours for flights
-          gstNumber: showGstFields ? gstNumber || undefined : undefined,
-          gstCompanyName: showGstFields ? gstCompanyName || undefined : undefined,
-          addOns: Object.keys(addOns).length > 0 ? JSON.stringify(addOns) : undefined,
+          supplierBookingRef: tboBookingId || undefined,
+          metadata: {
+            traceId: traceId || undefined,
+            resultIndex: flight.id,
+            isLCC: flight.isLCC,
+            isRefundable: flight.isRefundable,
+            baseFare: flight.baseFare,
+            tax: flight.tax,
+            addOns: Object.keys(addOns).length > 0 ? addOns : undefined,
+          },
         }),
       });
 
@@ -322,7 +414,7 @@ export default function FlightBookingModal({
 
       const saveData = await saveRes.json();
       setBookingId(saveData.id);
-      setConfirmation({ pnr: pnrCode, status: "Pending Payment" });
+      setConfirmation({ pnr: pnrCode, status: tboBookingId ? "Confirmed" : "Pending Payment" });
 
       if (saveToProfile && user) {
         try {
@@ -490,6 +582,45 @@ export default function FlightBookingModal({
                 <span className="flex items-center gap-1 text-slate-600"><Luggage size={12} />{flight.cabinBaggage || "7 KG"} cabin</span>
                 {flight.isLCC && <span className="px-1.5 py-0.5 bg-amber-100 text-amber-700 rounded text-[10px] font-bold">LCC</span>}
               </div>
+
+              {/* Fare Type & Inclusions */}
+              {flight.fareType && flight.fareType !== "Unknown" && (
+                <div className="flex items-center gap-2">
+                  <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${getFareTypeColor(flight.fareType)}`}>
+                    {formatFareType(flight.fareType)} Fare
+                  </span>
+                  {flight.fareClass && (
+                    <span className="text-[10px] text-slate-400">Class {flight.fareClass}</span>
+                  )}
+                </div>
+              )}
+
+              {flight.fareInclusions && flight.fareInclusions.length > 0 && (
+                <div className="p-3 bg-emerald-50 rounded-xl">
+                  <p className="text-[10px] font-bold text-emerald-700 uppercase mb-1.5">What's Included</p>
+                  <div className="space-y-1">
+                    {flight.fareInclusions.map((inc, idx) => (
+                      <div key={idx} className="flex items-center gap-1.5 text-[11px] text-emerald-800">
+                        <span className="w-1 h-1 rounded-full bg-emerald-500 flex-shrink-0" />
+                        {inc}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {flight.isRefundable !== undefined && (
+                <div className={`p-3 rounded-xl ${flight.isRefundable ? 'bg-green-50' : 'bg-red-50'}`}>
+                  <p className={`text-[10px] font-bold uppercase mb-0.5 ${flight.isRefundable ? 'text-green-700' : 'text-red-700'}`}>
+                    {flight.isRefundable ? 'Refundable' : 'Non-Refundable'}
+                  </p>
+                  <p className={`text-[11px] ${flight.isRefundable ? 'text-green-600' : 'text-red-600'}`}>
+                    {flight.isRefundable
+                      ? 'Cancellation charges may apply as per airline policy.'
+                      : 'Changes may be subject to fees. No refund on cancellation.'}
+                  </p>
+                </div>
+              )}
             </div>
 
             {/* Promo Code */}

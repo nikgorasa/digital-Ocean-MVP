@@ -105,22 +105,64 @@ export interface TBOFlightFareBreakdown {
   ServiceFee: number;
 }
 
+export interface TBOFlightSegmentAirline {
+  AirlineCode: string;
+  AirlineName: string;
+  FlightNumber: string;
+  FareClass: string;
+  OperatingCarrier: string;
+}
+
+export interface TBOFlightSegmentAirport {
+  AirportCode: string;
+  AirportName: string;
+  Terminal: string;
+  CityCode: string;
+  CityName: string;
+  CountryCode: string;
+  CountryName: string;
+}
+
+export interface TBOFlightSegmentOrigin {
+  Airport: TBOFlightSegmentAirport;
+  DepTime: string;
+}
+
+export interface TBOFlightSegmentDestination {
+  Airport: TBOFlightSegmentAirport;
+  ArrTime: string;
+}
+
 export interface TBOFlightSegment {
   TripIndicator: number;
   SegmentIndicator: number;
-  Airline: string;
-  AirlineCode: string;
-  Origin: string;
-  Destination: string;
-  DepTime: string;
-  ArrTime: string;
-  FlightNumber: string;
-  OperatingCarrier: string;
+  Airline: TBOFlightSegmentAirline;
+  Origin: TBOFlightSegmentOrigin;
+  Destination: TBOFlightSegmentDestination;
+  Duration: number;
   Baggage: string;
-  CabinBaggage: string;
-  CabinClass: string;
-  BookingClass: string;
-  Duration: string;
+  CabinBaggage: string | null;
+  CabinClass: number;
+  NoOfSeatAvailable: number;
+  GroundTime: number;
+  Mile: number;
+  StopOver: boolean;
+  FlightInfoIndex: string;
+  Craft: string;
+  IsETicketEligible: boolean;
+  FlightStatus: string;
+  Status: string;
+}
+
+export interface TBOFlightFareClassification {
+  Type: string;
+  Color: string;
+}
+
+export interface TBOFlightPenaltyCharge {
+  Type: string;
+  Charge: number;
+  Currency: string;
 }
 
 export interface TBOFlightResult {
@@ -130,10 +172,29 @@ export interface TBOFlightResult {
   IsRefundable: boolean;
   Fare: TBOFlightFare;
   FareBreakdown: TBOFlightFareBreakdown[];
-  Segments: TBOFlightSegment[];
+  Segments: TBOFlightSegment[][];
   LastTicketDate: string;
   Penalty: string;
   FareRules: string;
+  AirlineRemark?: string;
+  FareInclusions?: string[];
+  FareClassification?: TBOFlightFareClassification;
+  IsExclusiveFare?: boolean;
+  IsFreeMealAvailable?: boolean;
+  IsHoldAllowedWithSSR?: boolean;
+  IsUpsellAllowed?: boolean;
+  IsBookableIfSeatNotAvailable?: boolean;
+  GSTAllowed?: boolean;
+  IsGSTMandatory?: boolean;
+  IsCouponAppilcable?: boolean;
+  IsPanRequiredAtBook?: boolean;
+  IsPassportRequiredAtBook?: boolean;
+  ValidatingAirline?: string;
+  PenaltyCharges?: TBOFlightPenaltyCharge[];
+  MiniFareRules?: string;
+  TicketAdvisory?: string;
+  NonStopFirstRanking?: number;
+  SmartChoiceRanking?: number;
 }
 
 export interface TBOFlightSearchResponse {
@@ -141,7 +202,7 @@ export interface TBOFlightSearchResponse {
     ResponseStatus: number;
     Error: TBOFlightError | null;
     TraceId: string;
-    Results: TBOFlightResult[];
+    Results: TBOFlightResult[][];
   };
 }
 
@@ -183,7 +244,7 @@ export interface TBOFlightFareQuoteResponse {
     Error: TBOFlightError | null;
     TraceId: string;
     IsPriceChanged: boolean;
-    Results: TBOFlightResult[];
+    Results: TBOFlightResult;
   };
 }
 
@@ -209,11 +270,15 @@ export interface TBOFlightBaggage {
 export interface TBOFlightMeal {
   WayType: number;
   Code: string;
-  Description: string;
-  AirlineDescription: string;
+  Description: string | number;
+  AirlineDescription: string | null;
   Quantity: number;
   Price: number;
   Currency: string;
+  Origin?: string;
+  Destination?: string;
+  AirlineCode?: string;
+  FlightNumber?: string;
 }
 
 export interface TBOFlightSeatRow {
@@ -230,9 +295,9 @@ export interface TBOFlightSegmentSeat {
 }
 
 export interface TBOFlightSSRData {
-  Baggage: TBOFlightBaggage[];
-  MealDynamic: TBOFlightMeal[];
-  SeatDynamic: TBOFlightSegmentSeat[];
+  Baggage: TBOFlightBaggage[][];
+  MealDynamic: TBOFlightMeal[][];
+  SeatDynamic: TBOFlightSegmentSeat[][];
 }
 
 export interface TBOFlightSSRResponse {
@@ -241,7 +306,9 @@ export interface TBOFlightSSRResponse {
     Error: TBOFlightError | null;
     TraceId: string;
     IsLCC: boolean;
-    SSR: TBOFlightSSRData;
+    Baggage: TBOFlightBaggage[][];
+    MealDynamic: TBOFlightMeal[][];
+    SeatDynamic: TBOFlightSegmentSeat[][];
   };
 }
 
@@ -331,9 +398,9 @@ export interface TBOFlightTicketLCCRequest {
   TraceId: string;
   ResultIndex: string;
   Passengers: (TBOFlightBookPassenger & {
-    Baggage?: TBOFlightBaggage;
-    MealDynamic?: TBOFlightMeal;
-    SeatDynamic?: TBOFlightSeatRow;
+    Baggage?: TBOFlightBaggage[];
+    MealDynamic?: TBOFlightMeal[];
+    SeatDynamic?: TBOFlightSeatRow[];
   })[];
 }
 
@@ -342,31 +409,33 @@ export interface TBOFlightTicketResponse {
     ResponseStatus: number;
     Error: TBOFlightError | null;
     TraceId: string;
-    IsPriceChanged: boolean;
-    PNR: string;
-    BookingId: string;
-    FlightItinerary: {
-      BookingId: string;
+    Response: {
       PNR: string;
-      IsLCC: boolean;
-      IsDomestic: boolean;
-      Passenger: {
-        PaxId: number;
-        Title: string;
-        FirstName: string;
-        LastName: string;
-        Ticket: {
-          TicketId: number;
-          TicketNumber: string;
-          TicketStatus: string;
-          TicketType: string;
-          ConjunctionNumber: string;
-          ValidOn: string;
-        };
-      }[];
-      Segments: TBOFlightSegment[];
-      Fare: TBOFlightFare;
-      FareBreakdown: TBOFlightFareBreakdown[];
+      BookingId: string;
+      IsPriceChanged: boolean;
+      FlightItinerary: {
+        BookingId: string;
+        PNR: string;
+        IsLCC: boolean;
+        IsDomestic: boolean;
+        Passenger: {
+          PaxId: number;
+          Title: string;
+          FirstName: string;
+          LastName: string;
+          Ticket: {
+            TicketId: number;
+            TicketNumber: string;
+            TicketStatus: string;
+            TicketType: string;
+            ConjunctionNumber: string;
+            ValidOn: string;
+          };
+        }[];
+        Segments: TBOFlightSegment[];
+        Fare: TBOFlightFare;
+        FareBreakdown: TBOFlightFareBreakdown[];
+      };
     };
   };
 }
@@ -424,10 +493,10 @@ export interface TBOFlightDisplay {
   destination: string;
   departureTime: string;
   arrivalTime: string;
-  duration: string;
-  cabinClass: string;
+  duration: number;
+  cabinClass: number;
   baggage: string;
-  cabinBaggage: string;
+  cabinBaggage: string | null;
   currency: string;
   publishedFare: number;
   offeredFare: number;
@@ -439,8 +508,20 @@ export interface TBOFlightDisplay {
   penalty?: string;
   lastTicketDate?: string;
   fareRules?: string;
-  segments: TBOFlightSegment[];
+  segments: TBOFlightSegment[][];
   fareBreakdown: TBOFlightFareBreakdown[];
+  airlineRemark?: string;
+  fareInclusions?: string[];
+  fareClassification?: TBOFlightFareClassification;
+  isExclusiveFare?: boolean;
+  isFreeMealAvailable?: boolean;
+  isHoldAllowedWithSSR?: boolean;
+  isUpsellAllowed?: boolean;
+  gstAllowed?: boolean;
+  isGSTMandatory?: boolean;
+  validatingAirline?: string;
+  penaltyCharges?: TBOFlightPenaltyCharge[];
+  ticketAdvisory?: string;
 }
 
 export interface TBOFlightSearchOutput {

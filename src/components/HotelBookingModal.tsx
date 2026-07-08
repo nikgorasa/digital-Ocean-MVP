@@ -191,6 +191,7 @@ export default function HotelBookingModal({
       const clientRef = `GR-${Date.now()}`;
       let pnrCode = clientRef;
       let confirmationNo = "";
+      let bookData: Record<string, any> | null = null;
 
       if (!demoMode) {
         const blockRes = await fetch("/api/tbo-hotels", {
@@ -258,9 +259,9 @@ export default function HotelBookingModal({
           body: JSON.stringify(bookReqPayload),
         });
 
-        const bookData = await bookRes.json();
+        bookData = await bookRes.json();
 
-        if (!bookData.success) {
+        if (!bookData?.success) {
           setErrorMessage("Booking confirmation failed. Please try again.");
           setStep("error");
           return;
@@ -286,11 +287,15 @@ export default function HotelBookingModal({
           seatOrRoom: room.name,
           paxCount: guestCount,
           travelDates: `${checkIn} to ${checkOut}`,
-          status: "PENDING",
-          expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(), // 24 hours for hotels
           leadGuestPan: pan.trim().toUpperCase(),
-          gstNumber: showGstFields ? gstNumber || undefined : undefined,
-          gstCompanyName: showGstFields ? gstCompanyName || undefined : undefined,
+          supplierBookingRef: bookData?.bookingId ? String(bookData.bookingId) : undefined,
+          metadata: {
+            tboBookingId: bookData?.bookingId,
+            confirmationNo: bookData?.confirmationNo,
+            hotelCode: hotel.hotelCode,
+            roomName: room.name,
+            bookingCode: room.bookingCode,
+          },
         }),
       });
 

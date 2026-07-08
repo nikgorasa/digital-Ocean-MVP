@@ -11,6 +11,7 @@ import type {
   TBOFlightDisplay,
   TBOFlightSearchOutput,
   TBOFlightResult,
+  TBOFlightSegment,
   TBOBookingResult,
   TBOFlightTicketOutput,
 } from "./tbo-flight-types";
@@ -66,33 +67,40 @@ async function ensureToken(): Promise<string> {
   return res.TokenId;
 }
 
+function firstSeg(r: TBOFlightResult): TBOFlightSegment | undefined {
+  return r.Segments?.[0]?.[0];
+}
+
+function lastSeg(r: TBOFlightResult): TBOFlightSegment | undefined {
+  const legs = r.Segments?.[0];
+  return legs?.[legs.length - 1];
+}
+
 async function toDisplay(
   r: TBOFlightResult,
   leg: "outbound" | "inbound" | "oneway",
 ): Promise<TBOFlightDisplay> {
-  const seg = r.Segments[0];
-  const airline = seg?.Airline as any;
-  const origin = seg?.Origin as any;
-  const destination = seg?.Destination as any;
+  const f = firstSeg(r);
+  const l = lastSeg(r);
   return {
     resultIndex: r.ResultIndex,
     leg,
     isLCC: r.IsLCC,
     isRefundable: r.IsRefundable,
-    isDomestic: seg?.TripIndicator === 1,
+    isDomestic: f?.TripIndicator === 1,
     source: r.Source,
-    airline: (typeof airline === "object" ? airline?.AirlineName : airline) ?? "",
-    airlineCode: (typeof airline === "object" ? airline?.AirlineCode : "") ?? "",
-    flightNumber: (typeof airline === "object" ? airline?.FlightNumber : airline) ?? "",
-    operatingCarrier: (typeof airline === "object" ? airline?.OperatingCarrier : "") ?? "",
-    origin: (typeof origin === "object" ? origin?.Airport?.AirportCode : origin) ?? "",
-    destination: (typeof destination === "object" ? destination?.Airport?.AirportCode : destination) ?? "",
-    departureTime: seg?.DepTime ?? "",
-    arrivalTime: seg?.ArrTime ?? "",
-    duration: seg?.Duration ?? "",
-    cabinClass: seg?.CabinClass ?? "",
-    baggage: seg?.Baggage ?? "",
-    cabinBaggage: seg?.CabinBaggage ?? "",
+    airline: f?.Airline?.AirlineName ?? "",
+    airlineCode: f?.Airline?.AirlineCode ?? "",
+    flightNumber: f?.Airline?.FlightNumber ?? "",
+    operatingCarrier: f?.Airline?.OperatingCarrier ?? "",
+    origin: f?.Origin?.Airport?.AirportCode ?? "",
+    destination: l?.Destination?.Airport?.AirportCode ?? "",
+    departureTime: f?.Origin?.DepTime ?? "",
+    arrivalTime: l?.Destination?.ArrTime ?? "",
+    duration: (r.Segments?.[0] ?? []).reduce((sum, s) => sum + s.Duration, 0),
+    cabinClass: f?.CabinClass ?? 0,
+    baggage: f?.Baggage ?? "",
+    cabinBaggage: f?.CabinBaggage ?? "",
     currency: r.Fare.Currency,
     publishedFare: r.Fare.PublishedFare,
     offeredFare: r.Fare.OfferedFare,
@@ -106,6 +114,18 @@ async function toDisplay(
     fareRules: r.FareRules,
     segments: r.Segments,
     fareBreakdown: r.FareBreakdown,
+    airlineRemark: r.AirlineRemark,
+    fareInclusions: r.FareInclusions,
+    fareClassification: r.FareClassification,
+    isExclusiveFare: r.IsExclusiveFare,
+    isFreeMealAvailable: r.IsFreeMealAvailable,
+    isHoldAllowedWithSSR: r.IsHoldAllowedWithSSR,
+    isUpsellAllowed: r.IsUpsellAllowed,
+    gstAllowed: r.GSTAllowed,
+    isGSTMandatory: r.IsGSTMandatory,
+    validatingAirline: r.ValidatingAirline,
+    penaltyCharges: r.PenaltyCharges,
+    ticketAdvisory: r.TicketAdvisory,
   };
 }
 
@@ -117,9 +137,20 @@ export async function searchFlights(params: {
   InfantCount: number;
   JourneyType: number;
   PreferredDepartureTime?: string;
+  CabinClass?: string;
   EndUserIp?: string;
   forceMock?: boolean;
 }): Promise<TBOFlightSearchOutput> {
+  const cabinClassMap: Record<string, number> = {
+    "economy": 1,
+    "premium economy": 2,
+    "business": 3,
+    "premium business": 4,
+    "first": 5,
+    "all": 0,
+  };
+  const cabinClassNum = cabinClassMap[(params.CabinClass || "economy").toLowerCase()] ?? 1;
+
   if (!params.forceMock && await checkCredentials()) {
     try {
       const tokenId = await ensureToken();
@@ -134,7 +165,7 @@ export async function searchFlights(params: {
           {
             Origin: params.Origin,
             Destination: params.Destination,
-            FlightCabinClass: 1,
+            FlightCabinClass: cabinClassNum,
             PreferredDepartureTime: params.PreferredDepartureTime || "",
             PreferredArrivalTime: "",
           },
@@ -142,10 +173,14 @@ export async function searchFlights(params: {
       };
           const res = await api.searchFlights(tokenId, searchReq);
       if (res.Response?.ResponseStatus === 1) {
+        const results = res.Response.Results;
+        const flightList: TBOFlightResult[] = Array.isArray(results[0])
+          ? (results[0] as TBOFlightResult[])
+          : (results as unknown as TBOFlightResult[]);
         const flights = await Promise.all(
-          res.Response.Results.map(async (r) => {
+          flightList.map(async (r) => {
             const isReturn = params.JourneyType === 2 || params.JourneyType === 5;
-            const tripInd = r.Segments[0]?.TripIndicator ?? 1;
+            const tripInd = r.Segments?.[0]?.[0]?.TripIndicator ?? 1;
             let leg: "outbound" | "inbound" | "oneway";
             if (!isReturn) leg = "oneway";
             else if (tripInd === 1) leg = "outbound";
@@ -169,10 +204,14 @@ export async function searchFlights(params: {
     JourneyType: params.JourneyType,
     PreferredDepartureTime: params.PreferredDepartureTime,
   });
+  const mockResults = mockRes.Response.Results;
+  const mockFlightList: TBOFlightResult[] = Array.isArray(mockResults[0])
+    ? (mockResults[0] as TBOFlightResult[])
+    : (mockResults as unknown as TBOFlightResult[]);
   const flights = await Promise.all(
-    mockRes.Response.Results.map(async (r) => {
+    mockFlightList.map(async (r) => {
       const isReturn = params.JourneyType === 2 || params.JourneyType === 5;
-      const tripInd = r.Segments[0]?.TripIndicator ?? 1;
+      const tripInd = r.Segments?.[0]?.[0]?.TripIndicator ?? 1;
       let leg: "outbound" | "inbound" | "oneway";
       if (!isReturn) leg = "oneway";
       else if (tripInd === 1) leg = "outbound";
@@ -238,7 +277,9 @@ export async function getFareQuote(params: {
       };
       const res = await api.getFareQuote(req);
       if (res.Response?.ResponseStatus === 1) {
-        const r = res.Response.Results[0];
+        const r = Array.isArray(res.Response.Results)
+          ? res.Response.Results[0]
+          : res.Response.Results;
         return {
           isPriceChanged: res.Response.IsPriceChanged,
           traceId: res.Response.TraceId,
@@ -253,7 +294,9 @@ export async function getFareQuote(params: {
     }
   }
   const mockRes = mock.mockFareQuote(params.traceId, params.resultIndex, _lastResults);
-  const r = mockRes.Response.Results[0];
+  const r = Array.isArray(mockRes.Response.Results)
+    ? mockRes.Response.Results[0]
+    : mockRes.Response.Results;
   return {
     isPriceChanged: mockRes.Response.IsPriceChanged,
     traceId: mockRes.Response.TraceId,
@@ -281,9 +324,9 @@ export async function getSSR(params: {
       if (res.Response?.ResponseStatus === 1) {
         return {
           isLCC: res.Response.IsLCC,
-          baggage: res.Response.SSR.Baggage,
-          meals: res.Response.SSR.MealDynamic,
-          seats: res.Response.SSR.SeatDynamic,
+          baggage: res.Response.Baggage,
+          meals: res.Response.MealDynamic,
+          seats: res.Response.SeatDynamic,
           traceId: res.Response.TraceId,
         };
       }
@@ -295,9 +338,9 @@ export async function getSSR(params: {
   const mockRes = mock.mockSSR(params.traceId, params.resultIndex, _lastResults);
   return {
     isLCC: mockRes.Response.IsLCC,
-    baggage: mockRes.Response.SSR.Baggage,
-    meals: mockRes.Response.SSR.MealDynamic,
-    seats: mockRes.Response.SSR.SeatDynamic,
+    baggage: mockRes.Response.Baggage,
+    meals: mockRes.Response.MealDynamic,
+    seats: mockRes.Response.SeatDynamic,
     traceId: mockRes.Response.TraceId,
   };
 }
@@ -381,6 +424,19 @@ export async function ticketFlight(params: {
     try {
       const tokenId = await ensureToken();
       if (params.isLCC) {
+        // Fetch SSR data to get meal and baggage options
+        const ssrReq: TBOFlightSSRRequest = {
+          EndUserIp: params.EndUserIp || getEndUserIp(),
+          TokenId: tokenId,
+          TraceId: params.traceId,
+          ResultIndex: params.resultIndex || "",
+        };
+        const ssrRes = await api.getSSR(ssrReq);
+        const allMeals = (ssrRes.Response?.MealDynamic || []).flat();
+        const allBaggage = (ssrRes.Response?.Baggage || []).flat();
+        const noMeal = allMeals.find((m: any) => m.Code === "NoMeal") || allMeals[0];
+        const noBag = allBaggage.find((b: any) => b.Code === "NoBaggage") || allBaggage[0];
+
         const req: TBOFlightTicketLCCRequest = {
           EndUserIp: params.EndUserIp || getEndUserIp(),
           TokenId: tokenId,
@@ -400,12 +456,16 @@ export async function ticketFlight(params: {
             IsLeadPax: p.IsLeadPax ?? false,
             Nationality: p.Nationality ?? "IN",
             Fare: p.Fare ?? { BaseFare: 0, Tax: 0, TransactionFee: 0, YQTax: 0, AdditionalTxnFeeOfrd: 0, AdditionalTxnFeePub: 0, AirTransFee: 0 },
+            ...(noBag ? { Baggage: [noBag] } : {}),
+            ...(noMeal ? { MealDynamic: [noMeal] } : {}),
           })),
         };
         const res = await api.ticketFlight(req);
         if (res.Response?.ResponseStatus === 1) {
-          return { results: [{ bookingId: res.Response.BookingId, pnr: res.Response.PNR }] };
+          const r = res.Response.Response;
+          return { results: [{ bookingId: r?.BookingId, pnr: r?.PNR }] };
         }
+        throw new Error(`Ticket failed: ${res.Response?.ResponseStatus} ${JSON.stringify(res.Response?.Error)}`);
       } else {
         if (!params.BookingId || !params.PNR) throw new Error("Non-LCC ticket requires BookingId and PNR");
         const req: TBOFlightTicketNonLCCRequest = {
@@ -423,10 +483,12 @@ export async function ticketFlight(params: {
         };
         const res = await api.ticketFlight(req);
         if (res.Response?.ResponseStatus === 1) {
-          return { results: [{ bookingId: res.Response.BookingId, pnr: res.Response.PNR }] };
+          const r = res.Response.Response;
+          return { results: [{ bookingId: r?.BookingId, pnr: r?.PNR }] };
         }
+        throw new Error(`Non-LCC Ticket failed: ${res.Response?.ResponseStatus} ${JSON.stringify(res.Response?.Error)}`);
       }
-      throw new Error("Ticket failed");
+      throw new Error("Ticket failed: unknown path");
     } catch (e) {
       console.warn("TBO ticket failed, fallback to mock:", e);
     }
@@ -440,7 +502,8 @@ export async function ticketFlight(params: {
     fare: params.fare,
     fareBreakdown: params.fareBreakdown,
   });
-  return { results: [{ bookingId: res.Response.BookingId, pnr: res.Response.PNR }] };
+  const r = res.Response.Response;
+  return { results: [{ bookingId: r?.BookingId, pnr: r?.PNR }] };
 }
 
 export async function getBookingDetail(params: {

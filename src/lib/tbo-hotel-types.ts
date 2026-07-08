@@ -126,33 +126,38 @@ export interface TBOHotelTaxBreakup {
 
 export interface TBOHotelPreBookRoom {
   Name: string[];
+  BookingCode: string;
   Supplier: string;
   PassengerSlab: number;
   Currency: string;
   DayRates: TBOHotelDayRate[][];
   TotalFare: number;
   TotalTax: number;
+  NetAmount: number;
+  NetTax: number;
+  Inclusion: string;
+  MealType: string;
+  IsRefundable: boolean;
+  Amenities: string[];
+  CancelPolicies: { FromDate: string; ChargeType: string; CancellationCharge: number }[];
+  LastCancellationDeadline: string;
+  PriceBreakUp: {
+    RoomRate: number;
+    RoomTax: number;
+    AgentCommission: number;
+    TaxBreakup: { TaxType: string; TaxableAmount: number; TaxPercentage: number; TaxAmount: number }[];
+  }[];
 }
 
 export interface TBOHotelPreBookResponse {
   Status: TBOStatus;
-  Amenities: string[];
-  RateConditions: string[];
   ValidationInfo: TBOHotelValidationInfo;
-  HotelName: string;
-  HotelCode: string;
-  RoomRate: number;
-  RoomTax: number;
-  RoomExtraGuestCharges: number;
-  RoomChildCharges: number;
-  ServiceFee: number;
-  AgentCommission: number;
-  TDS: number;
-  NetAmount: number;
-  NetTax: number;
-  TaxBreakup: TBOHotelTaxBreakup[];
-  RoomCombined: TBOHotelPreBookRoom[];
-  TraceId: string;
+  HotelResult?: {
+    HotelCode: string;
+    Currency: string;
+    Rooms: TBOHotelPreBookRoom[];
+    RateConditions: string[];
+  }[];
 }
 
 export interface TBOHotelPassenger {

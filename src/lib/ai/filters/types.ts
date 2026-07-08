@@ -13,6 +13,12 @@ export interface FlightFilters {
   airlines: string[];
   departureTime: string[];
   maxDuration: number;
+  fareType: string[];
+  refundableOnly: boolean;
+  baggageIncluded: boolean;
+  mealsIncluded: boolean;
+  loungeIncluded: boolean;
+  freeReissue: boolean;
 }
 
 export interface FilterOption {
@@ -36,6 +42,12 @@ export const DEFAULT_FLIGHT_FILTERS: FlightFilters = {
   airlines: [],
   departureTime: [],
   maxDuration: 24,
+  fareType: [],
+  refundableOnly: false,
+  baggageIncluded: false,
+  mealsIncluded: false,
+  loungeIncluded: false,
+  freeReissue: false,
 };
 
 export const HOTEL_AMENITIES: FilterOption[] = [
@@ -79,4 +91,12 @@ export const DEPARTURE_TIMES: FilterOption[] = [
   { label: "Morning (06:00-12:00)", value: "morning" },
   { label: "Afternoon (12:00-18:00)", value: "afternoon" },
   { label: "Evening (18:00-24:00)", value: "evening" },
+];
+
+export const FARE_TYPES: FilterOption[] = [
+  { label: "Value", value: "Value" },
+  { label: "Promo", value: "Promo" },
+  { label: "Classic", value: "Classic" },
+  { label: "Flex", value: "Flex" },
+  { label: "Corporate", value: "Corporate" },
 ];

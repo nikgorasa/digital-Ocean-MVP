@@ -520,21 +520,23 @@ export async function preBook(params: {
       };
       const res = await api.preBook(req);
       if (res.Status?.Code === 200) {
-        if (res.TraceId) _lastTraceId = res.TraceId;
+        const hotel = res.HotelResult?.[0];
+        const room = hotel?.Rooms?.[0];
+        const priceBreakup = room?.PriceBreakUp?.[0];
         return {
-          hotelName: res.HotelName,
-          hotelCode: res.HotelCode,
-          netAmount: res.NetAmount,
-          roomRate: res.RoomRate,
-          roomTax: res.RoomTax,
-          serviceFee: res.ServiceFee,
-          agentCommission: res.AgentCommission,
-          tds: res.TDS,
+          hotelName: hotel?.HotelCode || '',
+          hotelCode: hotel?.HotelCode || '',
+          netAmount: room?.NetAmount || 0,
+          roomRate: priceBreakup?.RoomRate || 0,
+          roomTax: priceBreakup?.RoomTax || 0,
+          serviceFee: 0,
+          agentCommission: priceBreakup?.AgentCommission || 0,
+          tds: 0,
           validationInfo: res.ValidationInfo,
-          amenities: res.Amenities,
-          rateConditions: res.RateConditions,
-          taxBreakup: res.TaxBreakup.map(t => ({ chargeType: t.ChargeType, amount: t.Amount })),
-          traceId: res.TraceId,
+          amenities: room?.Amenities || [],
+          rateConditions: hotel?.RateConditions || [],
+          taxBreakup: (priceBreakup?.TaxBreakup || []).map(t => ({ chargeType: t.TaxType, amount: t.TaxAmount })),
+          traceId: '',
         };
       }
       throw new Error(`PreBook failed: ${res.Status?.Description}`);
@@ -544,19 +546,22 @@ export async function preBook(params: {
   }
 
   const mockRes = mock.mockPreBook(params.bookingCode);
+  const hotelResult = mockRes.HotelResult?.[0];
+  const room = hotelResult?.Rooms?.[0];
+  const priceBreakUp = room?.PriceBreakUp?.[0];
   return {
-    hotelName: mockRes.HotelName,
-    hotelCode: mockRes.HotelCode,
-    netAmount: mockRes.NetAmount,
-    roomRate: mockRes.RoomRate,
-    roomTax: mockRes.RoomTax,
-    serviceFee: mockRes.ServiceFee,
-    agentCommission: mockRes.AgentCommission,
-    tds: mockRes.TDS,
+    hotelName: hotelResult?.HotelCode || "",
+    hotelCode: hotelResult?.HotelCode || "",
+    netAmount: room?.NetAmount || 0,
+    roomRate: priceBreakUp?.RoomRate || 0,
+    roomTax: priceBreakUp?.RoomTax || 0,
+    serviceFee: 0,
+    agentCommission: priceBreakUp?.AgentCommission || 0,
+    tds: 0,
     validationInfo: mockRes.ValidationInfo,
-    amenities: mockRes.Amenities,
-    rateConditions: mockRes.RateConditions,
-    taxBreakup: mockRes.TaxBreakup.map(t => ({ chargeType: t.ChargeType, amount: t.Amount })),
+    amenities: room?.Amenities || [],
+    rateConditions: hotelResult?.RateConditions || [],
+    taxBreakup: (priceBreakUp?.TaxBreakup || []).map(t => ({ chargeType: t.TaxType, amount: t.TaxAmount })),
     traceId: _lastTraceId,
   };
 }
