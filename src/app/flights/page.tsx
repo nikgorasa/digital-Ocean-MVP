@@ -129,7 +129,6 @@ export default function FlightsPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           action: "search",
-          demo: demoMode,
           params: {
             origin: originCode,
             destination: destCode,

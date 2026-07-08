@@ -21,8 +21,8 @@ async function findTestUser(): Promise<{ id: string; email: string; name: string
 async function doHotelBooking(userId: string, userEmail: string): Promise<void> {
   console.log('\n========== HOTEL BOOKING ==========\n');
 
-  const checkIn = addDays(new Date(), 15);
-  const checkOut = addDays(new Date(), 17);
+  const checkIn = addDays(new Date(), 20);
+  const checkOut = addDays(new Date(), 22);
 
   const searchResult = await searchHotels({
     checkIn,
@@ -38,7 +38,7 @@ async function doHotelBooking(userId: string, userEmail: string): Promise<void> 
     return;
   }
 
-  const hotel = searchResult.hotels[0];
+  const hotel = searchResult.hotels[2] || searchResult.hotels[1] || searchResult.hotels[0];
   console.log(`Hotel: ${hotel.name} (${hotel.hotelCode})`);
   console.log(`Rating: ${hotel.starRating}, Price: ${hotel.price} ${hotel.currency}`);
 
@@ -116,7 +116,7 @@ async function doHotelBooking(userId: string, userEmail: string): Promise<void> 
 async function doFlightBooking(userId: string, userEmail: string): Promise<void> {
   console.log('\n========== FLIGHT BOOKING ==========\n');
 
-  const flightDate = addDays(new Date(), 5);
+  const flightDate = addDays(new Date(), 7);
 
   const searchResult = await searchFlights({
     Origin: 'DEL',

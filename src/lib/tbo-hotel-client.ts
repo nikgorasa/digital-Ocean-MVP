@@ -19,7 +19,6 @@ import type {
   TBOHotelPassenger,
 } from "./tbo-hotel-types";
 import * as api from "./tbo-hotel-api";
-import * as mock from "./tbo-hotel-mock";
 import { calculatePrice } from "./pricing";
 import { HOTEL_BOOKING_MODE } from "./tbo-hotel-types";
 import { readConfig } from "./config-service";
@@ -41,11 +40,13 @@ async function getClientId(): Promise<string> {
   return cfg.clientId || process.env.TBO_CLIENT_ID || "ApiIntegrationNew";
 }
 
-async function checkCredentials(): Promise<boolean> {
+async function validateCredentials(): Promise<void> {
   const cfg = await readConfig("tbo_hotel");
   const username = cfg.username || process.env.TBO_USERNAME || "";
   const password = cfg.password || process.env.TBO_PASSWORD || "";
-  return !!(username && password) && !cfg.forceMock;
+  if (!username || !password) {
+    throw new Error("TBO hotel credentials not configured. Set TBO_USERNAME and TBO_PASSWORD.");
+  }
 }
 
 async function ensureToken(): Promise<string> {
@@ -54,8 +55,9 @@ async function ensureToken(): Promise<string> {
     return cachedToken.tokenId;
   }
   const clientId = await getClientId();
-  const username = (await readConfig("tbo_hotel")).username || process.env.TBO_USERNAME || "";
-  const password = (await readConfig("tbo_hotel")).password || process.env.TBO_PASSWORD || "";
+  const cfg = await readConfig("tbo_hotel");
+  const username = cfg.username || process.env.TBO_USERNAME || "";
+  const password = cfg.password || process.env.TBO_PASSWORD || "";
 
   const req: TBOHotelAuthRequest = {
     ClientId: clientId,
@@ -146,24 +148,12 @@ async function toDisplay(
   };
 }
 
-let _lastHotelResults: any[] = [];
 let _lastTraceId = "";
-
-export function setLastHotelResults(results: any[], traceId: string): void {
-  _lastHotelResults = results;
-  _lastTraceId = traceId;
-}
 
 let _hotelCodesCache: Record<string, string> = {};
 let _hotelDetailsCache: Record<string, { name: string; rating: string; address: string; city: string; imageUrl?: string; amenities: string[]; facilities: string[] }> = {};
 let _cityNameToCodeCache: Record<string, string> = {};
 
-// NOTE: City code discrepancy between static and search endpoints.
-// `api.getCities()` hits the static staging endpoint (api.tbotechnology.in) which returns
-// DIFFERENT city codes than what the production Search endpoint (affiliate.tektravels.com) uses.
-// The CitySearchDropdown component fetches codes and passes them through, so the search flow
-// uses whatever code the user selected — but lookupTboCityCode() returns staging codes which
-// may NOT work with production Search. This is a known limitation.
 async function lookupTboCityCode(cityName: string, requestId?: string, countryCode = "IN"): Promise<string | null> {
   const cacheKey = `${countryCode}:${cityName.toLowerCase()}`;
   if (_cityNameToCodeCache[cacheKey]) return _cityNameToCodeCache[cacheKey];
@@ -178,13 +168,11 @@ async function lookupTboCityCode(cityName: string, requestId?: string, countryCo
         const code = c.CityCode || (c as any).Code;
         if (!name || !code) continue;
 
-        // Exact match on first part of name (e.g., "Goa" matches "Goa, Goa")
         if (name === cityName.toLowerCase()) {
           _cityNameToCodeCache[cacheKey] = String(code);
           console.log(`Looked up TBO city code for "${cityName}": ${code} (exact match: ${fullName})`);
           return String(code);
         }
-        // Track best partial match (prefer shorter name = more specific city)
         if (fullName.toLowerCase().includes(cityName.toLowerCase())) {
           if (!bestMatch || name.length < bestMatch.name.length) {
             bestMatch = { code: String(code), name: fullName };
@@ -253,68 +241,60 @@ async function resolveHotelCodes(city?: string, hotelCodes?: string, cityCode?: 
 
   let resolvedCode = cityCode;
 
-  // If no city code provided, or provided code returns no hotels, look up via CityList
   if (!resolvedCode && city) {
     resolvedCode = await lookupTboCityCode(city, requestId) || undefined;
   }
 
   if (!resolvedCode) {
-    console.warn(`No cityCode provided or resolved for "${city}" — cannot resolve hotel codes`);
-    return "";
+    throw new Error(`No cityCode provided or resolved for "${city}". Cannot search hotels.`);
   }
 
   const cacheKey = `code:${resolvedCode}`;
   if (_hotelCodesCache[cacheKey]) return _hotelCodesCache[cacheKey];
 
-  try {
-    const res = await api.getHotelCodeList(resolvedCode, { requestId });
-    if (res.Status?.Code === 200 && res.Hotels?.length > 0) {
-      const codeStr = res.Hotels.slice(0, 50).map(c => c.HotelCode).join(",");
-      _hotelCodesCache[cacheKey] = codeStr;
-      for (const h of res.Hotels) {
-        _hotelDetailsCache[h.HotelCode] = {
-          name: h.HotelName,
-          rating: h.HotelRating,
-          address: h.Address || "",
-          city: h.CityName || city || "",
-          amenities: [],
-          facilities: [],
-        };
-      }
-      console.log(`Resolved ${res.Hotels.length} hotel codes for city code ${resolvedCode} (showing first 50)`);
-      return codeStr;
+  const res = await api.getHotelCodeList(resolvedCode, { requestId });
+  if (res.Status?.Code === 200 && res.Hotels?.length > 0) {
+    const codeStr = res.Hotels.slice(0, 50).map(c => c.HotelCode).join(",");
+    _hotelCodesCache[cacheKey] = codeStr;
+    for (const h of res.Hotels) {
+      _hotelDetailsCache[h.HotelCode] = {
+        name: h.HotelName,
+        rating: h.HotelRating,
+        address: h.Address || "",
+        city: h.CityName || city || "",
+        amenities: [],
+        facilities: [],
+      };
     }
-    console.warn(`No hotel codes returned for city code ${resolvedCode}:`, res.Status?.Description);
-
-    // If provided city code failed and we have a city name, try lookup
-    if (cityCode && city) {
-      const lookedUp = await lookupTboCityCode(city, requestId);
-      if (lookedUp && lookedUp !== cityCode) {
-        console.log(`Retrying with looked-up city code ${lookedUp} for "${city}"`);
-        const retryRes = await api.getHotelCodeList(lookedUp, { requestId });
-        if (retryRes.Status?.Code === 200 && retryRes.Hotels?.length > 0) {
-          const codeStr = retryRes.Hotels.slice(0, 50).map(c => c.HotelCode).join(",");
-          _hotelCodesCache[`code:${lookedUp}`] = codeStr;
-          for (const h of retryRes.Hotels) {
-            _hotelDetailsCache[h.HotelCode] = {
-              name: h.HotelName,
-              rating: h.HotelRating,
-              address: h.Address || "",
-              city: h.CityName || city || "",
-              amenities: [],
-              facilities: [],
-            };
-          }
-          console.log(`Resolved ${retryRes.Hotels.length} hotel codes with looked-up code ${lookedUp}`);
-          return codeStr;
-        }
-      }
-    }
-  } catch (e) {
-    console.warn(`Failed to fetch hotel codes for city code ${resolvedCode}:`, e);
+    console.log(`Resolved ${res.Hotels.length} hotel codes for city code ${resolvedCode} (showing first 50)`);
+    return codeStr;
   }
 
-  return "";
+  if (cityCode && city) {
+    const lookedUp = await lookupTboCityCode(city, requestId);
+    if (lookedUp && lookedUp !== cityCode) {
+      console.log(`Retrying with looked-up city code ${lookedUp} for "${city}"`);
+      const retryRes = await api.getHotelCodeList(lookedUp, { requestId });
+      if (retryRes.Status?.Code === 200 && retryRes.Hotels?.length > 0) {
+        const codeStr = retryRes.Hotels.slice(0, 50).map(c => c.HotelCode).join(",");
+        _hotelCodesCache[`code:${lookedUp}`] = codeStr;
+        for (const h of retryRes.Hotels) {
+          _hotelDetailsCache[h.HotelCode] = {
+            name: h.HotelName,
+            rating: h.HotelRating,
+            address: h.Address || "",
+            city: h.CityName || city || "",
+            amenities: [],
+            facilities: [],
+          };
+        }
+        console.log(`Resolved ${retryRes.Hotels.length} hotel codes with looked-up code ${lookedUp}`);
+        return codeStr;
+      }
+    }
+  }
+
+  throw new Error(`No hotels found for city "${city}" (code: ${resolvedCode}).`);
 }
 
 export async function searchHotels(params: {
@@ -326,243 +306,67 @@ export async function searchHotels(params: {
   rooms: { adults: number; children: number; childrenAges: number[] }[];
   guestNationality?: string;
   preferredCurrency?: string;
-  forceMock?: boolean;
 }): Promise<TBOHotelSearchOutput> {
+  await validateCredentials();
   const requestId = `search_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
 
-  if (!params.forceMock && await checkCredentials()) {
-    try {
-      const resolvedCodes = await resolveHotelCodes(params.city, params.hotelCodes, params.cityCode, requestId);
-      if (!resolvedCodes) {
-        console.warn("No hotel codes resolved for city:", params.city, "— falling back to mock");
-      } else {
-        // Fetch images for resolved hotel codes
-        await fetchHotelImages(resolvedCodes.split(","), requestId);
+  const resolvedCodes = await resolveHotelCodes(params.city, params.hotelCodes, params.cityCode, requestId);
+  await fetchHotelImages(resolvedCodes.split(","), requestId);
 
-        const tokenId = await ensureToken();
-        const searchReq: TBOHotelSearchRequest = {
-          CheckIn: params.checkIn,
-          CheckOut: params.checkOut,
-          HotelCodes: resolvedCodes,
-          GuestNationality: params.guestNationality || "IN",
-          PaxRooms: params.rooms.map(r => ({ Adults: r.adults, Children: r.children, ChildrenAges: r.childrenAges })),
-          PreferredCurrency: params.preferredCurrency || "INR",
-          ResponseTime: 29,
-          IsDetailedResponse: true,
-          Filters: { Refundable: false, NoOfRooms: 0, MealType: null, StarRating: null },
-          EndUserIp: getEndUserIp(),
-          TokenId: tokenId,
-        };
-        const res = await api.searchHotels(searchReq, { requestId });
-        if (res.TraceId) _lastTraceId = res.TraceId;
-        if (res.Status?.Code === 200 && res.HotelResult?.length > 0) {
-          const hotels = await Promise.all(
-            res.HotelResult.map(h => toDisplay(h, { destination: params.city }).then(d => ({ ...d, source: "tbo" as const })))
-          );
-          return { hotels, traceId: _lastTraceId };
-        }
-        throw new Error(`Hotel search failed: ${res.Status?.Description}`);
-      }
-    } catch (e) {
-      console.warn("TBO hotel API search failed, fallback to mock:", e);
-    }
-  }
-
-  const mockReq: TBOHotelSearchRequest = {
+  const tokenId = await ensureToken();
+  const searchReq: TBOHotelSearchRequest = {
     CheckIn: params.checkIn,
     CheckOut: params.checkOut,
-    HotelCodes: params.hotelCodes || "",
+    HotelCodes: resolvedCodes,
     GuestNationality: params.guestNationality || "IN",
     PaxRooms: params.rooms.map(r => ({ Adults: r.adults, Children: r.children, ChildrenAges: r.childrenAges })),
     PreferredCurrency: params.preferredCurrency || "INR",
-    SearchedCities: params.city ? [params.city] : undefined,
+    ResponseTime: 29,
+    IsDetailedResponse: true,
+    Filters: { Refundable: false, NoOfRooms: 0, MealType: null, StarRating: null },
+    EndUserIp: getEndUserIp(),
+    TokenId: tokenId,
   };
-
-  const mockRes = mock.mockSearchHotels(mockReq);
-
-  // Check if mock returned fallback hotels (no real inventory for this city)
-  const isFallback = mockRes.Status.Description === "Fallback";
-
-  if (isFallback) {
-    // Use fallback hotels with correct city name
-    const fallbackCity = params.city || "Unknown";
-    const fallbackHotels = mock.generateFallbackHotels(fallbackCity);
-    const fallbackNights = Math.max(1, Math.ceil(
-      (new Date(params.checkOut).getTime() - new Date(params.checkIn).getTime()) / 86400000
-    ));
-
-    const hotels: TBOHotelDisplay[] = await Promise.all(fallbackHotels.map(async (h, idx) => {
-      const rooms: TBOHotelRoomDisplay[] = h.rooms.map((r, ri) => ({
-        roomId: `${h.code}-${ri}`,
-        roomName: r.name,
-        name: r.name,
-        bookingCode: `${h.code}!TB!${ri + 1}!TB!fallback`,
-        mealType: r.mealType,
-        isRefundable: r.refundable,
-        totalFare: r.basePrice * fallbackNights,
-        totalTax: r.tax * fallbackNights,
-        inclusion: r.inclusion,
-        dayRates: Array.from({ length: fallbackNights }, () => ({ basePrice: r.basePrice })),
-        cancelPolicy: "Non Refundable",
-        cancellationPolicy: "Non Refundable",
-        roomIndex: ri + 1,
-        typeCode: "",
-        ratePlanCode: "",
-        roomFare: r.basePrice,
-        roomTax: r.tax,
-        currency: h.currency,
-        amenities: r.amenities,
-      }));
-
-      const minFare = Math.min(...rooms.map(r => r.totalFare));
-      const pricing = await calculatePrice(minFare, {
-        category: "HOTEL",
-        destination: fallbackCity,
-        hotelName: h.name,
-      });
-
-      return {
-        hotelCode: h.code,
-        name: h.name,
-        hotelRating: h.rating,
-        location: h.location,
-        currency: h.currency,
-        minTotalFare: pricing.displayedPrice,
-        rooms,
-        resultIndex: idx + 1,
-        picture: h.imageUrl,
-        rating: h.rating === 5 ? "FiveStar" : h.rating === 4 ? "FourStar" : h.rating === 3 ? "ThreeStar" : "TwoStar",
-        address: h.location,
-        tripAdvisorRating: 0,
-        description: "",
-        price: pricing.displayedPrice,
-        starRating: h.rating,
-        originalPrice: pricing.originalPrice,
-        source: "fallback" as const,
-      };
-    }));
-
-    return { hotels, traceId: "" };
+  const res = await api.searchHotels(searchReq, { requestId });
+  if (res.TraceId) _lastTraceId = res.TraceId;
+  if (res.Status?.Code !== 200 || !res.HotelResult?.length) {
+    throw new Error(`Hotel search failed: ${res.Status?.Description || "No hotels found"}`);
   }
-
-  // Mock data found - use it
-  const hotels = await Promise.all(mockRes.HotelResult.map(async (h) => {
-    const info = mock.getHotelInfoByCode(h.HotelCode);
-    const location = info?.CityName || params.city || "";
-
-    const rooms: TBOHotelRoomDisplay[] = h.Rooms.map((r: any, ri: number) => ({
-      roomId: r.RoomID?.[0] || "",
-      roomName: r.Name?.[0] || "Room",
-      name: r.Name?.[0] || "Room",
-      bookingCode: r.BookingCode || "",
-      mealType: r.MealType || "Room_Only",
-      isRefundable: r.IsRefundable ?? false,
-      totalFare: r.TotalFare || 0,
-      totalTax: r.TotalTax || 0,
-      inclusion: r.Inclusion || "",
-      dayRates: (r.DayRates?.[0] || []).map((dr: any) => ({
-        basePrice: dr.BasePrice || 0,
-      })),
-      cancelPolicy: r.CancelPolicies?.[0]
-        ? `${r.CancelPolicies[0].ChargeType}: ${r.CancelPolicies[0].CancellationCharge}%`
-        : "Non Refundable",
-      cancellationPolicy: r.CancelPolicies?.[0]
-        ? `${r.CancelPolicies[0].ChargeType}: ${r.CancelPolicies[0].CancellationCharge}%`
-        : "Non Refundable",
-      roomIndex: ri + 1,
-      typeCode: r.RoomTypeCode || "",
-      ratePlanCode: r.RatePlanCode || "",
-      roomFare: r.DayRates?.[0]?.[0]?.BasePrice || 0,
-      roomTax: (r.TotalTax || 0) / Math.max(1, (r.DayRates?.[0]?.length || 1)),
-      currency: h.Currency,
-      amenities: r.Amenities?.Amenity || [],
-    }));
-
-    const minFare = Math.min(...rooms.map(r => r.totalFare));
-    const pricing = await calculatePrice(minFare, {
-      category: "HOTEL",
-      destination: location,
-      hotelName: info?.HotelName,
-    });
-
-    return {
-      hotelCode: Number(h.HotelCode) || 0,
-      name: info?.HotelName || `Hotel ${h.HotelCode}`,
-      hotelRating: info?.HotelRating || 0,
-      location,
-      currency: h.Currency,
-      minTotalFare: pricing.displayedPrice,
-      rooms,
-      resultIndex: 1,
-      picture: info?.imageUrl || "",
-      rating: "ThreeStar",
-      address: "",
-      tripAdvisorRating: 0,
-      description: "",
-      price: pricing.displayedPrice,
-      starRating: info?.HotelRating || 3,
-      originalPrice: pricing.originalPrice,
-      source: "mock" as const,
-    };
-  }));
-
-  return { hotels, traceId: "" };
+  const hotels = await Promise.all(
+    res.HotelResult.map(h => toDisplay(h, { destination: params.city }))
+  );
+  return { hotels, traceId: _lastTraceId };
 }
 
 export async function preBook(params: {
   bookingCode: string;
 }): Promise<TBOHotelPreBookOutput> {
-  if (await checkCredentials()) {
-    try {
-      const req: TBOHotelPreBookRequest = {
-        BookingCode: params.bookingCode,
-        PaymentMode: "Limit",
-      };
-      const res = await api.preBook(req);
-      if (res.Status?.Code === 200) {
-        const hotel = res.HotelResult?.[0];
-        const room = hotel?.Rooms?.[0];
-        const priceBreakup = room?.PriceBreakUp?.[0];
-        return {
-          hotelName: hotel?.HotelCode || '',
-          hotelCode: hotel?.HotelCode || '',
-          netAmount: room?.NetAmount || 0,
-          roomRate: priceBreakup?.RoomRate || 0,
-          roomTax: priceBreakup?.RoomTax || 0,
-          serviceFee: 0,
-          agentCommission: priceBreakup?.AgentCommission || 0,
-          tds: 0,
-          validationInfo: res.ValidationInfo,
-          amenities: room?.Amenities || [],
-          rateConditions: hotel?.RateConditions || [],
-          taxBreakup: (priceBreakup?.TaxBreakup || []).map(t => ({ chargeType: t.TaxType, amount: t.TaxAmount })),
-          traceId: '',
-        };
-      }
-      throw new Error(`PreBook failed: ${res.Status?.Description}`);
-    } catch (e) {
-      console.warn("TBO hotel preBook failed, fallback to mock:", e);
-    }
+  await validateCredentials();
+  const req: TBOHotelPreBookRequest = {
+    BookingCode: params.bookingCode,
+    PaymentMode: "Limit",
+  };
+  const res = await api.preBook(req);
+  if (res.Status?.Code !== 200) {
+    throw new Error(`PreBook failed: ${res.Status?.Description}`);
   }
-
-  const mockRes = mock.mockPreBook(params.bookingCode);
-  const hotelResult = mockRes.HotelResult?.[0];
-  const room = hotelResult?.Rooms?.[0];
-  const priceBreakUp = room?.PriceBreakUp?.[0];
+  const hotel = res.HotelResult?.[0];
+  const room = hotel?.Rooms?.[0];
+  const priceBreakup = room?.PriceBreakUp?.[0];
   return {
-    hotelName: hotelResult?.HotelCode || "",
-    hotelCode: hotelResult?.HotelCode || "",
+    hotelName: hotel?.HotelCode || '',
+    hotelCode: hotel?.HotelCode || '',
     netAmount: room?.NetAmount || 0,
-    roomRate: priceBreakUp?.RoomRate || 0,
-    roomTax: priceBreakUp?.RoomTax || 0,
+    roomRate: priceBreakup?.RoomRate || 0,
+    roomTax: priceBreakup?.RoomTax || 0,
     serviceFee: 0,
-    agentCommission: priceBreakUp?.AgentCommission || 0,
+    agentCommission: priceBreakup?.AgentCommission || 0,
     tds: 0,
-    validationInfo: mockRes.ValidationInfo,
+    validationInfo: res.ValidationInfo,
     amenities: room?.Amenities || [],
-    rateConditions: hotelResult?.RateConditions || [],
-    taxBreakup: (priceBreakUp?.TaxBreakup || []).map(t => ({ chargeType: t.TaxType, amount: t.TaxAmount })),
-    traceId: _lastTraceId,
+    rateConditions: hotel?.RateConditions || [],
+    taxBreakup: (priceBreakup?.TaxBreakup || []).map(t => ({ chargeType: t.TaxType, amount: t.TaxAmount })),
+    traceId: '',
   };
 }
 
@@ -582,73 +386,27 @@ export async function bookHotel(params: {
   }[] }[];
   EndUserIp?: string;
 }): Promise<TBOHotelBookOutput> {
-  if (await checkCredentials()) {
-    try {
-      const clientRef = `gorasa_${Date.now()}`;
-      const req: TBOHotelBookRequest = {
-        BookingCode: params.bookingCode,
-        IsVoucherBooking: false,
-        GuestNationality: params.guestNationality,
-        RequestedBookingMode: HOTEL_BOOKING_MODE,
-        NetAmount: params.netAmount,
-        ClientReferenceId: clientRef,
-        EndUserIp: getEndUserIp(),
-        TokenId: await ensureToken(),
-  HotelRoomsDetails: params.hotelRoomsDetails.map(rd => ({
-          HotelPassenger: rd.passengers.map(p => {
-      const passenger: TBOHotelPassenger = {
-        Title: p.title,
-        FirstName: p.firstName,
-        LastName: p.lastName,
-        PaxType: p.paxType,
-        LeadPassenger: p.leadPassenger,
-        Age: p.age,
-      };
-            if (p.email && p.email.trim()) passenger.Email = p.email;
-            if (p.phone && p.phone.trim()) passenger.Phoneno = p.phone;
-            if (p.pan && p.pan.trim()) passenger.PAN = p.pan;
-            if (p.addressLine1 && p.addressLine1.trim()) passenger.AddressLine1 = p.addressLine1;
-            if (p.city && p.city.trim()) passenger.City = p.city;
-            if (p.countryCode && p.countryCode.trim()) passenger.CountryCode = p.countryCode;
-            if (p.nationality && p.nationality.trim()) passenger.Nationality = p.nationality;
-            return passenger as TBOHotelPassenger;
-          }),
-        })),
-      };
-      const res = await api.bookHotel(req);
-      if (res.BookResult?.ResponseStatus === 1) {
-        return {
-          bookingId: res.BookResult.BookingId,
-          confirmationNo: res.BookResult.ConfirmationNo,
-          bookingRefNo: res.BookResult.BookingRefNo,
-          invoiceNumber: res.BookResult.InvoiceNumber,
-          hotelBookingStatus: res.BookResult.HotelBookingStatus,
-          isPriceChanged: res.BookResult.IsPriceChanged,
-        };
-      }
-      throw new Error(`Hotel book failed: ${res.BookResult?.Error?.ErrorMessage || ""}`);
-    } catch (e) {
-      console.warn("TBO hotel book failed, fallback to mock:", e);
-    }
-  }
-
-  const mockReq: TBOHotelBookRequest = {
+  await validateCredentials();
+  const clientRef = `gorasa_${Date.now()}`;
+  const req: TBOHotelBookRequest = {
     BookingCode: params.bookingCode,
     IsVoucherBooking: false,
     GuestNationality: params.guestNationality,
     RequestedBookingMode: HOTEL_BOOKING_MODE,
     NetAmount: params.netAmount,
-    ClientReferenceId: `gorasa_${Date.now()}`,
+    ClientReferenceId: clientRef,
+    EndUserIp: getEndUserIp(),
+    TokenId: await ensureToken(),
     HotelRoomsDetails: params.hotelRoomsDetails.map(rd => ({
       HotelPassenger: rd.passengers.map(p => {
-      const passenger: TBOHotelPassenger = {
-        Title: p.title,
-        FirstName: p.firstName,
-        LastName: p.lastName,
-        PaxType: p.paxType,
-        LeadPassenger: p.leadPassenger,
-        Age: p.age,
-      };
+        const passenger: TBOHotelPassenger = {
+          Title: p.title,
+          FirstName: p.firstName,
+          LastName: p.lastName,
+          PaxType: p.paxType,
+          LeadPassenger: p.leadPassenger,
+          Age: p.age,
+        };
         if (p.email && p.email.trim()) passenger.Email = p.email;
         if (p.phone && p.phone.trim()) passenger.Phoneno = p.phone;
         if (p.pan && p.pan.trim()) passenger.PAN = p.pan;
@@ -660,72 +418,35 @@ export async function bookHotel(params: {
       }),
     })),
   };
-  const mockRes = mock.mockBook(mockReq);
+  const res = await api.bookHotel(req);
+  if (res.BookResult?.ResponseStatus !== 1) {
+    throw new Error(`Hotel book failed: ${res.BookResult?.Error?.ErrorMessage || "Unknown error"}`);
+  }
   return {
-    bookingId: mockRes.BookResult.BookingId,
-    confirmationNo: mockRes.BookResult.ConfirmationNo,
-    bookingRefNo: mockRes.BookResult.BookingRefNo,
-    invoiceNumber: mockRes.BookResult.InvoiceNumber,
-    hotelBookingStatus: mockRes.BookResult.HotelBookingStatus,
-    isPriceChanged: mockRes.BookResult.IsPriceChanged,
+    bookingId: res.BookResult.BookingId,
+    confirmationNo: res.BookResult.ConfirmationNo,
+    bookingRefNo: res.BookResult.BookingRefNo,
+    invoiceNumber: res.BookResult.InvoiceNumber,
+    hotelBookingStatus: res.BookResult.HotelBookingStatus,
+    isPriceChanged: res.BookResult.IsPriceChanged,
   };
 }
 
 export async function getBookingDetail(params: {
   bookingId: number;
 }): Promise<TBOHotelBookingDetailOutput> {
-  if (await checkCredentials()) {
-    try {
-      const req: TBOHotelBookingDetailRequest = {
-        BookingId: params.bookingId,
-        EndUserIp: getEndUserIp(),
-        TokenId: await ensureToken(),
-        TraceId: _lastTraceId || undefined,
-      };
-      const res = await api.getBookingDetail(req);
-      const result = res.GetBookingDetailResult;
-      if (result.ResponseStatus === 1) {
-        return {
-          bookingId: result.BookingId,
-          confirmationNo: result.ConfirmationNo,
-          invoiceNumber: result.InvoiceNo,
-          hotelName: result.HotelName,
-          hotelCode: result.HotelCode,
-          checkIn: result.CheckInDate,
-          checkOut: result.CheckOutDate,
-          status: result.HotelBookingStatus,
-          rooms: (result.Rooms || []).map(r => ({
-            roomName: r.RoomTypeName,
-            passengers: (r.HotelPassenger || []).map(p => ({
-              title: p.Title,
-              firstName: p.FirstName,
-              lastName: p.LastName,
-              paxType: p.PaxType,
-            })),
-            totalFare: r.TotalFare,
-            totalTax: r.TotalTax,
-          })),
-          priceBreakup: {
-            roomRate: result.Rooms?.[0]?.PriceBreakUp?.RoomRate || 0,
-            roomTax: result.Rooms?.[0]?.PriceBreakUp?.RoomTax || 0,
-            extraGuestCharges: result.Rooms?.[0]?.PriceBreakUp?.RoomExtraGuestCharges || 0,
-            childCharges: result.Rooms?.[0]?.PriceBreakUp?.RoomChildCharges || 0,
-            netAmount: result.NetAmount,
-          },
-        };
-      }
-      throw new Error(`Booking detail failed`);
-    } catch (e) {
-      console.warn("TBO hotel booking detail failed, fallback to mock:", e);
-    }
-  }
-
-  const mockRes = mock.mockBookingDetail(params.bookingId);
-  const result = mockRes.GetBookingDetailResult;
+  await validateCredentials();
+  const req: TBOHotelBookingDetailRequest = {
+    BookingId: params.bookingId,
+    EndUserIp: getEndUserIp(),
+    TokenId: await ensureToken(),
+    TraceId: _lastTraceId || undefined,
+  };
+  const res = await api.getBookingDetail(req);
+  const result = res.GetBookingDetailResult;
   if (result.ResponseStatus !== 1) {
-    throw new Error("Booking not found");
+    throw new Error(`Booking detail failed: ${result.Error?.ErrorMessage || "Unknown error"}`);
   }
-
   return {
     bookingId: result.BookingId,
     confirmationNo: result.ConfirmationNo,
@@ -757,132 +478,88 @@ export async function getBookingDetail(params: {
 }
 
 export async function getCountries(): Promise<{ Code: string; Name: string }[]> {
-  try {
-    const res = await api.getCountries();
-    return res.CountryList || [];
-  } catch (e) {
-    console.warn("TBO getCountries API failed, falling back to mock:", e);
-    return mock.getMockCountries();
-  }
+  const res = await api.getCountries();
+  return res.CountryList || [];
 }
 
 export async function getCities(countryCode: string): Promise<any[]> {
-  try {
-    const res = await api.getCities(countryCode);
-    return res.CityList || [];
-  } catch (e) {
-    console.warn("TBO getCities API failed, falling back to mock:", e);
-    return mock.getMockCities(countryCode);
-  }
+  const res = await api.getCities(countryCode);
+  return res.CityList || [];
 }
 
 export async function getHotelCodes(cityCode: string): Promise<any[]> {
-  try {
-    const res = await api.getHotelCodeList(cityCode);
-    return res.Hotels || [];
-  } catch (e) {
-    console.warn("TBO getHotelCodes API failed, falling back to mock:", e);
-    return mock.getMockHotelCodes(Number(cityCode));
-  }
+  const res = await api.getHotelCodeList(cityCode);
+  return res.Hotels || [];
 }
 
 export async function generateVoucher(params: {
   bookingId: number;
 }): Promise<TBOHotelGenerateVoucherOutput> {
-  if (await checkCredentials()) {
-    try {
-      const req: TBOHotelGenerateVoucherRequest = {
-        EndUserIp: getEndUserIp(),
-        BookingId: params.bookingId,
-      };
-      const res = await api.generateVoucher(req);
-      if (res.GenerateVoucherResult?.ResponseStatus === 1) {
-        return {
-          voucherStatus: res.GenerateVoucherResult.VoucherStatus,
-          status: res.GenerateVoucherResult.Status,
-          hotelBookingStatus: res.GenerateVoucherResult.HotelBookingStatus,
-          bookingId: res.GenerateVoucherResult.BookingId,
-          confirmationNo: res.GenerateVoucherResult.ConfirmationNo,
-          invoiceNumber: res.GenerateVoucherResult.InvoiceNumber,
-          traceId: res.GenerateVoucherResult.TraceId,
-        };
-      }
-      throw new Error(`Voucher failed: ${res.GenerateVoucherResult?.Error?.ErrorMessage || ""}`);
-    } catch (e) {
-      console.warn("TBO generateVoucher failed, fallback to mock:", e);
-    }
+  await validateCredentials();
+  const req: TBOHotelGenerateVoucherRequest = {
+    EndUserIp: getEndUserIp(),
+    BookingId: params.bookingId,
+  };
+  const res = await api.generateVoucher(req);
+  if (res.GenerateVoucherResult?.ResponseStatus !== 1) {
+    throw new Error(`Voucher failed: ${res.GenerateVoucherResult?.Error?.ErrorMessage || "Unknown error"}`);
   }
-
-  const mockRes = mock.mockGenerateVoucher(params.bookingId);
-  return mockRes;
+  return {
+    voucherStatus: res.GenerateVoucherResult.VoucherStatus,
+    status: res.GenerateVoucherResult.Status,
+    hotelBookingStatus: res.GenerateVoucherResult.HotelBookingStatus,
+    bookingId: res.GenerateVoucherResult.BookingId,
+    confirmationNo: res.GenerateVoucherResult.ConfirmationNo,
+    invoiceNumber: res.GenerateVoucherResult.InvoiceNumber,
+    traceId: res.GenerateVoucherResult.TraceId,
+  };
 }
 
 export async function cancelBooking(params: {
   bookingId: number;
   remarks?: string;
 }): Promise<TBOHotelCancelOutput> {
-  if (await checkCredentials()) {
-    try {
-      const tokenId = await ensureToken();
-      const req: TBOHotelSendChangeRequest = {
-        BookingMode: 5,
-        RequestType: 4,
-        Remarks: params.remarks || "Customer requested cancellation",
-        BookingId: params.bookingId,
-        EndUserIp: getEndUserIp(),
-        TokenId: tokenId,
-      };
-      const res = await api.sendChangeRequest(req);
-      if (res.HotelChangeRequestResult?.ResponseStatus === 1) {
-        return {
-          changeRequestId: res.HotelChangeRequestResult.ChangeRequestId,
-          changeRequestStatus: res.HotelChangeRequestResult.ChangeRequestStatus,
-          traceId: res.HotelChangeRequestResult.TraceId,
-        };
-      }
-      throw new Error(`Cancel failed: ${res.HotelChangeRequestResult?.Error?.ErrorMessage || ""}`);
-    } catch (e) {
-      console.warn("TBO cancel failed, fallback to mock:", e);
-    }
+  await validateCredentials();
+  const tokenId = await ensureToken();
+  const req: TBOHotelSendChangeRequest = {
+    BookingMode: 5,
+    RequestType: 4,
+    Remarks: params.remarks || "Customer requested cancellation",
+    BookingId: params.bookingId,
+    EndUserIp: getEndUserIp(),
+    TokenId: tokenId,
+  };
+  const res = await api.sendChangeRequest(req);
+  if (res.HotelChangeRequestResult?.ResponseStatus !== 1) {
+    throw new Error(`Cancel failed: ${res.HotelChangeRequestResult?.Error?.ErrorMessage || "Unknown error"}`);
   }
-
-  return mock.mockCancel(params.bookingId);
+  return {
+    changeRequestId: res.HotelChangeRequestResult.ChangeRequestId,
+    changeRequestStatus: res.HotelChangeRequestResult.ChangeRequestStatus,
+    traceId: res.HotelChangeRequestResult.TraceId,
+  };
 }
 
 export async function getCancelStatus(params: {
   changeRequestId: number;
 }): Promise<TBOHotelCancelStatusOutput> {
-  if (await checkCredentials()) {
-    try {
-      const tokenId = await ensureToken();
-      const req: TBOHotelGetChangeRequestStatusRequest = {
-        BookingMode: 5,
-        ChangeRequestId: params.changeRequestId,
-        EndUserIp: getEndUserIp(),
-        TokenId: tokenId,
-      };
-      const res = await api.getChangeRequestStatus(req);
-      if (res.HotelChangeRequestStatusResult?.ResponseStatus === 1) {
-        return {
-          changeRequestId: res.HotelChangeRequestStatusResult.ChangeRequestId,
-          refundedAmount: res.HotelChangeRequestStatusResult.RefundedAmount,
-          cancellationCharge: res.HotelChangeRequestStatusResult.CancellationCharge,
-          changeRequestStatus: res.HotelChangeRequestStatusResult.ChangeRequestStatus,
-          traceId: res.HotelChangeRequestStatusResult.TraceId,
-        };
-      }
-      throw new Error(`Cancel status failed: ${res.HotelChangeRequestStatusResult?.Error?.ErrorMessage || ""}`);
-    } catch (e) {
-      console.warn("TBO cancel status failed, fallback to mock:", e);
-    }
+  await validateCredentials();
+  const tokenId = await ensureToken();
+  const req: TBOHotelGetChangeRequestStatusRequest = {
+    BookingMode: 5,
+    ChangeRequestId: params.changeRequestId,
+    EndUserIp: getEndUserIp(),
+    TokenId: tokenId,
+  };
+  const res = await api.getChangeRequestStatus(req);
+  if (res.HotelChangeRequestStatusResult?.ResponseStatus !== 1) {
+    throw new Error(`Cancel status failed: ${res.HotelChangeRequestStatusResult?.Error?.ErrorMessage || "Unknown error"}`);
   }
-
-  return mock.mockCancelStatus(params.changeRequestId);
-}
-
-export function resetClient(): void {
-  mock.resetMock();
-  _lastHotelResults = [];
-  _lastTraceId = "";
-  cachedToken = null;
+  return {
+    changeRequestId: res.HotelChangeRequestStatusResult.ChangeRequestId,
+    refundedAmount: res.HotelChangeRequestStatusResult.RefundedAmount,
+    cancellationCharge: res.HotelChangeRequestStatusResult.CancellationCharge,
+    changeRequestStatus: res.HotelChangeRequestStatusResult.ChangeRequestStatus,
+    traceId: res.HotelChangeRequestStatusResult.TraceId,
+  };
 }

@@ -34,7 +34,6 @@ export async function POST(req: NextRequest) {
           JourneyType: journeyType,
           PreferredDepartureTime: p.departureDate || "",
           CabinClass: p.cabinClass || "Economy",
-          forceMock: !!body.demo,
         });
         return NextResponse.json(result);
       }

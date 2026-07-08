@@ -131,7 +131,6 @@ export default function HotelsPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           action: "search",
-          demo: demoMode,
           params: {
             CheckInDate: checkIn,
             CheckOutDate: checkOut,

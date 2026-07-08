@@ -7,7 +7,6 @@ import {
   generateVoucher,
   cancelBooking,
   getCancelStatus,
-  setLastHotelResults,
   getCountries,
   getCities,
   getHotelCodes,
@@ -64,7 +63,6 @@ export async function POST(req: NextRequest) {
           rooms: roomsArray,
           guestNationality: p.GuestNationality || p.guestNationality || "IN",
           preferredCurrency: p.PreferredCurrency || p.preferredCurrency || "INR",
-          forceMock: !!body.demo,
         });
         return NextResponse.json(result);
       }

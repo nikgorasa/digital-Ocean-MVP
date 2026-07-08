@@ -7,7 +7,6 @@ import {
   bookFlight,
   ticketFlight,
   getBookingDetail,
-  setLastResults,
   setEndUserIp,
 } from "@/lib/tbo-flight-client";
 
@@ -34,39 +33,7 @@ export async function POST(req: NextRequest) {
           PreferredDepartureTime: date,
           CabinClass: body.cabinClass || "Economy",
           EndUserIp: endUserIp,
-          forceMock: !!body.demo,
         });
-        setLastResults(result.flights.map(f => ({
-          ResultIndex: f.resultIndex,
-          Source: f.source,
-          IsLCC: f.isLCC,
-          IsRefundable: f.isRefundable,
-          Fare: {
-            Currency: f.currency,
-            BaseFare: f.baseFare,
-            Tax: f.tax,
-            YQTax: 0,
-            AdditionalTxnFeeOfrd: 0,
-            AdditionalTxnFeePub: 0,
-            OtherCharges: 0,
-            Discount: 0,
-            PublishedFare: f.publishedFare,
-            CommissionEarned: f.commissionEarned,
-            PLBEarned: 0,
-            IncentiveEarned: 0,
-            OfferedFare: f.offeredFare,
-            TdsOnCommission: 0,
-            TdsOnPLB: 0,
-            TdsOnIncentive: 0,
-            ServiceFee: 0,
-            ChargeBU: [],
-          },
-          FareBreakdown: f.fareBreakdown,
-          Segments: f.segments,
-          LastTicketDate: "",
-          Penalty: "",
-          FareRules: "",
-        })));
         return NextResponse.json(result);
       }
 

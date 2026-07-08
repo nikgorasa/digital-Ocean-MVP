@@ -158,19 +158,21 @@ export default function Navbar({
 
           {/* Auth / User Menu */}
           <div className="flex items-center space-x-3">
-            {/* Demo Mode Toggle */}
-            <button
-              onClick={toggleDemoMode}
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold transition-all cursor-pointer ${
-                demoMode
-                  ? "bg-purple-100 text-purple-700 border border-purple-300"
-                  : "bg-slate-100 text-slate-500 border border-slate-200 hover:bg-slate-200"
-              }`}
-              title={demoMode ? "Demo Mode ON — Click to disable" : "Demo Mode OFF — Click to enable (skip real APIs)"}
-            >
-              <FlaskConical size={14} />
-              {demoMode ? "Demo ON" : "Demo"}
-            </button>
+            {/* Demo Mode Toggle — Admin Only */}
+            {isAdmin && (
+              <button
+                onClick={toggleDemoMode}
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold transition-all cursor-pointer ${
+                  demoMode
+                    ? "bg-purple-100 text-purple-700 border border-purple-300"
+                    : "bg-slate-100 text-slate-500 border border-slate-200 hover:bg-slate-200"
+                }`}
+                title={demoMode ? "Demo Mode ON — Click to disable" : "Demo Mode OFF — Click to enable (skip real APIs)"}
+              >
+                <FlaskConical size={14} />
+                {demoMode ? "Demo ON" : "Demo"}
+              </button>
+            )}
 
             {user ? (
               <motion.div

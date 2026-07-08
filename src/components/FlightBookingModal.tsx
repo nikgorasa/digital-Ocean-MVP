@@ -259,7 +259,7 @@ export default function FlightBookingModal({
       const res = await fetch("/api/tbo-flights", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ action: "ssr", traceId: "demo", resultIndex: flight.id, demo: demoMode }),
+        body: JSON.stringify({ action: "ssr", traceId: "demo", resultIndex: flight.id }),
       });
       const data = await res.json();
       setSsrBaggage(data.baggage || []);
