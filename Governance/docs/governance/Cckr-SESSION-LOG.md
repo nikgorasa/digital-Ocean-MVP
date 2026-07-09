@@ -1,7 +1,7 @@
 # GoRASA CockroachDB Standalone — SESSION-LOG
 
 > **Purpose:** Living document tracking all sessions, changes, deployments, and learnings.
-> **Last updated:** 2026-07-10 (Session 16 — Multi-city UI + JourneyType=3 segment building)
+> **Last updated:** 2026-07-10 (Session 17 — CORP-08: Admin user-to-company assignment)
 
 ---
 
@@ -367,6 +367,31 @@ Each environment connects to a **different CockroachDB cluster**. Zero shared da
 | Schema changes | Manual SQL | 2026-06-15 |
 | Deploy | Vercel CLI + GitHub Actions | 2026-06-15 |
 | Pipeline | Standalone (separate from any other pipeline) | 2026-06-15 |
+
+---
+
+---
+
+### Session 2026-07-10 (Session 17) — CORP-08: Admin user-to-company assignment
+
+**Objective:** Wire up company selector in admin users page to complete the corporate employee identification flow.
+
+**Changes:**
+- **PATCH `/api/users`** — now accepts `companyId` in the request body (was missing from destructuring)
+- **Admin users page** — fetches `/api/companies` on mount, adds company dropdown in both edit and create user forms, includes `companyId` in PATCH body
+- **`users.findAll()`** — added `include: { company: { select: { name: true } } }` so company name renders in the user detail card
+- **`sanitizeUser()`** — added `company` to `SAFE_USER_FIELDS` and `SafeUser` type
+- **`companies.findAll()`** — added `_count: { employees: true }` with flattened mapping for real employee counts
+
+**Files changed:** `src/lib/db/users.ts`, `src/lib/auth-helpers.ts`, `src/app/api/users/route.ts`, `src/app/admin/users/page.tsx`, `src/lib/db/companies.ts`
+
+**GitHub issue:** #79 (CORP-08)
+
+**Verification:**
+- Pre-flight: 13/13 passed
+- TypeScript: 0 errors
+- Build: clean
+- Post-task: 9/9 passed
 
 ---
 
