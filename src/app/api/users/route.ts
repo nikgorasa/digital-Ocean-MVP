@@ -82,7 +82,7 @@ export async function PATCH(request: NextRequest) {
     await requireAdmin();
 
     const body = await request.json();
-    const { id, role, isActive, name, email } = body;
+    const { id, role, isActive, name, email, companyId } = body;
 
     if (!id) {
       return NextResponse.json({ error: "User ID is required" }, { status: 400 });
@@ -93,6 +93,7 @@ export async function PATCH(request: NextRequest) {
     if (isActive !== undefined) updateData.isActive = isActive;
     if (name !== undefined) updateData.name = name;
     if (email !== undefined) updateData.email = email;
+    if (companyId !== undefined) updateData.companyId = companyId;
 
     const user = await users.update(id, updateData);
     return NextResponse.json(sanitizeUser(user as Record<string, unknown>));

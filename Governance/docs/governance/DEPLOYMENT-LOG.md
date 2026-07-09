@@ -21,6 +21,7 @@
 | 2026-07-09 | DEV | ✅ Live | https://cckr.vercel.app | Middleware whitelist fix — TBO API routes no longer return 401 (1039585) |
 | 2026-07-09 | DEV | ✅ Live | https://cckr.vercel.app | Flight search frontend fix — duration type mismatch, cabin class map, stops derivation (cbc4d74) |
 | 2026-07-09 | DEV | ✅ Live | https://cckr.vercel.app | Return flight search fix — send 2 segments for JourneyType=2 (closes #55, 4061780) |
+| 2026-07-10 | DEV | 🚧 Pending | https://cckr.vercel.app | Multi-city flight UI + JourneyType=3 segment building — remove/add leg buttons, date validation, Circle tripType, N-leg alternating segments |
 | 2026-06-26 | DEV | ✅ Pushed | https://cckr.vercel.app | API config guardrails — dual-endpoint validation, seed defaults fix, governance scripts (d091a52) |
 | 2026-06-19 | DEV | ✅ Live | https://cckr.vercel.app | First deployment — Supabase removed, aqua-pony CockroachDB cluster |
 | 2026-06-17 | DEV | ✅ Live | https://cckr.vercel.app | Initial CockroachDB standalone deployment |

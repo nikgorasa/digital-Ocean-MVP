@@ -10,6 +10,7 @@ const SAFE_USER_FIELDS = {
   role: true,
   avatar: true,
   companyId: true,
+  company: true,
   isActive: true,
   createdAt: true,
   walletBalance: true,
@@ -27,6 +28,7 @@ type SafeUser = {
   role: string;
   avatar: string | null;
   companyId: string | null;
+  company: { name: string } | null;
   isActive: boolean;
   createdAt: Date;
   walletBalance: number;

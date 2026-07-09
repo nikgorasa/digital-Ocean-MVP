@@ -1,7 +1,15 @@
 import { prisma } from './index'
 
 export async function findAll() {
-  return prisma.company.findMany({ orderBy: { createdAt: 'desc' } })
+  const companies = await prisma.company.findMany({
+    orderBy: { createdAt: 'desc' },
+    include: { _count: { select: { employees: true } } },
+  })
+  return companies.map((c) => ({
+    ...c,
+    employees: c._count.employees,
+    _count: undefined,
+  }))
 }
 
 export async function findById(id: string) {

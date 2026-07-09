@@ -7,12 +7,14 @@ export interface UserFindOptions {
   limit?: number
 }
 
+const userInclude = { company: { select: { name: true } } } as const;
+
 export async function findByEmail(email: string) {
-  return prisma.user.findUnique({ where: { email } })
+  return prisma.user.findUnique({ where: { email }, include: userInclude })
 }
 
 export async function findById(id: string) {
-  return prisma.user.findUnique({ where: { id } })
+  return prisma.user.findUnique({ where: { id }, include: userInclude })
 }
 
 export async function findAll(options: UserFindOptions = {}) {
@@ -33,6 +35,7 @@ export async function findAll(options: UserFindOptions = {}) {
       orderBy: { createdAt: 'desc' },
       skip: offset,
       take: limit,
+      include: userInclude,
     }),
     prisma.user.count({ where }),
   ])

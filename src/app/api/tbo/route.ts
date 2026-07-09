@@ -35,6 +35,7 @@ export async function POST(req: NextRequest) {
           PreferredDepartureTime: p.departureDate || "",
           PreferredArrivalTime: p.returnDate || "",
           CabinClass: p.cabinClass || "Economy",
+          multiCityDates: journeyType === 3 ? p.multiCityDates : undefined,
         });
         return NextResponse.json(result);
       }

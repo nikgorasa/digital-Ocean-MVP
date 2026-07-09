@@ -24,6 +24,12 @@ interface UserItem {
   createdAt: string;
 }
 
+interface CompanyItem {
+  id: string;
+  name: string;
+  domain: string | null;
+}
+
 const ROLE_COLORS: Record<string, string> = {
   CUSTOMER: "bg-blue-100 text-blue-700",
   CORPORATE_USER: "bg-cyan-100 text-cyan-700",
@@ -42,10 +48,11 @@ export default function UsersPage() {
   const [search, setSearch] = useState("");
   const [roleFilter, setRoleFilter] = useState("");
   const [page, setPage] = useState(1);
+  const [companies, setCompanies] = useState<CompanyItem[]>([]);
   const [selectedUser, setSelectedUser] = useState<UserItem | null>(null);
-  const [editForm, setEditForm] = useState<{ name: string; email: string; role: string } | null>(null);
+  const [editForm, setEditForm] = useState<{ name: string; email: string; role: string; companyId: string | null } | null>(null);
   const [showCreate, setShowCreate] = useState(false);
-  const [newUser, setNewUser] = useState({ name: "", email: "", role: "CUSTOMER" });
+  const [newUser, setNewUser] = useState({ name: "", email: "", role: "CUSTOMER", companyId: "" });
   const [createdPassword, setCreatedPassword] = useState("");
   const [saving, setSaving] = useState(false);
   const limit = 20;
@@ -61,13 +68,27 @@ export default function UsersPage() {
       const data = await res.json();
       if (res.ok) {
         setCreatedPassword(data.tempPassword || "");
-        setNewUser({ name: "", email: "", role: "CUSTOMER" });
+        setNewUser({ name: "", email: "", role: "CUSTOMER", companyId: "" });
         fetchUsers();
       }
     } catch (err) {
       console.error("Failed to create user:", err);
     }
   };
+
+  const fetchCompanies = useCallback(async () => {
+    try {
+      const res = await fetch("/api/companies");
+      if (res.ok) {
+        const data = await res.json();
+        setCompanies(Array.isArray(data) ? data : []);
+      }
+    } catch (err) {
+      console.error("Failed to fetch companies:", err);
+    }
+  }, []);
+
+  useEffect(() => { fetchCompanies(); }, [fetchCompanies]);
 
   const fetchUsers = useCallback(async () => {
     try {
@@ -94,7 +115,7 @@ export default function UsersPage() {
 
   const openUserDetail = (user: UserItem) => {
     setSelectedUser(user);
-    setEditForm({ name: user.name, email: user.email, role: user.role });
+    setEditForm({ name: user.name, email: user.email, role: user.role, companyId: user.companyId });
   };
 
   const toggleActive = async (user: UserItem) => {
@@ -125,6 +146,7 @@ export default function UsersPage() {
           name: editForm.name,
           email: editForm.email,
           role: editForm.role,
+          companyId: editForm.companyId,
         }),
       });
       if (res.ok) {
@@ -391,6 +413,19 @@ export default function UsersPage() {
                       ))}
                     </select>
                   </div>
+                  <div>
+                    <label className="text-[10px] font-bold uppercase tracking-widest text-slate-400 mb-1 block">Company</label>
+                    <select
+                      value={editForm?.companyId || ""}
+                      onChange={(e) => setEditForm(editForm ? { ...editForm, companyId: e.target.value || null } : null)}
+                      className="w-full px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm"
+                    >
+                      <option value="">None</option>
+                      {companies.map((c) => (
+                        <option key={c.id} value={c.id}>{c.name}{c.domain ? ` (${c.domain})` : ""}</option>
+                      ))}
+                    </select>
+                  </div>
                 </div>
               </div>
             </div>
@@ -424,6 +459,7 @@ export default function UsersPage() {
               <div><label className="text-[10px] font-bold uppercase tracking-widest text-slate-400 mb-1 block">Name</label><input value={newUser.name} onChange={(e) => setNewUser({ ...newUser, name: e.target.value })} placeholder="Full Name" className="w-full px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm" /></div>
               <div><label className="text-[10px] font-bold uppercase tracking-widest text-slate-400 mb-1 block">Email</label><input type="email" value={newUser.email} onChange={(e) => setNewUser({ ...newUser, email: e.target.value })} placeholder="email@example.com" className="w-full px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm" /></div>
               <div><label className="text-[10px] font-bold uppercase tracking-widest text-slate-400 mb-1 block">Role</label><select value={newUser.role} onChange={(e) => setNewUser({ ...newUser, role: e.target.value })} className="w-full px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm"><option value="CUSTOMER">Customer</option><option value="CORPORATE_USER">Corporate User</option><option value="SALES">Sales</option><option value="ADMIN">Admin</option></select></div>
+              <div><label className="text-[10px] font-bold uppercase tracking-widest text-slate-400 mb-1 block">Company</label><select value={newUser.companyId} onChange={(e) => setNewUser({ ...newUser, companyId: e.target.value })} className="w-full px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm"><option value="">None</option>{companies.map((c) => (<option key={c.id} value={c.id}>{c.name}</option>))}</select></div>
             </div>
             <div className="flex gap-2">
               <button onClick={createUser} className="px-6 py-2.5 bg-green-600 text-white rounded-xl text-sm font-medium hover:bg-green-700 cursor-pointer">Create User</button>

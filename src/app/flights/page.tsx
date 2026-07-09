@@ -137,6 +137,11 @@ export default function FlightsPage() {
     if (!originCity.name || !destinationCity.name) return;
     if (tripType !== "multi-city" && !departDate) return;
     if (tripType === "return" && !returnDate) return;
+    if (tripType === "multi-city" && multiCityDates.some(d => !d)) {
+      setSearchError("Please fill in all multi-city leg dates.");
+      setSearched(true);
+      return;
+    }
     setSearching(true);
     try {
       const originCode = originCity.iata_code || originCity.name;
@@ -156,7 +161,8 @@ export default function FlightsPage() {
             children,
             infants,
             cabinClass,
-            tripType: tripType === "return" ? "Return" : "OneWay",
+            tripType: tripType === "return" ? "Return" : tripType === "multi-city" ? "Circle" : "OneWay",
+            multiCityDates: tripType === "multi-city" ? multiCityDates : undefined,
           },
         }),
       });
@@ -334,15 +340,26 @@ export default function FlightsPage() {
                             className="w-full px-3 py-2.5 bg-white border border-slate-200 rounded-xl text-sm focus:ring-2 outline-none"
                           />
                         </div>
-                        {i === multiCityDates.length - 1 && (
-                          <button
-                            onClick={() => setMultiCityDates([...multiCityDates, ""])}
-                            className="mt-5 p-2 rounded-lg border border-dashed border-slate-300 text-slate-400 hover:text-[#D97706] hover:border-[#D97706] transition-colors cursor-pointer"
-                            title="Add leg"
-                          >
-                            <Plus size={16} />
-                          </button>
-                        )}
+                        <div className="flex items-center gap-1 mt-5">
+                          {multiCityDates.length > 2 && (
+                            <button
+                              onClick={() => setMultiCityDates(multiCityDates.filter((_, idx) => idx !== i))}
+                              className="p-2 rounded-lg border border-dashed border-slate-300 text-slate-400 hover:text-red-500 hover:border-red-300 transition-colors cursor-pointer"
+                              title="Remove leg"
+                            >
+                              <Minus size={16} />
+                            </button>
+                          )}
+                          {i === multiCityDates.length - 1 && (
+                            <button
+                              onClick={() => setMultiCityDates([...multiCityDates, ""])}
+                              className="p-2 rounded-lg border border-dashed border-slate-300 text-slate-400 hover:text-[#D97706] hover:border-[#D97706] transition-colors cursor-pointer"
+                              title="Add leg"
+                            >
+                              <Plus size={16} />
+                            </button>
+                          )}
+                        </div>
                       </div>
                     ))}
                   </div>
@@ -520,7 +537,7 @@ export default function FlightsPage() {
 
               <button
                 onClick={handleSearch}
-                disabled={searching || !originCity.name || !destinationCity.name || (tripType !== "multi-city" && !departDate)}
+                disabled={searching || !originCity.name || !destinationCity.name || (tripType !== "multi-city" && !departDate) || (tripType === "multi-city" && multiCityDates.some(d => !d))}
                 className="mt-4 w-full md:w-auto px-8 py-3 bg-brand-saffron text-white rounded-xl font-bold hover:bg-brand-burnt transition-colors flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed active:scale-[0.98]"
               >
                 {searching ? (

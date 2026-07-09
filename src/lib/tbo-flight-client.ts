@@ -141,6 +141,7 @@ export async function searchFlights(params: {
   PreferredArrivalTime?: string;
   CabinClass?: string;
   EndUserIp?: string;
+  multiCityDates?: string[];
 }): Promise<TBOFlightSearchOutput> {
   await validateCredentials();
   const cabinClassMap: Record<string, number> = {
@@ -154,23 +155,36 @@ export async function searchFlights(params: {
   const cabinClassNum = cabinClassMap[(params.CabinClass || "economy").toLowerCase()] ?? 1;
 
   const tokenId = await ensureToken();
-  const segments: TBOFlightSearchSegment[] = [
-    {
+  const segments: TBOFlightSearchSegment[] = [];
+  if (params.JourneyType === 3 && params.multiCityDates?.length) {
+    params.multiCityDates.forEach((date, i) => {
+      const origin = i % 2 === 0 ? params.Origin : params.Destination;
+      const dest = i % 2 === 0 ? params.Destination : params.Origin;
+      segments.push({
+        Origin: origin,
+        Destination: dest,
+        FlightCabinClass: cabinClassNum,
+        PreferredDepartureTime: date || "",
+        PreferredArrivalTime: "",
+      });
+    });
+  } else {
+    segments.push({
       Origin: params.Origin,
       Destination: params.Destination,
       FlightCabinClass: cabinClassNum,
       PreferredDepartureTime: params.PreferredDepartureTime || "",
       PreferredArrivalTime: "",
-    },
-  ];
-  if (params.JourneyType === 2 && params.PreferredArrivalTime) {
-    segments.push({
-      Origin: params.Destination,
-      Destination: params.Origin,
-      FlightCabinClass: cabinClassNum,
-      PreferredDepartureTime: params.PreferredArrivalTime,
-      PreferredArrivalTime: "",
     });
+    if (params.JourneyType === 2 && params.PreferredArrivalTime) {
+      segments.push({
+        Origin: params.Destination,
+        Destination: params.Origin,
+        FlightCabinClass: cabinClassNum,
+        PreferredDepartureTime: params.PreferredArrivalTime,
+        PreferredArrivalTime: "",
+      });
+    }
   }
   const searchReq: TBOFlightSearchRequest = {
     EndUserIp: params.EndUserIp || getEndUserIp(),

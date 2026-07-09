@@ -1,7 +1,7 @@
 # GoRASA CockroachDB Standalone — SESSION-LOG
 
 > **Purpose:** Living document tracking all sessions, changes, deployments, and learnings.
-> **Last updated:** 2026-07-09 (Session 15 — Return flight search: send 2 segments for JourneyType=2)
+> **Last updated:** 2026-07-10 (Session 16 — Multi-city UI + JourneyType=3 segment building)
 
 ---
 
@@ -379,7 +379,13 @@ Each environment connects to a **different CockroachDB cluster**. Zero shared da
 5. **UX-01/UX-02** — User dashboard + SEO meta tags
 6. **LAUNCH-02** — Deploy to production (after Cashfree done)
 7. **AUTH-01** — Document `BETTER_AUTH_URL` requirement in env setup docs (must match Vercel project URL)
-8. Keep schema in sync between DEV and PROD when making changes
+8. **FLT-03 (#58)** — bookFlight() never called before ticketFlight() (CRITICAL)
+9. **FLT-04 (#59)** — Only 1 passenger generated regardless of count (CRITICAL)
+10. **FLT-05 (#60)** — No multi-leg selection state (CRITICAL)
+11. **FLT-06 (#61)** — Multi-city search wrong JourneyType (HIGH)
+12. **FLT-07 (#62)** — Price change silently ignored (MEDIUM)
+13. **FLT-08 (#63)** — SSR endpoint wrong + hardcoded traceId (MEDIUM)
+14. Keep schema in sync between DEV and PROD when making changes
 
 ---
 
@@ -507,31 +513,36 @@ Each environment connects to a **different CockroachDB cluster**. Zero shared da
 
 ---
 
-### Session 2026-07-09 (Session 15) — Return flight search: send 2 segments for JourneyType=2
+### Session 2026-07-10 (Session 16) — Multi-city UI + JourneyType=3 segment building
 
-**Objective:** Fix "Flight search failed: Invalid segment length" error on return flight searches.
+**Objective:** Add multi-city flight search UI and segment building for JourneyType=3.
 
-**What happened:**
-- One-way flight search worked fine; return search failed with "Invalid segment length"
-- TBO API validates `Segments` array length against `JourneyType` (2 segments for Return, 1 for OneWay)
-- `searchFlights()` always built 1 segment regardless of JourneyType
-- Route handler never forwarded `returnDate` from the frontend to the search function
-- Response processing only used `results[0]` (outbound), silently discarding `results[1]` (inbound)
+**Changes:**
 
-**Root cause:** JourneyType=2 requires 2 segments (outbound + inbound), but code only ever sent 1 segment.
+**Multi-city UI fixes (`src/app/flights/page.tsx`):**
+- Added remove button for legs (Minus icon, min 2 legs enforced)
+- Added multi-city date validation before search (all leg dates required)
+- Fixed search button disabled condition — multi-city only checks multiCityDates, not departDate
+- Fixed API `tripType` — now sends `"Circle"` for multi-city (maps to JourneyType=3)
+- Forwards all `multiCityDates` array to the API params
 
-**Fix:**
-- Added `PreferredArrivalTime` param to `searchFlights` — mapped from frontend `returnDate`
-- For JourneyType=2 with a PreferredArrivalTime, push a second segment (dest→origin)
-- Flattened both result arrays with `.flat()` so inbound flights aren't lost
-- Added `TBOFlightSearchSegment` to imports
+**Multi-city segment building (`src/lib/tbo-flight-client.ts`):**
+- Added `multiCityDates?: string[]` param to `searchFlights()`
+- For JourneyType=3, builds N alternating segments for N legs (origin→dest alternates per leg)
+- Each segment gets its own `PreferredDepartureTime` from the multiCityDates array
 
-**Files changed:** 2 (`src/lib/tbo-flight-client.ts`, `src/app/api/tbo/route.ts`)
+**Return segment fix (committed in 4061780, re-verified):**
+- `PreferredArrivalTime` mapped from frontend `returnDate` in route handler
+- JourneyType=2 now pushes a 2nd segment (dest→origin with return date)
+- Results flattened with `.flat()` so inbound flights aren't discarded
+- `TBOFlightSearchSegment` imported
+
+**Files changed:** 3 (all uncommitted: `src/app/flights/page.tsx`, `src/lib/tbo-flight-client.ts`, `src/app/api/tbo/route.ts`)
 
 **Verification:**
 - Pre-flight: 13/13 passed
 - TypeScript: 0 errors
-- Build: compiled successfully (22.3s Turbopack)
-- Post-task: pending
+- Build: compiled successfully
+- Post-task: 9/9 passed
 
-**GitHub:** Closes #55, created #56 (FLT-02)
+**GitHub issues created:** Epic #57 (FLIGHT-EPIC), #58 (FLT-03), #59 (FLT-04), #60 (FLT-05), #61 (FLT-06), #62 (FLT-07), #63 (FLT-08)
