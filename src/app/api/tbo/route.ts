@@ -33,6 +33,7 @@ export async function POST(req: NextRequest) {
           InfantCount: p.infants || 0,
           JourneyType: journeyType,
           PreferredDepartureTime: p.departureDate || "",
+          PreferredArrivalTime: p.returnDate || "",
           CabinClass: p.cabinClass || "Economy",
         });
         return NextResponse.json(result);

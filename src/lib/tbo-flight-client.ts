@@ -1,6 +1,7 @@
 import type {
   TBOFlightAuthRequest,
   TBOFlightSearchRequest,
+  TBOFlightSearchSegment,
   TBOFlightFareRuleRequest,
   TBOFlightFareQuoteRequest,
   TBOFlightSSRRequest,
@@ -137,6 +138,7 @@ export async function searchFlights(params: {
   InfantCount: number;
   JourneyType: number;
   PreferredDepartureTime?: string;
+  PreferredArrivalTime?: string;
   CabinClass?: string;
   EndUserIp?: string;
 }): Promise<TBOFlightSearchOutput> {
@@ -152,6 +154,24 @@ export async function searchFlights(params: {
   const cabinClassNum = cabinClassMap[(params.CabinClass || "economy").toLowerCase()] ?? 1;
 
   const tokenId = await ensureToken();
+  const segments: TBOFlightSearchSegment[] = [
+    {
+      Origin: params.Origin,
+      Destination: params.Destination,
+      FlightCabinClass: cabinClassNum,
+      PreferredDepartureTime: params.PreferredDepartureTime || "",
+      PreferredArrivalTime: "",
+    },
+  ];
+  if (params.JourneyType === 2 && params.PreferredArrivalTime) {
+    segments.push({
+      Origin: params.Destination,
+      Destination: params.Origin,
+      FlightCabinClass: cabinClassNum,
+      PreferredDepartureTime: params.PreferredArrivalTime,
+      PreferredArrivalTime: "",
+    });
+  }
   const searchReq: TBOFlightSearchRequest = {
     EndUserIp: params.EndUserIp || getEndUserIp(),
     TokenId: tokenId,
@@ -159,15 +179,7 @@ export async function searchFlights(params: {
     ChildCount: params.ChildCount,
     InfantCount: params.InfantCount,
     JourneyType: params.JourneyType,
-    Segments: [
-      {
-        Origin: params.Origin,
-        Destination: params.Destination,
-        FlightCabinClass: cabinClassNum,
-        PreferredDepartureTime: params.PreferredDepartureTime || "",
-        PreferredArrivalTime: "",
-      },
-    ],
+    Segments: segments,
   };
   const res = await api.searchFlights(tokenId, searchReq);
   if (res.Response?.ResponseStatus !== 1) {
@@ -175,20 +187,18 @@ export async function searchFlights(params: {
   }
   const results = res.Response.Results;
   const flightList: TBOFlightResult[] = Array.isArray(results[0])
-    ? (results[0] as TBOFlightResult[])
+    ? (results as TBOFlightResult[][]).flat()
     : (results as unknown as TBOFlightResult[]);
-  const flights = await Promise.all(
-    flightList.map(async (r) => {
-      const isReturn = params.JourneyType === 2 || params.JourneyType === 5;
-      const tripInd = r.Segments?.[0]?.[0]?.TripIndicator ?? 1;
-      let leg: "outbound" | "inbound" | "oneway";
-      if (!isReturn) leg = "oneway";
-      else if (tripInd === 1) leg = "outbound";
-      else leg = "inbound";
-      return toDisplay(r, leg);
-    })
-  );
-  return { flights, traceId: res.Response.TraceId };
+  const flights = flightList.map((r) => {
+    const isReturn = params.JourneyType === 2 || params.JourneyType === 5;
+    const tripInd = r.Segments?.[0]?.[0]?.TripIndicator ?? 1;
+    let leg: "outbound" | "inbound" | "oneway";
+    if (!isReturn) leg = "oneway";
+    else if (tripInd === 1) leg = "outbound";
+    else leg = "inbound";
+    return toDisplay(r, leg);
+  });
+  return { flights: await Promise.all(flights), traceId: res.Response.TraceId };
 }
 
 export async function getFareRule(params: {
