@@ -18,6 +18,8 @@
 | 2026-07-03 | DEV | ✅ Live | https://cckr.vercel.app | Companies API auth + wallet ledger routes (dfec007) |
 | 2026-07-03 | DEV | ✅ Live | https://cckr.vercel.app | Corporate data model — Invoice, WalletLedger, schema changes (c41fa62) |
 | 2026-07-03 | DEV | ✅ Live | https://cckr.vercel.app | Email notifications wired + email verification + password reset (66ff917) |
+| 2026-07-09 | DEV | ✅ Live | https://cckr.vercel.app | Middleware whitelist fix — TBO API routes no longer return 401 (1039585) |
+| 2026-07-09 | DEV | 🚀 Deploying | https://cckr.vercel.app | Flight search frontend fix — duration type mismatch, cabin class map, stops derivation (closes #55) |
 | 2026-06-26 | DEV | ✅ Pushed | https://cckr.vercel.app | API config guardrails — dual-endpoint validation, seed defaults fix, governance scripts (d091a52) |
 | 2026-06-19 | DEV | ✅ Live | https://cckr.vercel.app | First deployment — Supabase removed, aqua-pony CockroachDB cluster |
 | 2026-06-17 | DEV | ✅ Live | https://cckr.vercel.app | Initial CockroachDB standalone deployment |

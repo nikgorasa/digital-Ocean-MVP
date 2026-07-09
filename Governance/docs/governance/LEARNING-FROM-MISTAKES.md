@@ -37,3 +37,23 @@
 - **Root Cause:** Scripts were copied from the main pipeline repo without updating paths for the standalone repo structure.
 - **Resolution:** Rewrote all governance scripts to use relative path resolution from `$SCRIPT_DIR`.
 - **Prevention:** Never hardcode absolute paths. Always use `$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)` for script directory resolution.
+
+### Issue 004 — Middleware Whitelist: API Routes Return 401 When Missing from PUBLIC_API_ROUTES
+
+- **Date:** 2026-07-09
+- **Duration:** ~15 min
+- **Severity:** Medium
+- **Symptoms:** Hotels page calling `/api/tbo-hotels` returned 401 Unauthorized. The middleware intercepted the request and rejected it because the route was not in the `PUBLIC_API_ROUTES` whitelist. Users must search hotels before logging in, so these routes must be accessible without a session cookie.
+- **Root Cause:** When `/api/tbo-hotels` and related TBO API routes were added, there was no step in the workflow to check whether new API routes need to be added to the middleware `PUBLIC_API_ROUTES` whitelist. The middleware blocks all non-whitelisted API routes that lack a valid session cookie.
+- **Resolution:** Added `/api/tbo-hotels`, `/api/tbo`, and `/api/tbo-flights` to the `PUBLIC_API_ROUTES` array in `src/middleware.ts`.
+- **Prevention:** Any new API route must be evaluated for middleware whitelist inclusion. Specifically, if a route must be accessible without authentication (i.e., before the user logs in), it must be added to `PUBLIC_API_ROUTES` in `src/middleware.ts`. This is now a mandatory step in the API route creation checklist.
+
+### Issue 005 — Type Mismatch: TBOFlightDisplay.duration (number) vs Flight.duration (string) Causes Silent React Crash
+
+- **Date:** 2026-07-09
+- **Duration:** ~20 min
+- **Severity:** High
+- **Symptoms:** Flight search on `/flights` page returns results from API (200 OK, 111 flights), but results never render. The search spinner transitions to a blank/empty state with no error message visible. The `handleSearch` function completes without exception, but the `useMemo` for `filteredResults` crashes silently when sorting calls `parseDuration()`.
+- **Root Cause:** `TBOFlightDisplay.duration` is a `number` (minutes, e.g. 135), but `Flight.duration` is typed as `string`. The mapping in `handleSearch` assigns `duration: f.duration` directly, carrying the number through. When `sortFlights("best")` calls `parseDuration(a.duration || "")`, the runtime value is a number (e.g. 135). The function calls `duration.match(...)` which throws `TypeError: duration.match is not a function` because numbers don't have `.match()`. This propagates from `useMemo` into the React render cycle, causing a component crash. Additional cascading issues: `stops` was always `0` (not derived from segments), `cabinClass` number was used as `tier` label.
+- **Resolution:** Added `formatDuration(minutes)` to convert number → string ("2h 15m"). Added `CABIN_CLASS_MAP` to map numeric codes to cabin labels. Derived `stops` from `segments[0].length - 1`. Updated mapping to handle all three correctly.
+- **Prevention:** When mapping API response types to frontend display types, verify that field types match EXACTLY at runtime, not just in TypeScript. Numeric fields from the API that represent display-oriented values (duration, cabin class codes) must be converted to their display format in the mapping layer. Non-null assertions and `||` fallbacks mask type mismatches but don't prevent runtime crashes from method calls on wrong types. Always validate that any function expecting a string method (`.match()`, `.split()`, `.slice()`) will actually receive a string at runtime.

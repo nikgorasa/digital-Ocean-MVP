@@ -62,6 +62,24 @@ function todayStr() {
   return new Date().toISOString().slice(0, 10);
 }
 
+function formatDuration(minutes: number): string {
+  if (!minutes && minutes !== 0) return "";
+  const h = Math.floor(minutes / 60);
+  const m = minutes % 60;
+  if (h === 0) return `${m}m`;
+  if (m === 0) return `${h}h`;
+  return `${h}h ${m}m`;
+}
+
+const CABIN_CLASS_MAP: Record<number, string> = {
+  0: "All",
+  1: "Economy",
+  2: "Premium Economy",
+  3: "Business",
+  4: "Premium Business",
+  5: "First",
+};
+
 export default function FlightsPage() {
   const { user } = useAuth();
   const { demoMode } = useDemoMode();
@@ -159,10 +177,10 @@ export default function FlightsPage() {
         destination: f.destination,
         departureTime: f.departureTime,
         arrivalTime: f.arrivalTime,
-        duration: f.duration,
-        stops: f.stops || 0,
+        duration: typeof f.duration === "number" ? formatDuration(f.duration) : f.duration,
+        stops: f.segments?.[0] ? f.segments[0].length - 1 : 0,
         price: f.publishedFare || f.baseFare || 0,
-        tier: f.cabinClass || "Economy",
+        tier: CABIN_CLASS_MAP[f.cabinClass as number] || f.cabinClass || "Economy",
         baggage: f.baggage || "",
         cabinBaggage: f.cabinBaggage || "7 KG",
         isRefundable: f.isRefundable ?? false,

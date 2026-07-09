@@ -1,7 +1,7 @@
 # GoRASA CockroachDB Standalone — SESSION-LOG
 
 > **Purpose:** Living document tracking all sessions, changes, deployments, and learnings.
-> **Last updated:** 2026-07-09 (Session 12 — Logo/favicon replacement)
+> **Last updated:** 2026-07-09 (Session 14 — Flight search duration type mismatch fix)
 
 ---
 
@@ -441,3 +441,66 @@ Each environment connects to a **different CockroachDB cluster**. Zero shared da
 **Files changed:** 2 (public/logo.svg, public/favicon.svg)
 
 **Governance docs updated:** Cckr-SESSION-LOG.md, CHANGE-LOG.md (CRDB-GOV-004)
+
+---
+
+### Session 2026-07-09 (Session 13) — Middleware whitelist fix for TBO API routes
+
+**Objective:** Fix 401 Unauthorized on `/api/tbo-hotels` — hotel search must work without auth (users search before logging in).
+
+**What happened:**
+- Hotels page calls `/api/tbo-hotels` from the browser
+- Middleware checked `PUBLIC_API_ROUTES`, did not find `/api/tbo-hotels`
+- Middleware returned 401 because no session cookie was present
+- Same issue affected `/api/tbo` and `/api/tbo-flights`
+
+**Fix:**
+- Added `/api/tbo-hotels`, `/api/tbo`, `/api/tbo-flights` to `PUBLIC_API_ROUTES` in `src/middleware.ts`
+
+**Root cause:** When new API routes are added, there is no documented step to check if they need to be added to the middleware whitelist.
+
+**Prevention rule documented in:** `Governance/docs/governance/LEARNING-FROM-MISTAKES.md` (Issue 004)
+
+**Files changed:** 1 (`src/middleware.ts`)
+
+**Verification:**
+- Pre-flight: 13/13 passed
+- Post-task: 9/9 passed
+- TypeScript: 0 errors
+- Build: clean
+
+**Commit:** `1039585`
+
+---
+
+### Session 2026-07-09 (Session 14) — Flight search frontend: duration type mismatch fix
+
+**Objective:** Investigate and fix client-side render crash on `/flights` after API returns results.
+
+**What happened:**
+- Flight search API `/api/tbo` works (HTTP 200, returns 111 flights from BOM→DEL)
+- Middleware whitelist is correct (`/api/tbo` in PUBLIC_API_ROUTES)
+- Frontend mapping in `handleSearch` assigned `TBOFlightDisplay.duration` (number, minutes) directly to `Flight.duration` (typed as `string`)
+- When `useMemo` → `sortFlights` called `parseDuration(a.duration || "")`, the number value (e.g., `135`) caused `TypeError: duration.match is not a function` because numbers don't have `.match()`
+- This error crashed the `useMemo`, causing the component to fail silently (React render crash)
+- Additional issues: `stops` was always `0` (no mapping from segments), `tier` was numeric `cabinClass` code instead of human-readable label
+
+**Root cause:** Type mismatch — `TBOFlightDisplay.duration` is `number` (minutes), `Flight.duration` expects `string`. The intermediate `FlightResult` interface in `applyFilters.ts` also declares `duration?: string`.
+
+**Fix:**
+- Added `formatDuration(minutes)` helper — converts minutes to "2h 15m" format
+- Added `CABIN_CLASS_MAP` — maps numeric cabin class codes (1=Economy, 2=Premium Economy, etc.)
+- Updated mapping in `handleSearch`:
+  - `duration: typeof f.duration === "number" ? formatDuration(f.duration) : f.duration`
+  - `stops: f.segments?.[0] ? f.segments[0].length - 1 : 0` (properly derived from segments)
+  - `tier: CABIN_CLASS_MAP[f.cabinClass as number] || f.cabinClass || "Economy"`
+
+**Files changed:** 1 (`src/app/flights/page.tsx`)
+
+**Verification:**
+- Pre-flight: 13/13 passed
+- TypeScript: `npx tsc --noEmit` — 0 errors
+- Build: `npm run build` — compiled successfully (4.5s Turbopack)
+- Post-task: 9/9 passed
+- API test: curl against `https://cckr.vercel.app/api/tbo` returns 200 with 111 flights
+- No database, schema, or API config changes
