@@ -406,7 +406,7 @@ export interface TBOHotelPreBookOutput {
   validationInfo: TBOHotelValidationInfo;
   amenities: string[];
   rateConditions: string[];
-  taxBreakup: { chargeType: string; amount: number }[];
+  taxBreakup: { chargeType: string; taxableAmount: number; taxPercentage: number; amount: number }[];
   traceId: string;
 }
 

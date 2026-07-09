@@ -246,18 +246,6 @@ export async function getCorporateDiscount(
   };
 }
 
-export function calculateTax(subtotal: number, category: "HOTEL" | "FLIGHT" | "PACKAGE"): number {
-  if (category === "FLIGHT") {
-    return Math.round(subtotal * 0.18);
-  }
-  return Math.round(subtotal * 0.05);
-}
-
-export function getTaxRate(category: "HOTEL" | "FLIGHT" | "PACKAGE"): number {
-  if (category === "FLIGHT") return 18;
-  return 5;
-}
-
 export function invalidateRulesCache(): void {
   rulesCache = null;
   rulesCacheTime = 0;

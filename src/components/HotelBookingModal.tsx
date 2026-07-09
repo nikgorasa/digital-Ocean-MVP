@@ -69,6 +69,7 @@ export default function HotelBookingModal({
   } | null>(null);
   const [errorMessage, setErrorMessage] = useState("");
   const [isCorporateBooking, setIsCorporateBooking] = useState(false);
+  const [prebookTaxBreakup, setPrebookTaxBreakup] = useState<{ chargeType: string; taxableAmount: number; taxPercentage: number; amount: number }[] | null>(null);
   const [corporateLoading, setCorporateLoading] = useState(false);
   const [corporateResult, setCorporateResult] = useState<{
     invoiceNumber?: string;
@@ -213,6 +214,10 @@ export default function HotelBookingModal({
           setErrorMessage("Price could not be verified. Please try again.");
           setStep("error");
           return;
+        }
+
+        if (blockData.taxBreakup?.length > 0) {
+          setPrebookTaxBreakup(blockData.taxBreakup);
         }
 
         if (blockData.isPriceChanged) {
@@ -723,6 +728,16 @@ export default function HotelBookingModal({
                   <span className="text-slate-600">Taxes & Fees</span>
                   <span className="text-slate-900">{formatCurrency(room.totalTax)}</span>
                 </div>
+                {prebookTaxBreakup && prebookTaxBreakup.length > 0 && (
+                  <div className="pl-3 space-y-0.5">
+                    {prebookTaxBreakup.map((t, i) => (
+                      <div key={i} className="flex justify-between text-xs text-slate-500">
+                        <span>{t.chargeType}{t.taxPercentage > 0 ? ` @ ${t.taxPercentage}%` : ''}</span>
+                        <span>{formatCurrency(t.amount)}</span>
+                      </div>
+                    ))}
+                  </div>
+                )}
                 <div className="flex justify-between text-sm">
                   <span className="text-slate-600">Subtotal</span>
                   <span className="text-slate-900">{formatCurrency(room.totalFare + room.totalTax)}</span>
