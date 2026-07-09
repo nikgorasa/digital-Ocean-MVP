@@ -18,6 +18,9 @@ const PUBLIC_API_ROUTES = [
   "/api/topup-amounts",
   "/api/roles",
   "/api/users/demo",
+  "/api/tbo-hotels",
+  "/api/tbo",
+  "/api/tbo-flights",
 ];
 
 function isPublicApiRoute(pathname: string): boolean {
