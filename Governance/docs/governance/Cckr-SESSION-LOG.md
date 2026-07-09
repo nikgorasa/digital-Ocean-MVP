@@ -1,7 +1,7 @@
 # GoRASA CockroachDB Standalone — SESSION-LOG
 
 > **Purpose:** Living document tracking all sessions, changes, deployments, and learnings.
-> **Last updated:** 2026-07-09 (Session 14 — Flight search duration type mismatch fix)
+> **Last updated:** 2026-07-09 (Session 15 — Return flight search: send 2 segments for JourneyType=2)
 
 ---
 
@@ -504,3 +504,34 @@ Each environment connects to a **different CockroachDB cluster**. Zero shared da
 - Post-task: 9/9 passed
 - API test: curl against `https://cckr.vercel.app/api/tbo` returns 200 with 111 flights
 - No database, schema, or API config changes
+
+---
+
+### Session 2026-07-09 (Session 15) — Return flight search: send 2 segments for JourneyType=2
+
+**Objective:** Fix "Flight search failed: Invalid segment length" error on return flight searches.
+
+**What happened:**
+- One-way flight search worked fine; return search failed with "Invalid segment length"
+- TBO API validates `Segments` array length against `JourneyType` (2 segments for Return, 1 for OneWay)
+- `searchFlights()` always built 1 segment regardless of JourneyType
+- Route handler never forwarded `returnDate` from the frontend to the search function
+- Response processing only used `results[0]` (outbound), silently discarding `results[1]` (inbound)
+
+**Root cause:** JourneyType=2 requires 2 segments (outbound + inbound), but code only ever sent 1 segment.
+
+**Fix:**
+- Added `PreferredArrivalTime` param to `searchFlights` — mapped from frontend `returnDate`
+- For JourneyType=2 with a PreferredArrivalTime, push a second segment (dest→origin)
+- Flattened both result arrays with `.flat()` so inbound flights aren't lost
+- Added `TBOFlightSearchSegment` to imports
+
+**Files changed:** 2 (`src/lib/tbo-flight-client.ts`, `src/app/api/tbo/route.ts`)
+
+**Verification:**
+- Pre-flight: 13/13 passed
+- TypeScript: 0 errors
+- Build: compiled successfully (22.3s Turbopack)
+- Post-task: pending
+
+**GitHub:** Closes #55, created #56 (FLT-02)
