@@ -405,7 +405,14 @@ export default function UsersPage() {
                     <label className="text-[10px] font-bold uppercase tracking-widest text-slate-400 mb-1 block">Role</label>
                     <select
                       value={editForm?.role || ""}
-                      onChange={(e) => setEditForm(editForm ? { ...editForm, role: e.target.value } : null)}
+                      onChange={(e) => {
+                        const newRole = e.target.value;
+                        setEditForm(editForm ? {
+                          ...editForm,
+                          role: newRole,
+                          companyId: newRole !== "CORPORATE_USER" ? null : editForm.companyId,
+                        } : null);
+                      }}
                       className="w-full px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm"
                     >
                       {ALL_ROLES.map((r) => (
@@ -413,19 +420,21 @@ export default function UsersPage() {
                       ))}
                     </select>
                   </div>
-                  <div>
-                    <label className="text-[10px] font-bold uppercase tracking-widest text-slate-400 mb-1 block">Company</label>
-                    <select
-                      value={editForm?.companyId || ""}
-                      onChange={(e) => setEditForm(editForm ? { ...editForm, companyId: e.target.value || null } : null)}
-                      className="w-full px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm"
-                    >
-                      <option value="">None</option>
-                      {companies.map((c) => (
-                        <option key={c.id} value={c.id}>{c.name}{c.domain ? ` (${c.domain})` : ""}</option>
-                      ))}
-                    </select>
-                  </div>
+                  {editForm?.role === "CORPORATE_USER" && (
+                    <div>
+                      <label className="text-[10px] font-bold uppercase tracking-widest text-slate-400 mb-1 block">Company</label>
+                      <select
+                        value={editForm?.companyId || ""}
+                        onChange={(e) => setEditForm(editForm ? { ...editForm, companyId: e.target.value || null } : null)}
+                        className="w-full px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm"
+                      >
+                        <option value="">None</option>
+                        {companies.map((c) => (
+                          <option key={c.id} value={c.id}>{c.name}{c.domain ? ` (${c.domain})` : ""}</option>
+                        ))}
+                      </select>
+                    </div>
+                  )}
                 </div>
               </div>
             </div>
@@ -458,8 +467,8 @@ export default function UsersPage() {
             <div className="space-y-4 mb-4">
               <div><label className="text-[10px] font-bold uppercase tracking-widest text-slate-400 mb-1 block">Name</label><input value={newUser.name} onChange={(e) => setNewUser({ ...newUser, name: e.target.value })} placeholder="Full Name" className="w-full px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm" /></div>
               <div><label className="text-[10px] font-bold uppercase tracking-widest text-slate-400 mb-1 block">Email</label><input type="email" value={newUser.email} onChange={(e) => setNewUser({ ...newUser, email: e.target.value })} placeholder="email@example.com" className="w-full px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm" /></div>
-              <div><label className="text-[10px] font-bold uppercase tracking-widest text-slate-400 mb-1 block">Role</label><select value={newUser.role} onChange={(e) => setNewUser({ ...newUser, role: e.target.value })} className="w-full px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm"><option value="CUSTOMER">Customer</option><option value="CORPORATE_USER">Corporate User</option><option value="SALES">Sales</option><option value="ADMIN">Admin</option></select></div>
-              <div><label className="text-[10px] font-bold uppercase tracking-widest text-slate-400 mb-1 block">Company</label><select value={newUser.companyId} onChange={(e) => setNewUser({ ...newUser, companyId: e.target.value })} className="w-full px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm"><option value="">None</option>{companies.map((c) => (<option key={c.id} value={c.id}>{c.name}</option>))}</select></div>
+              <div><label className="text-[10px] font-bold uppercase tracking-widest text-slate-400 mb-1 block">Role</label><select value={newUser.role} onChange={(e) => setNewUser({ ...newUser, role: e.target.value, companyId: e.target.value !== "CORPORATE_USER" ? "" : newUser.companyId })} className="w-full px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm"><option value="CUSTOMER">Customer</option><option value="CORPORATE_USER">Corporate User</option><option value="SALES">Sales</option><option value="ADMIN">Admin</option></select></div>
+              {newUser.role === "CORPORATE_USER" && (<div><label className="text-[10px] font-bold uppercase tracking-widest text-slate-400 mb-1 block">Company</label><select value={newUser.companyId} onChange={(e) => setNewUser({ ...newUser, companyId: e.target.value })} className="w-full px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm"><option value="">None</option>{companies.map((c) => (<option key={c.id} value={c.id}>{c.name}</option>))}</select></div>)}
             </div>
             <div className="flex gap-2">
               <button onClick={createUser} className="px-6 py-2.5 bg-green-600 text-white rounded-xl text-sm font-medium hover:bg-green-700 cursor-pointer">Create User</button>

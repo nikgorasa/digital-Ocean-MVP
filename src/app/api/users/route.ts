@@ -57,11 +57,14 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "User with this email already exists" }, { status: 409 });
     }
 
+    const effectiveRole = role || "CUSTOMER";
+    const effectiveCompanyId = effectiveRole === "CORPORATE_USER" ? (companyId || null) : null;
+
     const user = await users.create({
       email,
       name,
-      role: role || "CUSTOMER",
-      companyId: companyId || null,
+      role: effectiveRole,
+      companyId: effectiveCompanyId,
     });
 
     return NextResponse.json(sanitizeUser(user as Record<string, unknown>), { status: 201 });
@@ -88,12 +91,31 @@ export async function PATCH(request: NextRequest) {
       return NextResponse.json({ error: "User ID is required" }, { status: 400 });
     }
 
+    const existing = await users.findById(id);
+    if (!existing) {
+      return NextResponse.json({ error: "User not found" }, { status: 404 });
+    }
+
+    const effectiveRole = role !== undefined ? role : existing.role;
+
     const updateData: Record<string, unknown> = {};
     if (role !== undefined) updateData.role = role;
     if (isActive !== undefined) updateData.isActive = isActive;
     if (name !== undefined) updateData.name = name;
     if (email !== undefined) updateData.email = email;
-    if (companyId !== undefined) updateData.companyId = companyId;
+
+    if (effectiveRole !== "CORPORATE_USER") {
+      // Non-corporate users cannot be linked to a company
+      if (companyId !== undefined && companyId !== null) {
+        return NextResponse.json(
+          { error: "Only CORPORATE_USER role can be linked to a company" },
+          { status: 400 }
+        );
+      }
+      updateData.companyId = null;
+    } else {
+      if (companyId !== undefined) updateData.companyId = companyId;
+    }
 
     const user = await users.update(id, updateData);
     return NextResponse.json(sanitizeUser(user as Record<string, unknown>));
