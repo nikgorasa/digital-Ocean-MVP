@@ -1,7 +1,7 @@
 # GoRASA CockroachDB Standalone — SESSION-LOG
 
 > **Purpose:** Living document tracking all sessions, changes, deployments, and learnings.
-> **Last updated:** 2026-07-10 (Session 17 — CORP-08: Admin user-to-company assignment)
+> **Last updated:** 2026-07-10 (Session 18 — Full CORP audit + B2B top-up fix + InvoiceModal DB connection)
 
 ---
 
@@ -571,3 +571,49 @@ Each environment connects to a **different CockroachDB cluster**. Zero shared da
 - Post-task: 9/9 passed
 
 **GitHub issues created:** Epic #57 (FLIGHT-EPIC), #58 (FLT-03), #59 (FLT-04), #60 (FLT-05), #61 (FLT-06), #62 (FLT-07), #63 (FLT-08)
+
+---
+
+### Session 2026-07-10 (Session 18) — Full CORP audit + B2B top-up fix + InvoiceModal DB connection
+
+**Objective:** Complete comprehensive audit of all 8 CORP issues (CORP-01 through CORP-08), fix discovered bugs, and create corporate flow governance documentation.
+
+**Audit findings (all CORP issues implemented but with gaps):**
+
+| Issue | Status | Key Finding |
+|---|---|---|
+| CORP-01 | ✅ Done | Company/Invoice/WalletLedger models exist in Prisma |
+| CORP-02 | ✅ +🐛 Fixed | B2B top-up called PATCH (ignored walletBalance). Fixed: now calls POST /api/wallet/topup |
+| CORP-03 | ✅ Done | Corporate checkout: discount → wallet deduction → invoice creation atomic |
+| CORP-04 | ✅ Done | HotelBookingModal shows corporate discount & company name |
+| CORP-05 | ✅ Done | Admin invoices page: filters, stats, by-company breakdown, pagination |
+| CORP-06 | ✅ +🐛 Fixed | InvoiceModal showed booking-derived data, not real Invoice record. Fixed: fetches from DB |
+| CORP-07 | ✅ Done | Cancellation refunds to company wallet with WalletLedger entry |
+| CORP-08 | ✅ Done | Admin user-to-company assignment with role validation |
+
+**Fixes applied:**
+
+1. **B2B top-up (`src/app/admin/b2b/page.tsx`):**
+   - `handleTopUp` was calling `PATCH /api/companies/{id}` with `walletBalance` — the PATCH handler ignores `walletBalance`
+   - Fixed: now calls `POST /api/wallet/topup` with `{ companyId, amount, description }` — creates WalletLedgerEntry and properly updates balance
+
+2. **InvoiceModal DB connection (`src/components/InvoiceModal.tsx`):**
+   - Was displaying booking-derived data (mock) instead of the actual Invoice record
+   - Created `GET /api/invoices/user/[bookingId]` — user-facing endpoint (auth + ownership check)
+   - Updated InvoiceModal to fetch real Invoice record on mount, display with fallback
+
+**Documentation created:**
+- `Governance/docs/governance/CORPORATE-FLOW.md` — Complete reference: data model, wallets, checkout, invoices, cancellations, admin UIs, user flows, file map, known issues
+
+**Files changed:**
+- `src/app/admin/b2b/page.tsx` — B2B top-up fix (PATCH → POST /api/wallet/topup)
+- `src/components/InvoiceModal.tsx` — DB-backed invoice display
+- `src/app/api/invoices/user/[bookingId]/route.ts` — New public invoice endpoint
+- `Governance/docs/governance/CORPORATE-FLOW.md` — New comprehensive reference doc
+- `Governance/docs/governance/Cckr-SESSION-LOG.md` — This entry
+
+**Verification:**
+- Pre-flight: 13/13 passed
+- TypeScript (`npx tsc --noEmit`): 0 errors
+- Build (`npm run build`): compiled successfully
+- Post-task: 9/9 passed

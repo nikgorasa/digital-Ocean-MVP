@@ -52,17 +52,21 @@ export default function B2BPage() {
   const handleTopUp = async () => {
     if (!selectedCorp || topUpAmount <= 0) return;
     try {
-      const res = await fetch(`/api/companies/${selectedCorp.id}`, {
-        method: "PATCH",
+      const res = await fetch("/api/wallet/topup", {
+        method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ walletBalance: selectedCorp.walletBalance + topUpAmount }),
+        body: JSON.stringify({ companyId: selectedCorp.id, amount: topUpAmount, description: "Admin top-up" }),
       });
       if (res.ok) {
+        const data = await res.json();
         setShowSuccess(true);
-        const updated = { ...selectedCorp, walletBalance: selectedCorp.walletBalance + topUpAmount };
+        const updated = { ...selectedCorp, walletBalance: data.walletBalance };
         setSelectedCorp(updated);
         setCompanies(companies.map((c) => (c.id === updated.id ? updated : c)));
         setTimeout(() => { setShowSuccess(false); setTopUpAmount(0); }, 2000);
+      } else {
+        const err = await res.json();
+        console.error("Top-up failed:", err.error);
       }
     } catch (err) {
       console.error("Top-up failed:", err);
