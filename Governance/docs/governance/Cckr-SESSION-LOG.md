@@ -1,7 +1,7 @@
 # GoRASA CockroachDB Standalone — SESSION-LOG
 
 > **Purpose:** Living document tracking all sessions, changes, deployments, and learnings.
-> **Last updated:** 2026-07-08 (Session 11 — Admin bookings page + auth session fix)
+> **Last updated:** 2026-07-09 (Session 12 — Logo/favicon replacement)
 
 ---
 
@@ -380,3 +380,64 @@ Each environment connects to a **different CockroachDB cluster**. Zero shared da
 6. **LAUNCH-02** — Deploy to production (after Cashfree done)
 7. **AUTH-01** — Document `BETTER_AUTH_URL` requirement in env setup docs (must match Vercel project URL)
 8. Keep schema in sync between DEV and PROD when making changes
+
+---
+
+## Session — 2026-07-09
+
+### Accomplished
+1. **PR-44 rejected** — dark green `#163A32` navbar theme already in main; closed with note "change taken in code"
+2. **Audited all GitHub issues** — 19 closed (SEC, INFRA-01, CORE, CORP, TARIFF, mock removal); 12 open including ZAK-01/P2/40
+3. **Migrated payment gateway from Razorpay/PhonePe to Zaakpay**
+   - `src/lib/payment/razorpay-client.ts` → deleted
+   - `src/lib/payment/phonepe-client.ts` → deleted
+   - `src/lib/payment/zaakpay-client.ts` → new (Express Checkout / checkoutServer API, HMAC-SHA256 webhook verify, checkStatus, createRefund)
+   - `src/lib/payment/config.ts` → ZAAKPAY_MERCHANT_ID, SECRET_KEY, SALT, API_BASE
+   - `src/lib/payment/types.ts` → Zaakpay types (ZaakpayOrderResponse, ZaakpayWebhookBody, ZaakpayCheckStatusResponse)
+   - `src/lib/payment/payment-service.ts` → single Zaakpay flow, null-safety on orderId
+   - `src/lib/payment/index.ts` → updated exports
+   - `src/app/api/webhooks/zaakpay/route.ts` → new POST webhook + GET status check fallback
+   - `src/app/api/webhooks/razorpay/route.ts` → deleted
+   - `src/app/api/webhooks/phonepe/route.ts` → deleted
+   - `src/app/api/checkout/route.ts` → gateway enum → ["zaakpay"]
+   - `src/components/CheckoutButton.tsx` → gateway default "zaakpay"
+   - `src/app/payment/success/page.tsx` → mock callback hits /api/webhooks/zaakpay
+   - `.env.example` → Zaakpay env vars
+4. **Issues renamed** — #39 ZAK-01, #40 ZAK-02; label epic:cashfree → epic:zaakpay
+5. **Session timeout UX** — SessionWarningModal (3-min countdown) + AuthProvider session expiry tracking + global 401 interceptor; committed & deployed
+
+### Post-flight status
+- Pre-flight: ✓ ALL 13 CHECKS PASSED
+- Post-flight: ✓ ALL 9 CHECKS PASSED
+- Deployment: https://cckr-gpl3ymqep-nikhil-gorasa-s-projects.vercel.app (production)
+
+### Blockers
+- Zaakpay sandbox credentials not yet added to .env.local / .env.production
+- Prisma `gateway String @default("razorpay")` — cosmetic only, needs schema migration later
+
+### Next actions
+1. Add Zaakpay test credentials to .env.local
+2. Run Zaakpay sandbox E2E (create order → pay → webhook → confirm)
+3. ZAK-02 webhook hardening (idempotency, retry, reconciliation job)
+
+---
+
+### Session 2026-07-09 (Session 12) — Logo/favicon replacement (CRDB-GOV-004)
+
+**Objective:** Replace default Next.js logo/favicon SVGs with new GoRASA logo SVG (base64-encoded PNG in SVG container).
+
+**Changes:**
+- `public/logo.svg` — Overwritten with new GoRASA logo (identical to source)
+- `public/favicon.svg` — Overwritten with new GoRASA logo (same file, works for SVG favicons)
+- Both files replaced by copying `/home/nikhil/Downloads/GoRASA_logo.svg`
+
+**Verification:**
+- Pre-flight: 13/13 passed
+- TypeScript: `npx tsc --noEmit` — 0 errors
+- Build: `npm run build` — compiled successfully (3.9s Turbopack, 84 pages)
+- Post-task: 9/9 passed
+- No database, schema, or API config changes
+
+**Files changed:** 2 (public/logo.svg, public/favicon.svg)
+
+**Governance docs updated:** Cckr-SESSION-LOG.md, CHANGE-LOG.md (CRDB-GOV-004)
