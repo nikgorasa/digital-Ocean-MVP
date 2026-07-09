@@ -241,6 +241,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       "amit@example.com": "User@123",
       "priya@example.com": "User@123",
       "support@gorasa.in": "Support@123",
+      "test-booking-flow@gorasa.in": "Test@123",
     };
 
     const password = DEMO_PASSWORDS[email];

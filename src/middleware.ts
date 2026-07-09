@@ -1,7 +1,6 @@
 import { NextResponse, type NextRequest } from "next/server";
 
 const PUBLIC_API_ROUTES = [
-  "/api/auth/login",
   "/api/auth/[...all]",
   "/api/packages",
   "/api/packages/carousel",
