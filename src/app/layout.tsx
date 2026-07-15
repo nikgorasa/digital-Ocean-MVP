@@ -49,12 +49,12 @@ export default function RootLayout({
   return (
     <html lang="en" className="scroll-smooth">
       <head>
-        <meta name="theme-color" content="#F97316" />
+        <meta name="theme-color" content="#123C34" />
         <link rel="icon" href="/logo.svg" type="image/svg+xml" />
         <link rel="alternate icon" href="/favicon.svg" type="image/svg+xml" />
       </head>
       <body
-        className={`${inter.variable} ${playfair.variable} ${outfit.variable} font-sans bg-[#F5EFE0] text-slate-900 antialiased`}
+        className={`${inter.variable} ${playfair.variable} ${outfit.variable} font-sans bg-brand-ivory text-brand-charcoal antialiased`}
       >
         <AuthProvider>
           <DemoModeProvider>{children}</DemoModeProvider>

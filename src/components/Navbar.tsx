@@ -81,7 +81,7 @@ export default function Navbar({
   }, [mobileMenuOpen]);
 
   return (
-    <nav aria-label="Main navigation" className="fixed top-0 left-0 right-0 z-50 bg-[#163A32] border-b border-white/10">
+    <nav aria-label="Main navigation" className="fixed top-0 left-0 right-0 z-50 bg-brand-emerald border-b border-brand-antique-gold/20">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center h-16">
           {/* Logo */}
@@ -208,7 +208,7 @@ export default function Navbar({
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.92 }}
                 onClick={onLoginClick}
-                className="bg-white text-[#163A32] px-5 py-2 rounded-full text-sm font-medium hover:bg-white/90 transition-colors shadow-lg cursor-pointer"
+                className="bg-white text-brand-emerald px-5 py-2 rounded-full text-sm font-medium hover:bg-white/90 transition-colors shadow-lg cursor-pointer"
               >
                 Sign In
               </motion.button>
@@ -234,7 +234,7 @@ export default function Navbar({
             initial={{ opacity: 0, height: 0 }}
             animate={{ opacity: 1, height: "auto" }}
             exit={{ opacity: 0, height: 0 }}
-            className="md:hidden bg-[#163A32] border-b border-white/10 overflow-hidden"
+            className="md:hidden bg-brand-emerald border-b border-brand-antique-gold/20 overflow-hidden"
           >
             <div className="px-4 py-3 space-y-1">
               <Link

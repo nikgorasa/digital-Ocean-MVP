@@ -10,6 +10,12 @@ const config: Config = {
     extend: {
       colors: {
         brand: {
+          emerald: "#123C34",
+          "antique-gold": "#C99A52",
+          champagne: "#E4C58D",
+          ivory: "#F7F1E7",
+          sand: "#D7C3A4",
+          charcoal: "#2B241D",
           saffron: "#F97316",
           burnt: "#C2410C",
           dark: "#1E293B",

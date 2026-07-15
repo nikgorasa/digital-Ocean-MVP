@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
+import { Prisma } from "@prisma/client";
 import { upsertConfig, invalidateCache } from "@/lib/config-service";
 import { headers } from "next/headers";
 import { requireAdmin } from "@/lib/auth-helpers";
@@ -10,7 +11,7 @@ export async function GET() {
     const rows = await prisma.configProvider.findMany({
       orderBy: { provider: "asc" },
     });
-    const providers = rows.map((r) => ({
+    const providers = rows.map((r: Prisma.ConfigProviderGetPayload<{}>) => ({
       id: r.id,
       provider: r.provider,
       label: r.label,
