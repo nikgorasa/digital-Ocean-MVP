@@ -74,21 +74,6 @@ interface HomePageClientProps {
   error?: string | null;
 }
 
-<<<<<<< HEAD
-=======
-const SEARCH_TABS: {
-  id: string;
-  label: string;
-  icon: React.ComponentType<{ size?: number; className?: string }>;
-  href: string;
-  color: string;
-}[] = [
-  { id: "holidays", label: "Plan My Holiday", icon: Map, href: "/holidays", color: "#C99A52" },
-  { id: "hotels", label: "Hotels", icon: Building2, href: "/hotels", color: "#C99A52" },
-  { id: "flights", label: "Flights", icon: Plane, href: "/flights", color: "#C99A52" },
-];
-
->>>>>>> main
 const ICON_MAP: Record<string, React.ReactNode> = {
   Shield: <Shield className="w-6 h-6" />,
   Clock: <Clock className="w-6 h-6" />,

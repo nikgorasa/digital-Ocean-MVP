@@ -121,6 +121,14 @@ async function toDisplay(
     "OneStar": 1, "TwoStar": 2, "ThreeStar": 3, "FourStar": 4, "FiveStar": 5,
   };
 
+  const rawRating = details.rating;
+  const numericRating =
+    typeof rawRating === "number" ? rawRating : ratingMap[rawRating] || 3;
+  const ratingLabel =
+    typeof rawRating === "number"
+      ? `${rawRating}Star`
+      : rawRating || "ThreeStar";
+
   const pricing = await calculatePrice(minFare, {
     category: "HOTEL",
     destination: context?.destination,
@@ -131,19 +139,19 @@ async function toDisplay(
   return {
     hotelCode: Number(h.HotelCode) || 0,
     name: details.name || `Hotel ${h.HotelCode}`,
-    hotelRating: ratingMap[details.rating] || 3,
+    hotelRating: numericRating,
     location: details.city || details.address || "",
     currency: h.Currency,
     minTotalFare: pricing.displayedPrice,
     rooms,
     resultIndex: 1,
     picture: details.imageUrl || "",
-    rating: "ThreeStar",
+    rating: ratingLabel,
     address: details.address || "",
     tripAdvisorRating: 0,
     description: "",
     price: pricing.displayedPrice,
-    starRating: ratingMap[details.rating] || 3,
+    starRating: numericRating,
     originalPrice: pricing.originalPrice,
   };
 }
