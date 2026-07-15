@@ -3,6 +3,7 @@ import { Inter, Playfair_Display, Outfit } from "next/font/google";
 import "./globals.css";
 import { AuthProvider } from "@/hooks/useAuth";
 import { DemoModeProvider } from "@/hooks/useDemoMode";
+import SplashScreen from "@/components/SplashScreen";
 
 const inter = Inter({
   subsets: ["latin"],
@@ -57,7 +58,9 @@ export default function RootLayout({
         className={`${inter.variable} ${playfair.variable} ${outfit.variable} font-sans bg-brand-ivory text-brand-charcoal antialiased`}
       >
         <AuthProvider>
-          <DemoModeProvider>{children}</DemoModeProvider>
+          <DemoModeProvider>
+            <SplashScreen>{children}</SplashScreen>
+          </DemoModeProvider>
         </AuthProvider>
       </body>
     </html>
