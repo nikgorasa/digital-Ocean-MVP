@@ -6,6 +6,7 @@ import Footer from "@/components/Footer";
 import LoginModal from "@/components/LoginModal";
 import InquiryModal from "@/components/InquiryModal";
 import PackageCarousel from "@/components/PackageCarousel";
+import HeroSection from "@/components/HeroSection";
 import { useAuth } from "@/hooks/useAuth";
 import { motion } from "motion/react";
 import {
@@ -23,13 +24,10 @@ import {
   Award,
   User,
   CreditCard,
-  Map,
-  Plane,
   MessageCircle,
   CircleCheck,
   Palmtree,
 } from "lucide-react";
-import Image from "next/image";
 import Link from "next/link";
 
 interface PackageItem {
@@ -76,6 +74,8 @@ interface HomePageClientProps {
   error?: string | null;
 }
 
+<<<<<<< HEAD
+=======
 const SEARCH_TABS: {
   id: string;
   label: string;
@@ -88,6 +88,7 @@ const SEARCH_TABS: {
   { id: "flights", label: "Flights", icon: Plane, href: "/flights", color: "#C99A52" },
 ];
 
+>>>>>>> main
 const ICON_MAP: Record<string, React.ReactNode> = {
   Shield: <Shield className="w-6 h-6" />,
   Clock: <Clock className="w-6 h-6" />,
@@ -127,75 +128,7 @@ export default function HomePageClient({
       />
 
       <main className="min-h-screen pt-16">
-        {/* Hero Section */}
-        <section className="relative min-h-[50vh] md:min-h-[58vh] lg:min-h-[65vh] flex items-center overflow-hidden bg-brand-emerald">
-          {/* Hero image */}
-          <div className="absolute inset-0">
-            <Image
-              src="https://images.unsplash.com/photo-1548013146-72479768bada?auto=format&fit=crop&w=1600&q=80"
-              alt="Taj Mahal at golden hour, Agra, India"
-              fill
-              className="object-cover object-center"
-              priority
-              sizes="100vw"
-            />
-            <div className="absolute inset-0 bg-gradient-to-r from-brand-emerald/90 via-brand-emerald/75 to-brand-emerald/40" />
-          </div>
-
-          {/* Content — left-aligned */}
-          <div className="relative w-full max-w-7xl mx-auto px-6 sm:px-8 lg:px-12 py-12 md:py-16">
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.7, ease: [0.16, 1, 0.3, 1] }}
-              className="max-w-xl"
-            >
-              <h1 className="text-4xl md:text-5xl lg:text-6xl font-serif font-bold text-white leading-tight tracking-tight">
-                Reserve luxury
-                <span className="block text-brand-antique-gold italic">&amp; Composure</span>
-              </h1>
-              <p className="mt-3 text-brand-champagne/80 text-base md:text-lg max-w-md leading-relaxed">
-                Curated stays, flights, and packages with a dedicated concierge.
-              </p>
-
-              {/* Quick action tiles */}
-              <div className="flex flex-wrap gap-2.5 mt-6">
-                {SEARCH_TABS.map((tab, i) => {
-                  const Icon = tab.icon;
-                  return (
-                    <motion.div
-                      key={tab.id}
-                      initial={{ opacity: 0, y: 12 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      transition={{ duration: 0.5, delay: 0.25 + i * 0.07, ease: [0.16, 1, 0.3, 1] }}
-                    >
-                      <Link
-                        href={tab.href}
-                        className="inline-flex items-center gap-2 px-5 py-2.5 rounded-lg bg-white/10 border border-white/15 text-white text-sm font-medium hover:bg-brand-antique-gold hover:border-brand-antique-gold transition-colors duration-200"
-                      >
-                        <Icon size={16} />
-                        {tab.label}
-                      </Link>
-                    </motion.div>
-                  );
-                })}
-              </div>
-
-              {/* Corporate travel CTA */}
-              <motion.p
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                transition={{ duration: 0.5, delay: 0.5 }}
-                className="mt-4 text-xs text-brand-sand"
-              >
-                Managing corporate travel?{" "}
-                <Link href="/admin" className="text-brand-antique-gold hover:underline font-medium">
-                  Access dashboard
-                </Link>
-              </motion.p>
-            </motion.div>
-          </div>
-        </section>
+        <HeroSection />
 
         {/* Value Propositions */}
         <section className="py-16 bg-brand-ivory">
