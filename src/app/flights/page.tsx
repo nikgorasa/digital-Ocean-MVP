@@ -238,7 +238,7 @@ export default function FlightsPage() {
       case "Business": return "bg-purple-100 text-purple-700";
       case "Flexi Plus": return "bg-blue-100 text-blue-700";
       case "Standard": return "bg-green-100 text-green-700";
-      default: return "bg-slate-100 text-slate-700";
+      default: return "bg-brand-ivory text-brand-charcoal/80";
     }
   };
 
@@ -247,9 +247,9 @@ export default function FlightsPage() {
       <Navbar onLoginClick={() => setShowLogin(true)} />
       <LoginModal isOpen={showLogin} onClose={() => setShowLogin(false)} />
 
-      <main className="min-h-screen pt-16" style={{ backgroundColor: "#F5EFE0" }}>
+      <main className="min-h-screen pt-16 bg-brand-ivory">
         {/* Hero */}
-        <section className="py-12" style={{ backgroundColor: "#D97706" }}>
+        <section className="py-12 bg-brand-emerald">
           <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
             <motion.div
               initial={{ opacity: 0, y: 20 }}
@@ -270,15 +270,15 @@ export default function FlightsPage() {
               className="bg-white rounded-2xl p-5 shadow-xl"
             >
               {/* Trip Type Tabs */}
-              <div className="flex gap-1 mb-4 bg-slate-100 rounded-xl p-1 w-fit">
+              <div className="flex gap-1 mb-4 bg-brand-ivory rounded-xl p-1 w-fit">
                 {(["one-way", "return", "multi-city"] as const).map((t) => (
                   <button
                     key={t}
                     onClick={() => setTripType(t)}
                     className={`px-4 py-1.5 rounded-lg text-sm font-medium cursor-pointer transition-all ${
                       tripType === t
-                        ? "bg-brand-saffron text-white shadow-sm"
-                        : "text-slate-500 hover:text-slate-700"
+                        ? "bg-brand-antique-gold text-white shadow-sm"
+                        : "text-brand-sand hover:text-brand-charcoal"
                     }`}
                   >
                     {t === "one-way" ? "One Way" : t === "return" ? "Return" : "Multi-city"}
@@ -325,7 +325,7 @@ export default function FlightsPage() {
                     {multiCityDates.map((d, i) => (
                       <div key={i} className="flex items-center gap-2">
                         <div className="flex-1">
-                          <label className="text-[10px] font-bold uppercase tracking-widest text-slate-400 mb-1 block">
+                          <label className="text-[10px] font-bold uppercase tracking-widest text-brand-sand mb-1 block">
                             Leg {i + 1}
                           </label>
                           <input
@@ -337,14 +337,14 @@ export default function FlightsPage() {
                               next[i] = e.target.value;
                               setMultiCityDates(next);
                             }}
-                            className="w-full px-3 py-2.5 bg-white border border-slate-200 rounded-xl text-sm focus:ring-2 outline-none"
+                            className="w-full px-3 py-2.5 bg-white border border-brand-sand/30 rounded-xl text-sm focus:ring-2 outline-none"
                           />
                         </div>
                         <div className="flex items-center gap-1 mt-5">
                           {multiCityDates.length > 2 && (
                             <button
                               onClick={() => setMultiCityDates(multiCityDates.filter((_, idx) => idx !== i))}
-                              className="p-2 rounded-lg border border-dashed border-slate-300 text-slate-400 hover:text-red-500 hover:border-red-300 transition-colors cursor-pointer"
+                              className="p-2 rounded-lg border border-dashed border-brand-sand/50 text-brand-sand hover:text-red-500 hover:border-red-300 transition-colors cursor-pointer"
                               title="Remove leg"
                             >
                               <Minus size={16} />
@@ -353,7 +353,7 @@ export default function FlightsPage() {
                           {i === multiCityDates.length - 1 && (
                             <button
                               onClick={() => setMultiCityDates([...multiCityDates, ""])}
-                              className="p-2 rounded-lg border border-dashed border-slate-300 text-slate-400 hover:text-[#D97706] hover:border-[#D97706] transition-colors cursor-pointer"
+                              className="p-2 rounded-lg border border-dashed border-brand-sand/50 text-brand-sand hover:text-brand-antique-gold hover:border-brand-antique-gold transition-colors cursor-pointer"
                               title="Add leg"
                             >
                               <Plus size={16} />
@@ -367,36 +367,35 @@ export default function FlightsPage() {
 
                 {/* Passenger + Cabin Popover */}
                 <div ref={passengerRef} className="relative">
-                  <label className="text-[11px] font-bold uppercase tracking-widest text-slate-500 mb-1.5 block">
+                  <label className="text-[11px] font-bold uppercase tracking-widest text-brand-sand mb-1.5 block">
                     Passengers & Cabin
                   </label>
                   <button
                     onClick={() => setShowPassengerPopover(!showPassengerPopover)}
-                    className="w-full px-3 py-3 bg-white border border-slate-200 rounded-xl text-sm flex items-center justify-between gap-2 cursor-pointer hover:border-brand-saffron/30 transition-colors focus:ring-2 focus:ring-brand-saffron focus:ring-offset-2 outline-none"
+                    className="w-full px-3 py-3 bg-white border border-brand-sand/30 rounded-xl text-sm flex items-center justify-between gap-2 cursor-pointer hover:border-brand-antique-gold/30 transition-colors focus:ring-2 focus:ring-brand-antique-gold focus:ring-offset-2 outline-none"
                   >
                     <span className="flex items-center gap-2">
-                      <Users size={14} className="text-slate-400" />
-                      <span className="text-slate-900 font-medium">{totalPassengers}</span>
-                      <span className="text-slate-500">{totalPassengers === 1 ? "Passenger" : "Passengers"}</span>
-                      <span className="text-slate-300 mx-1">·</span>
-                      <span className="text-slate-500">{cabinClass}</span>
+                      <Users size={14} className="text-brand-sand" />
+                      <span className="text-brand-charcoal font-medium">{totalPassengers}</span>
+                      <span className="text-brand-sand">{totalPassengers === 1 ? "Passenger" : "Passengers"}</span>
+                      <span className="text-brand-sand/50 mx-1">·</span>
+                      <span className="text-brand-sand">{cabinClass}</span>
                     </span>
-                    <ChevronDown size={14} className={`text-slate-400 transition-transform ${showPassengerPopover ? "rotate-180" : ""}`} />
+                    <ChevronDown size={14} className={`text-brand-sand transition-transform ${showPassengerPopover ? "rotate-180" : ""}`} />
                   </button>
 
                   {showPassengerPopover && (
-                    <div className="absolute left-0 right-0 sm:left-auto sm:right-0 top-full mt-1 z-50 w-full sm:w-80 bg-white rounded-2xl shadow-xl border border-slate-200 p-4">
+                    <div className="absolute left-0 right-0 sm:left-auto sm:right-0 top-full mt-1 z-50 w-full sm:w-80 bg-white rounded-2xl shadow-xl border border-brand-sand/30 p-4">
                       {showConcierge ? (
                         <div className="text-center py-6">
-                          <User size={32} className="mx-auto text-[#D97706] mb-3" />
-                          <p className="font-bold text-slate-900 mb-1">Large Group Booking</p>
-                          <p className="text-xs text-slate-500 mb-3">
+                          <User size={32} className="mx-auto text-brand-antique-gold mb-3" />
+                          <p className="font-bold text-brand-charcoal mb-1">Large Group Booking</p>
+                          <p className="text-xs text-brand-sand mb-3">
                             For groups larger than 10 passengers, please contact our concierge.
                           </p>
                           <Link
                             href="/support"
-                            style={{ backgroundColor: "#D97706" }}
-                            className="inline-block px-6 py-2.5 text-white rounded-xl font-bold text-sm hover:opacity-90 transition-opacity"
+                            className="inline-block px-6 py-2.5 bg-brand-antique-gold text-white rounded-xl font-bold text-sm hover:bg-brand-emerald transition-colors"
                           >
                             Submit to Concierge
                           </Link>
@@ -405,18 +404,17 @@ export default function FlightsPage() {
                         <div className="space-y-4">
                           {/* Cabin Class */}
                           <div>
-                            <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400 mb-2">Cabin Class</p>
+                            <p className="text-[10px] font-bold uppercase tracking-widest text-brand-sand mb-2">Cabin Class</p>
                             <div className="grid grid-cols-2 gap-1.5">
                               {CABIN_OPTIONS.map((c) => (
                                 <button
                                   key={c}
                                   onClick={() => setCabinClass(c)}
-                                  style={{
-                                    backgroundColor: cabinClass === c ? "#D97706" : "transparent",
-                                    color: cabinClass === c ? "#fff" : "#64748b",
-                                    borderColor: cabinClass === c ? "#D97706" : "#e2e8f0",
-                                  }}
-                                  className="px-3 py-2 rounded-lg text-xs font-medium border cursor-pointer transition-all"
+                                  className={`px-3 py-2 rounded-lg text-xs font-medium border cursor-pointer transition-all ${
+                                    cabinClass === c
+                                      ? "bg-brand-antique-gold text-white border-brand-antique-gold"
+                                      : "bg-transparent text-brand-sand border-brand-sand/30"
+                                  }`}
                                 >
                                   {c}
                                 </button>
@@ -427,21 +425,21 @@ export default function FlightsPage() {
                           {/* Adults */}
                           <div className="flex items-center justify-between">
                             <div>
-                              <p className="text-sm font-semibold text-slate-900">Adults</p>
-                              <p className="text-[10px] text-slate-400">12+ years</p>
+                              <p className="text-sm font-semibold text-brand-charcoal">Adults</p>
+                              <p className="text-[10px] text-brand-sand">12+ years</p>
                             </div>
                             <div className="flex items-center gap-3">
                               <button
                                 onClick={() => setAdults(Math.max(1, adults - 1))}
-                                className="w-8 h-8 rounded-full border border-slate-200 flex items-center justify-center text-slate-600 hover:bg-slate-50 cursor-pointer disabled:opacity-30"
+                                className="w-8 h-8 rounded-full border border-brand-sand/30 flex items-center justify-center text-brand-sand hover:bg-brand-ivory cursor-pointer disabled:opacity-30"
                                 disabled={adults <= 1}
                               >
                                 <Minus size={14} />
                               </button>
-                              <span className="w-6 text-center font-bold text-slate-900">{adults}</span>
+                              <span className="w-6 text-center font-bold text-brand-charcoal">{adults}</span>
                               <button
                                 onClick={() => setAdults(Math.min(9, adults + 1))}
-                                className="w-8 h-8 rounded-full border border-slate-200 flex items-center justify-center text-slate-600 hover:bg-slate-50 cursor-pointer disabled:opacity-30"
+                                className="w-8 h-8 rounded-full border border-brand-sand/30 flex items-center justify-center text-brand-sand hover:bg-brand-ivory cursor-pointer disabled:opacity-30"
                                 disabled={adults >= 9}
                               >
                                 <Plus size={14} />
@@ -452,21 +450,21 @@ export default function FlightsPage() {
                           {/* Children */}
                           <div className="flex items-center justify-between">
                             <div>
-                              <p className="text-sm font-semibold text-slate-900">Children</p>
-                              <p className="text-[10px] text-slate-400">2-17 years</p>
+                              <p className="text-sm font-semibold text-brand-charcoal">Children</p>
+                              <p className="text-[10px] text-brand-sand">2-17 years</p>
                             </div>
                             <div className="flex items-center gap-3">
                               <button
                                 onClick={() => setChildren(Math.max(0, children - 1))}
-                                className="w-8 h-8 rounded-full border border-slate-200 flex items-center justify-center text-slate-600 hover:bg-slate-50 cursor-pointer disabled:opacity-30"
+                                className="w-8 h-8 rounded-full border border-brand-sand/30 flex items-center justify-center text-brand-sand hover:bg-brand-ivory cursor-pointer disabled:opacity-30"
                                 disabled={children <= 0}
                               >
                                 <Minus size={14} />
                               </button>
-                              <span className="w-6 text-center font-bold text-slate-900">{children}</span>
+                              <span className="w-6 text-center font-bold text-brand-charcoal">{children}</span>
                               <button
                                 onClick={() => setChildren(Math.min(9, children + 1))}
-                                className="w-8 h-8 rounded-full border border-slate-200 flex items-center justify-center text-slate-600 hover:bg-slate-50 cursor-pointer disabled:opacity-30"
+                                className="w-8 h-8 rounded-full border border-brand-sand/30 flex items-center justify-center text-brand-sand hover:bg-brand-ivory cursor-pointer disabled:opacity-30"
                                 disabled={children >= 9}
                               >
                                 <Plus size={14} />
@@ -477,7 +475,7 @@ export default function FlightsPage() {
                           {/* Child Ages */}
                           {childAges.map((age, i) => (
                             <div key={i} className="flex items-center gap-2 pl-4">
-                              <span className="text-[10px] text-slate-400 w-16">Child {i + 1} age</span>
+                              <span className="text-[10px] text-brand-sand w-16">Child {i + 1} age</span>
                               <select
                                 value={age}
                                 onChange={(e) => {
@@ -485,7 +483,7 @@ export default function FlightsPage() {
                                   next[i] = parseInt(e.target.value);
                                   setChildAges(next);
                                 }}
-                                className="flex-1 px-2 py-1.5 bg-white border border-slate-200 rounded-lg text-xs outline-none"
+                                className="flex-1 px-2 py-1.5 bg-white border border-brand-sand/30 rounded-lg text-xs outline-none"
                               >
                                 {Array.from({ length: 16 }, (_, i) => i + 2).map((a) => (
                                   <option key={a} value={a}>{a} years</option>
@@ -497,21 +495,21 @@ export default function FlightsPage() {
                           {/* Infants */}
                           <div className="flex items-center justify-between">
                             <div>
-                              <p className="text-sm font-semibold text-slate-900">Infants (lap)</p>
-                              <p className="text-[10px] text-slate-400">0-2 years</p>
+                              <p className="text-sm font-semibold text-brand-charcoal">Infants (lap)</p>
+                              <p className="text-[10px] text-brand-sand">0-2 years</p>
                             </div>
                             <div className="flex items-center gap-3">
                               <button
                                 onClick={() => setInfants(Math.max(0, infants - 1))}
-                                className="w-8 h-8 rounded-full border border-slate-200 flex items-center justify-center text-slate-600 hover:bg-slate-50 cursor-pointer disabled:opacity-30"
+                                className="w-8 h-8 rounded-full border border-brand-sand/30 flex items-center justify-center text-brand-sand hover:bg-brand-ivory cursor-pointer disabled:opacity-30"
                                 disabled={infants <= 0}
                               >
                                 <Minus size={14} />
                               </button>
-                              <span className="w-6 text-center font-bold text-slate-900">{infants}</span>
+                              <span className="w-6 text-center font-bold text-brand-charcoal">{infants}</span>
                               <button
                                 onClick={() => setInfants(Math.min(9, infants + 1))}
-                                className="w-8 h-8 rounded-full border border-slate-200 flex items-center justify-center text-slate-600 hover:bg-slate-50 cursor-pointer disabled:opacity-30"
+                                className="w-8 h-8 rounded-full border border-brand-sand/30 flex items-center justify-center text-brand-sand hover:bg-brand-ivory cursor-pointer disabled:opacity-30"
                                 disabled={infants >= 9}
                               >
                                 <Plus size={14} />
@@ -522,11 +520,10 @@ export default function FlightsPage() {
                       )}
 
                       {!showConcierge && (
-                        <button
-                          onClick={() => setShowPassengerPopover(false)}
-                          style={{ backgroundColor: "#D97706" }}
-                          className="w-full mt-4 py-2 text-white rounded-xl font-bold text-sm hover:opacity-90 transition-opacity cursor-pointer"
-                        >
+                          <button
+                            onClick={() => setShowPassengerPopover(false)}
+                            className="w-full mt-4 py-2 bg-brand-antique-gold text-white rounded-xl font-bold text-sm hover:bg-brand-emerald transition-colors cursor-pointer"
+                          >
                           Done
                         </button>
                       )}
@@ -538,7 +535,7 @@ export default function FlightsPage() {
               <button
                 onClick={handleSearch}
                 disabled={searching || !originCity.name || !destinationCity.name || (tripType !== "multi-city" && !departDate) || (tripType === "multi-city" && multiCityDates.some(d => !d))}
-                className="mt-4 w-full md:w-auto px-8 py-3 bg-brand-saffron text-white rounded-xl font-bold hover:bg-brand-burnt transition-colors flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed active:scale-[0.98]"
+                className="mt-4 w-full md:w-auto px-8 py-3 bg-brand-antique-gold text-white rounded-xl font-bold hover:bg-brand-emerald transition-colors flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed active:scale-[0.98]"
               >
                 {searching ? (
                   <><Loader2 size={18} className="animate-spin" /> Searching...</>
@@ -555,35 +552,35 @@ export default function FlightsPage() {
           <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
             {searching ? (
               <div className="text-center py-16">
-                <Loader2 size={32} className="mx-auto animate-spin text-blue-600 mb-4" />
-                <h2 className="text-xl font-bold text-slate-900 mb-2">Searching flights...</h2>
-                <p className="text-slate-500">Checking available routes between {originCity.name} and {destinationCity.name}.</p>
+                <Loader2 size={32} className="mx-auto animate-spin text-brand-antique-gold mb-4" />
+                <h2 className="text-xl font-bold text-brand-charcoal mb-2">Searching flights...</h2>
+                <p className="text-brand-sand">Checking available routes between {originCity.name} and {destinationCity.name}.</p>
               </div>
             ) : !searched ? (
               <div className="text-center py-16">
-                <Plane size={48} className="mx-auto text-slate-300 mb-4" />
-                <h2 className="text-xl font-bold text-slate-900 mb-2">Search for flights</h2>
-                <p className="text-slate-500">Enter your travel details above to find the best flight deals.</p>
+                <Plane size={48} className="mx-auto text-brand-sand/50 mb-4" />
+                <h2 className="text-xl font-bold text-brand-charcoal mb-2">Search for flights</h2>
+                <p className="text-brand-sand">Enter your travel details above to find the best flight deals.</p>
               </div>
             ) : results.length === 0 ? (
               <div className="text-center py-16">
                 {searchError ? (
                   <>
                     <AlertCircle size={48} className="mx-auto text-red-300 mb-4" />
-                    <h2 className="text-xl font-bold text-slate-900 mb-2">Search Failed</h2>
-                    <p className="text-slate-500 mb-4">{searchError}</p>
+                    <h2 className="text-xl font-bold text-brand-charcoal mb-2">Search Failed</h2>
+                    <p className="text-brand-sand mb-4">{searchError}</p>
                     <button
                       onClick={handleSearch}
-                      className="px-6 py-2.5 bg-brand-saffron text-white rounded-xl font-semibold text-sm hover:bg-brand-burnt transition-colors cursor-pointer inline-flex items-center gap-2"
+                      className="px-6 py-2.5 bg-brand-antique-gold text-white rounded-xl font-semibold text-sm hover:bg-brand-emerald transition-colors cursor-pointer inline-flex items-center gap-2"
                     >
                       <RefreshCw size={16} /> Try Again
                     </button>
                   </>
                 ) : (
                   <>
-                    <Plane size={48} className="mx-auto text-slate-300 mb-4" />
-                    <h2 className="text-xl font-bold text-slate-900 mb-2">No flights found</h2>
-                    <p className="text-slate-500">Try different dates or routes.</p>
+                    <Plane size={48} className="mx-auto text-brand-sand/50 mb-4" />
+                    <h2 className="text-xl font-bold text-brand-charcoal mb-2">No flights found</h2>
+                    <p className="text-brand-sand">Try different dates or routes.</p>
                   </>
                 )}
               </div>
@@ -644,7 +641,7 @@ export default function FlightsPage() {
                   />
                 )}
 
-                <p className="text-sm text-slate-500 mb-4">{filteredResults.length} flights found</p>
+                <p className="text-sm text-brand-sand mb-4">{filteredResults.length} flights found</p>
                 <div className="space-y-3">
                   {filteredResults.map((flight, i) => (
                     <motion.div
@@ -652,12 +649,12 @@ export default function FlightsPage() {
                       initial={{ opacity: 0, y: 10 }}
                       animate={{ opacity: 1, y: 0 }}
                       transition={{ delay: i * 0.05 }}
-                      className="bg-white rounded-2xl p-5 border border-slate-200 hover:shadow-lg transition-shadow cursor-pointer"
+                      className="bg-white rounded-2xl p-5 border border-brand-sand/30 hover:shadow-lg transition-shadow cursor-pointer"
                       onClick={() => setSelectedFlight(flight)}
                     >
                       <div className="flex items-center justify-between">
                         <div className="flex items-center gap-4">
-                          <div className="w-10 h-10 rounded-xl bg-slate-50 flex items-center justify-center overflow-hidden">
+                          <div className="w-10 h-10 rounded-xl bg-brand-ivory flex items-center justify-center overflow-hidden">
                             <img
                               src={getAirlineLogo(flight.airlineCode)}
                               alt={flight.airline}
@@ -669,11 +666,11 @@ export default function FlightsPage() {
                             />
                           </div>
                           <div>
-                            <p className="font-bold text-slate-900">{flight.airline}</p>
-                            <p className="text-xs text-slate-500">{flight.flightNumber}</p>
+                            <p className="font-bold text-brand-charcoal">{flight.airline}</p>
+                            <p className="text-xs text-brand-sand">{flight.flightNumber}</p>
                             <div className="flex items-center gap-2 mt-1 flex-wrap">
                               {flight.baggage && (
-                                <span className="text-[10px] text-slate-400 flex items-center gap-0.5">
+                                <span className="text-[10px] text-brand-sand flex items-center gap-0.5">
                                   <Luggage size={10} /> {flight.baggage}
                                 </span>
                               )}
@@ -717,19 +714,19 @@ export default function FlightsPage() {
 
                         <div className="flex items-center gap-10">
                           <div className="text-center min-w-[72px]">
-                            <p className="text-lg font-bold text-slate-900">{formatFlightTime(flight.departureTime)}</p>
-                            <p className="text-[10px] text-slate-400 font-medium">{formatFlightDate(flight.departureTime)}</p>
-                            <p className="text-xs text-slate-500 font-semibold mt-0.5">{flight.origin}</p>
+                            <p className="text-lg font-bold text-brand-charcoal">{formatFlightTime(flight.departureTime)}</p>
+                            <p className="text-[10px] text-brand-sand font-medium">{formatFlightDate(flight.departureTime)}</p>
+                            <p className="text-xs text-brand-sand font-semibold mt-0.5">{flight.origin}</p>
                           </div>
                           <div className="flex flex-col items-center">
-                            <p className="text-xs font-medium text-slate-500">{flight.duration}</p>
-                            <div className="w-24 h-0.5 bg-slate-300 my-1.5 rounded-full" />
-                            <p className="text-xs font-medium text-slate-500">{flight.stops === 0 ? "Non-stop" : `${flight.stops} stop${flight.stops > 1 ? "s" : ""}`}</p>
+                            <p className="text-xs font-medium text-brand-sand">{flight.duration}</p>
+                            <div className="w-24 h-0.5 bg-brand-sand/50 my-1.5 rounded-full" />
+                            <p className="text-xs font-medium text-brand-sand">{flight.stops === 0 ? "Non-stop" : `${flight.stops} stop${flight.stops > 1 ? "s" : ""}`}</p>
                           </div>
                           <div className="text-center min-w-[72px]">
-                            <p className="text-lg font-bold text-slate-900">{formatFlightTime(flight.arrivalTime)}</p>
-                            <p className="text-[10px] text-slate-400 font-medium">{formatFlightDate(flight.arrivalTime)}</p>
-                            <p className="text-xs text-slate-500 font-semibold mt-0.5">{flight.destination}</p>
+                            <p className="text-lg font-bold text-brand-charcoal">{formatFlightTime(flight.arrivalTime)}</p>
+                            <p className="text-[10px] text-brand-sand font-medium">{formatFlightDate(flight.arrivalTime)}</p>
+                            <p className="text-xs text-brand-sand font-semibold mt-0.5">{flight.destination}</p>
                           </div>
                         </div>
 
@@ -737,8 +734,8 @@ export default function FlightsPage() {
                           <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${getTierColor(flight.tier)}`}>
                             {flight.tier}
                           </span>
-                          <p className="text-2xl font-black text-slate-900 mt-1">{formatCurrency(flight.price)}</p>
-                          <p className="text-[10px] text-slate-400">total for {totalPassengers} pax</p>
+                          <p className="text-2xl font-black text-brand-charcoal mt-1">{formatCurrency(flight.price)}</p>
+                          <p className="text-[10px] text-brand-sand">total for {totalPassengers} pax</p>
                         </div>
                       </div>
                     </motion.div>
@@ -754,70 +751,70 @@ export default function FlightsPage() {
       <AnimatePresence>
         {selectedFlight && (
           <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
-            <div className="absolute inset-0 bg-slate-900/60 backdrop-blur-md" onClick={() => setSelectedFlight(null)} />
+            <div className="absolute inset-0 bg-brand-charcoal/60 backdrop-blur-md" onClick={() => setSelectedFlight(null)} />
             <motion.div
               initial={{ opacity: 0, scale: 0.95 }}
               animate={{ opacity: 1, scale: 1 }}
               exit={{ opacity: 0, scale: 0.95 }}
               className="relative bg-white w-full max-w-md rounded-3xl shadow-2xl overflow-hidden p-8"
             >
-              <button onClick={() => setSelectedFlight(null)} className="absolute top-6 right-6 p-2 text-slate-400 hover:text-slate-600">
+              <button onClick={() => setSelectedFlight(null)} className="absolute top-6 right-6 p-2 text-brand-sand hover:text-brand-charcoal">
                 <X size={20} />
               </button>
 
               <div className="text-center mb-6">
-                <div className="w-16 h-16 mx-auto mb-4 rounded-2xl bg-blue-50 flex items-center justify-center">
-                  <Plane size={32} className="text-blue-600" />
+                <div className="w-16 h-16 mx-auto mb-4 rounded-2xl bg-brand-ivory flex items-center justify-center">
+                  <Plane size={32} className="text-brand-antique-gold" />
                 </div>
-                <h2 className="text-2xl font-serif font-bold text-slate-900">{selectedFlight.airline}</h2>
-                <p className="text-slate-500">{selectedFlight.flightNumber}</p>
+                <h2 className="text-2xl font-serif font-bold text-brand-charcoal">{selectedFlight.airline}</h2>
+                <p className="text-brand-sand">{selectedFlight.flightNumber}</p>
               </div>
 
               <div className="space-y-4">
-                <div className="flex items-center justify-between p-4 bg-slate-50 rounded-xl">
+                <div className="flex items-center justify-between p-4 bg-brand-ivory rounded-xl">
                   <div className="text-center">
-                    <p className="text-2xl font-bold text-slate-900">{formatFlightTime(selectedFlight.departureTime)}</p>
-                    <p className="text-xs text-slate-400">{formatFlightDate(selectedFlight.departureTime)}</p>
-                    <p className="text-sm text-slate-500 font-semibold mt-0.5">{selectedFlight.origin}</p>
+                    <p className="text-2xl font-bold text-brand-charcoal">{formatFlightTime(selectedFlight.departureTime)}</p>
+                    <p className="text-xs text-brand-sand">{formatFlightDate(selectedFlight.departureTime)}</p>
+                    <p className="text-sm text-brand-sand font-semibold mt-0.5">{selectedFlight.origin}</p>
                   </div>
                   <div className="flex flex-col items-center">
-                    <Clock size={16} className="text-slate-400 mb-1" />
-                    <p className="text-sm font-medium text-slate-700">{selectedFlight.duration}</p>
-                    <p className="text-xs font-medium text-slate-400">{selectedFlight.stops === 0 ? "Non-stop" : `${selectedFlight.stops} stop${selectedFlight.stops > 1 ? "s" : ""}`}</p>
+                    <Clock size={16} className="text-brand-sand mb-1" />
+                    <p className="text-sm font-medium text-brand-charcoal">{selectedFlight.duration}</p>
+                    <p className="text-xs font-medium text-brand-sand">{selectedFlight.stops === 0 ? "Non-stop" : `${selectedFlight.stops} stop${selectedFlight.stops > 1 ? "s" : ""}`}</p>
                   </div>
                   <div className="text-center">
-                    <p className="text-2xl font-bold text-slate-900">{formatFlightTime(selectedFlight.arrivalTime)}</p>
-                    <p className="text-xs text-slate-400">{formatFlightDate(selectedFlight.arrivalTime)}</p>
-                    <p className="text-sm text-slate-500 font-semibold mt-0.5">{selectedFlight.destination}</p>
+                    <p className="text-2xl font-bold text-brand-charcoal">{formatFlightTime(selectedFlight.arrivalTime)}</p>
+                    <p className="text-xs text-brand-sand">{formatFlightDate(selectedFlight.arrivalTime)}</p>
+                    <p className="text-sm text-brand-sand font-semibold mt-0.5">{selectedFlight.destination}</p>
                   </div>
                 </div>
 
                 <div className="grid grid-cols-2 gap-3">
-                  <div className="p-3 bg-slate-50 rounded-xl">
-                    <p className="text-[10px] text-slate-400 uppercase">Tier</p>
+                  <div className="p-3 bg-brand-ivory rounded-xl">
+                    <p className="text-[10px] text-brand-sand uppercase">Tier</p>
                     <span className={`text-xs font-bold px-2 py-0.5 rounded-full ${getTierColor(selectedFlight.tier)}`}>
                       {selectedFlight.tier}
                     </span>
                   </div>
-                  <div className="p-3 bg-slate-50 rounded-xl">
-                    <p className="text-[10px] text-slate-400 uppercase">Fare Type</p>
+                  <div className="p-3 bg-brand-ivory rounded-xl">
+                    <p className="text-[10px] text-brand-sand uppercase">Fare Type</p>
                     {selectedFlight.fareType && selectedFlight.fareType !== "Unknown" ? (
                       <span className={`text-xs font-bold px-2 py-0.5 rounded-full ${getFareTypeColor(selectedFlight.fareType)}`}>
                         {formatFareType(selectedFlight.fareType)}
                       </span>
                     ) : (
-                      <p className="text-sm font-medium text-slate-900">Standard</p>
+                      <p className="text-sm font-medium text-brand-charcoal">Standard</p>
                     )}
                   </div>
                 </div>
 
                 {selectedFlight.fareInclusions && selectedFlight.fareInclusions.length > 0 && (
-                  <div className="p-4 bg-slate-50 rounded-xl">
-                    <p className="text-[10px] text-slate-400 uppercase mb-2">What's Included</p>
+                  <div className="p-4 bg-brand-ivory rounded-xl">
+                    <p className="text-[10px] text-brand-sand uppercase mb-2">What's Included</p>
                     <div className="space-y-1.5">
                       {selectedFlight.fareInclusions.map((inc, idx) => (
-                        <div key={idx} className="flex items-center gap-2 text-xs text-slate-600">
-                          <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 flex-shrink-0" />
+                        <div key={idx} className="flex items-center gap-2 text-xs text-brand-charcoal/80">
+                          <span className="w-1.5 h-1.5 rounded-full bg-brand-emerald flex-shrink-0" />
                           {inc}
                         </div>
                       ))}
@@ -826,31 +823,31 @@ export default function FlightsPage() {
                 )}
 
                 {selectedFlight.isRefundable !== undefined && (
-                  <div className="p-3 bg-slate-50 rounded-xl">
-                    <p className="text-[10px] text-slate-400 uppercase mb-1">Cancellation Policy</p>
-                    <p className="text-xs text-slate-600">
+                  <div className="p-3 bg-brand-ivory rounded-xl">
+                    <p className="text-[10px] text-brand-sand uppercase mb-1">Cancellation Policy</p>
+                    <p className="text-xs text-brand-charcoal/80">
                       {selectedFlight.isRefundable
                         ? "This fare is refundable. Cancellation charges may apply as per airline policy."
                         : "This fare is non-refundable. Changes may be subject to fees."}
                     </p>
                     {selectedFlight.penalty && (
-                      <p className="text-xs text-slate-500 mt-1">{selectedFlight.penalty}</p>
+                      <p className="text-xs text-brand-sand mt-1">{selectedFlight.penalty}</p>
                     )}
                   </div>
                 )}
 
                 {selectedFlight.lastTicketDate && (
-                  <div className="p-3 bg-amber-50 rounded-xl">
-                    <p className="text-[10px] text-amber-600 uppercase mb-1">Last Ticket Date</p>
-                    <p className="text-xs font-medium text-amber-700">{selectedFlight.lastTicketDate}</p>
+                  <div className="p-3 bg-brand-champagne/20 rounded-xl">
+                    <p className="text-[10px] text-brand-antique-gold uppercase mb-1">Last Ticket Date</p>
+                    <p className="text-xs font-medium text-brand-charcoal">{selectedFlight.lastTicketDate}</p>
                   </div>
                 )}
 
-                <div className="pt-4 border-t border-slate-200">
+                <div className="pt-4 border-t border-brand-sand/30">
                   <div className="flex justify-between items-center mb-4">
                     <div>
-                      <p className="text-3xl font-black font-mono text-slate-900">{formatCurrency(selectedFlight.price)}</p>
-                      <p className="text-xs text-slate-400">total for {totalPassengers} pax</p>
+                      <p className="text-3xl font-black font-mono text-brand-charcoal">{formatCurrency(selectedFlight.price)}</p>
+                      <p className="text-xs text-brand-sand">total for {totalPassengers} pax</p>
                     </div>
                   </div>
                   <button
@@ -861,7 +858,7 @@ export default function FlightsPage() {
                         setShowBookingModal(true);
                       }
                     }}
-                    className="w-full py-3 bg-brand-saffron text-white rounded-xl font-bold hover:bg-brand-burnt transition-colors cursor-pointer active:scale-[0.98]"
+                    className="w-full py-3 bg-brand-antique-gold text-white rounded-xl font-bold hover:bg-brand-emerald transition-colors cursor-pointer active:scale-[0.98]"
                   >
                     {user ? "Book Now" : "Sign in to Book"}
                   </button>
