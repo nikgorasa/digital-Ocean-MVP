@@ -132,6 +132,7 @@ export default function FlightBookingModal({
     pnr?: string;
     status?: string;
   } | null>(null);
+  const [isTimeChanged, setIsTimeChanged] = useState(false);
   const [isCorporateBooking, setIsCorporateBooking] = useState(false);
   const [corporateLoading, setCorporateLoading] = useState(false);
   const [corporateResult, setCorporateResult] = useState<{
@@ -469,6 +470,9 @@ export default function FlightBookingModal({
           if (bookData.bookingId) {
             tboBookingId = bookData.bookingId;
             tboPnr = bookData.pnr || null;
+            if (bookData.isTimeChanged) {
+              setIsTimeChanged(true);
+            }
           }
         } catch (e) {
           console.warn("TBO book failed:", e);
@@ -1340,6 +1344,16 @@ export default function FlightBookingModal({
                 ? "Your corporate flight booking has been confirmed and charged to your company account."
                 : "Your flight has been booked successfully."}
             </p>
+            {isTimeChanged && (
+              <div className="bg-amber-50 border border-amber-200 rounded-xl p-3 mb-4 text-left">
+                <div className="flex items-center gap-2">
+                  <AlertCircle size={14} className="text-amber-600" />
+                  <span className="text-xs font-bold text-amber-800">
+                    Flight time has changed since your search. Please check your email for updated schedule.
+                  </span>
+                </div>
+              </div>
+            )}
             {isCorporateBooking && corporateResult && (
               <div className="bg-slate-50 rounded-xl p-4 space-y-2 text-left mb-6">
                 {corporateResult.corporateDiscount && corporateResult.corporateDiscount > 0 && (

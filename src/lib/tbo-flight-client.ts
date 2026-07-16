@@ -306,7 +306,7 @@ export async function bookFlight(params: {
   resultIndex: string;
   passengers: TBOFlightBookRequest["Passengers"];
   EndUserIp?: string;
-}): Promise<{ bookingId: string; pnr: string; isPriceChanged: boolean }> {
+  }): Promise<{ bookingId: string; pnr: string; isPriceChanged: boolean; isTimeChanged: boolean }> {
   await validateCredentials();
   const tokenId = await ensureToken();
   const req: TBOFlightBookRequest = {
@@ -324,6 +324,7 @@ export async function bookFlight(params: {
     bookingId: res.Response.FlightItinerary.BookingId,
     pnr: res.Response.FlightItinerary.PNR,
     isPriceChanged: res.Response.IsPriceChanged,
+    isTimeChanged: res.Response.IsTimeChanged || false,
   };
 }
 
