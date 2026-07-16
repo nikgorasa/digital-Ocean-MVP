@@ -85,6 +85,7 @@ export default function HotelBookingModal({
   const [bookingDetail, setBookingDetail] = useState<Record<string, unknown> | null>(null);
   const [actionLoading, setActionLoading] = useState<string | null>(null);
   const [companyName, setCompanyName] = useState<string | null>(null);
+  const [validationInfo, setValidationInfo] = useState<{ PanMandatory?: boolean; PanPassport?: boolean; PassportMandatory?: boolean } | null>(null);
 
   useEffect(() => {
     if (user?.companyId) {
@@ -95,7 +96,11 @@ export default function HotelBookingModal({
     }
   }, [user?.companyId]);
 
-  const isInternational = hotel.hotelCode >= 10000000;
+  const isInternational = hotel.countryCode ? hotel.countryCode !== "IN" : hotel.hotelCode >= 10000000;
+  const showPassport = validationInfo?.PassportMandatory === true || (isInternational && !validationInfo);
+  const showPan = validationInfo?.PanMandatory === true || validationInfo?.PanPassport === true || (!isInternational && !validationInfo);
+  const passportRequired = validationInfo?.PassportMandatory === true || (isInternational && !validationInfo);
+  const panRequired = validationInfo?.PanMandatory === true || (!isInternational && !validationInfo);
   const nights = Math.max(1, Math.ceil(
     (new Date(checkOut).getTime() - new Date(checkIn).getTime()) / 86400000
   ));
@@ -104,8 +109,9 @@ export default function HotelBookingModal({
   const demoDiscount = demoMode ? 500 : 0;
   const totalPayable = finalPrice - demoDiscount;
   const perNightTotal = (room.roomFare || room.totalFare / nights) + room.roomTax;
-  const passportValid = !isInternational || (passportNo.trim() && passportExpiry);
-  const isValid = firstName.trim() && lastName.trim() && phone.trim().length >= 7 && email.trim() && passportValid;
+  const passportValid = !passportRequired || (passportNo.trim() && passportExpiry);
+  const panValid = !panRequired || pan.trim().length > 0;
+  const isValid = firstName.trim() && lastName.trim() && phone.trim().length >= 7 && email.trim() && passportValid && panValid;
 
   const prefilled = firstName && lastName && phone && email && pan;
   const dirtyRef = useRef(false);
@@ -152,6 +158,7 @@ export default function HotelBookingModal({
     setVoucherStatus(null);
     setBookingDetail(null);
     setActionLoading(null);
+    setValidationInfo(null);
     dirtyRef.current = false;
   };
 
@@ -242,6 +249,10 @@ export default function HotelBookingModal({
           setPrebookTaxBreakup(blockData.taxBreakup);
         }
 
+        if (blockData.validationInfo) {
+          setValidationInfo(blockData.validationInfo);
+        }
+
         if (blockData.isPriceChanged) {
           const proceed = window.confirm(
             "The room price has changed. The new total is shown in the booking summary. Do you want to proceed?"
@@ -270,9 +281,9 @@ export default function HotelBookingModal({
               age: guestAge,
               email: email.trim(),
               phone: phone.trim(),
-              pan: isInternational ? undefined : pan.trim().toUpperCase(),
-              passportNo: isInternational ? passportNo || undefined : undefined,
-              passportExpiry: isInternational ? passportExpiry || undefined : undefined,
+              pan: showPan && pan.trim() ? pan.trim().toUpperCase() : undefined,
+              passportNo: showPassport && passportNo ? passportNo || undefined : undefined,
+              passportExpiry: showPassport && passportExpiry ? passportExpiry || undefined : undefined,
               addressLine1: addressLine1 || undefined,
               city: addressCity || location,
               countryCode: guestNationality,
@@ -350,7 +361,7 @@ export default function HotelBookingModal({
           seatOrRoom: room.name,
           paxCount: guestCount,
           travelDates: `${checkIn} to ${checkOut}`,
-          leadGuestPan: isInternational ? undefined : pan.trim().toUpperCase(),
+          leadGuestPan: showPan && pan.trim() ? pan.trim().toUpperCase() : undefined,
           supplierBookingRef: bookData?.bookingId ? String(bookData.bookingId) : undefined,
           metadata: {
             tboBookingId: bookData?.bookingId,
@@ -714,8 +725,8 @@ export default function HotelBookingModal({
             </FormSection>
 
             {/* Identity - PAN */}
-            {!isInternational && (
-              <FormSection icon={CreditCard} title="Identity (Required)">
+            {showPan && (
+              <FormSection icon={CreditCard} title={panRequired ? "Identity (Required)" : "Identity (Optional)"}>
                 <FormPan
                   id="hotel-pan"
                   label="PAN Card Number"
@@ -727,14 +738,14 @@ export default function HotelBookingModal({
             )}
 
             {/* Passport (International Hotels) */}
-            {isInternational && (
+            {showPassport && (
               <FormPassport
                 id="hotel-passport"
                 passportNo={passportNo}
                 passportExpiry={passportExpiry}
                 onPassportNoChange={(v) => { setPassportNo(v); markDirty(); }}
                 onPassportExpiryChange={(v) => { setPassportExpiry(v); markDirty(); }}
-                required
+                required={passportRequired}
                 travelDate={checkIn}
                 returnDate={checkOut}
               />

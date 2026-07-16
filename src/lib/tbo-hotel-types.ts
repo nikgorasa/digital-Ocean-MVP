@@ -347,6 +347,8 @@ export interface TBOHotelDetail {
   CityName?: string;
   Latitude?: number;
   Longitude?: number;
+  CheckInTime?: string;
+  CheckOutTime?: string;
 }
 
 export interface TBOHotelRoomDisplay {
@@ -389,6 +391,7 @@ export interface TBOHotelDisplay {
   starRating: number;
   originalPrice: number;
   source?: "tbo" | "mock" | "fallback";
+  countryCode?: string;
 }
 
 export interface TBOHotelSearchOutput {

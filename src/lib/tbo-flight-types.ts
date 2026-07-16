@@ -484,6 +484,8 @@ export interface TBOFlightDisplay {
   isLCC: boolean;
   isRefundable: boolean;
   isDomestic?: boolean;
+  originCountry?: string;
+  destCountry?: string;
   source: number;
   airline: string;
   airlineCode: string;

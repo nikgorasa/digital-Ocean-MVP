@@ -83,12 +83,17 @@ async function toDisplay(
 ): Promise<TBOFlightDisplay> {
   const f = firstSeg(r);
   const l = lastSeg(r);
+  const originCountry = f?.Origin?.Airport?.CountryCode || "";
+  const destCountry = l?.Destination?.Airport?.CountryCode || "";
+  const isDomestic = originCountry === destCountry && originCountry === "IN";
   return {
     resultIndex: r.ResultIndex,
     leg,
     isLCC: r.IsLCC,
     isRefundable: r.IsRefundable,
-    isDomestic: f?.TripIndicator === 1,
+    isDomestic,
+    originCountry,
+    destCountry,
     source: r.Source,
     airline: f?.Airline?.AirlineName ?? "",
     airlineCode: f?.Airline?.AirlineCode ?? "",

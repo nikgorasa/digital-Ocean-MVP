@@ -79,10 +79,11 @@ async function ensureToken(): Promise<string> {
 
 async function toDisplay(
   h: TBOHotelResult,
-  context?: { destination?: string; hotelName?: string },
+  context?: { destination?: string; hotelName?: string; countryCode?: string },
 ): Promise<TBOHotelDisplay> {
   const details = _hotelDetailsCache[h.HotelCode] || {};
   const hotelAmenities = details.amenities || [];
+  const countryCode = context?.countryCode || details.countryCode || "IN";
 
   const rooms: TBOHotelRoomDisplay[] = h.Rooms.map((r: TBOHotelRoom, ri: number) => {
     const roomName = Array.isArray(r.Name) ? r.Name[0] : (r.Name || "Room");
@@ -157,11 +158,12 @@ async function toDisplay(
     price: pricing.displayedPrice,
     starRating: numericRating,
     originalPrice: pricing.originalPrice,
+    countryCode,
   };
 }
 
 let _hotelCodesCache: Record<string, string> = {};
-let _hotelDetailsCache: Record<string, { name: string; rating: string; address: string; city: string; imageUrl?: string; amenities: string[]; facilities: string[] }> = {};
+let _hotelDetailsCache: Record<string, { name: string; rating: string; address: string; city: string; imageUrl?: string; amenities: string[]; facilities: string[]; countryCode?: string; checkInTime?: string; checkOutTime?: string }> = {};
 let _cityNameToCodeCache: Record<string, string> = {};
 
 async function lookupTboCityCode(cityName: string, requestId?: string, countryCode = "IN"): Promise<string | null> {
@@ -231,6 +233,9 @@ async function fetchHotelImages(hotelCodes: string[], requestId?: string): Promi
               imageUrl: images[0] || existing.imageUrl,
               amenities: detail.Amenities || existing.amenities || [],
               facilities: detail.HotelFacilities || existing.facilities || [],
+              countryCode: detail.CountryCode || existing.countryCode,
+              checkInTime: detail.CheckInTime || existing.checkInTime,
+              checkOutTime: detail.CheckOutTime || existing.checkOutTime,
             };
           }
         }
@@ -274,6 +279,7 @@ async function resolveHotelCodes(city?: string, hotelCodes?: string, cityCode?: 
         city: h.CityName || city || "",
         amenities: [],
         facilities: [],
+        countryCode: h.CountryCode || countryCode,
       };
     }
     console.log(`Resolved ${res.Hotels.length} hotel codes for city code ${resolvedCode} (showing first 50)`);
@@ -296,6 +302,7 @@ async function resolveHotelCodes(city?: string, hotelCodes?: string, cityCode?: 
             city: h.CityName || city || "",
             amenities: [],
             facilities: [],
+            countryCode: h.CountryCode || countryCode,
           };
         }
         console.log(`Resolved ${retryRes.Hotels.length} hotel codes with looked-up code ${lookedUp}`);
@@ -345,7 +352,7 @@ export async function searchHotels(params: {
     throw new Error(`Hotel search failed: ${res.Status?.Description || "No hotels found"}`);
   }
   const hotels = await Promise.all(
-    res.HotelResult.map(h => toDisplay(h, { destination: params.city }))
+    res.HotelResult.map(h => toDisplay(h, { destination: params.city, countryCode }))
   );
   return { hotels, traceId };
 }
