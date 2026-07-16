@@ -4,6 +4,15 @@ import { Prisma } from "@prisma/client";
 const L1_TTL_MS = 5 * 60 * 1000;
 const l1Cache = new Map<string, { data: unknown; expiresAt: number }>();
 
+// TBO-recommended TTLs per data type
+const DEFAULT_TTL_SECONDS: Record<string, number> = {
+  CountryList: 0,        // Cache forever (249 countries, rarely changes)
+  CityList: 604800,      // 7 days (~1K cities per country)
+  HotelCodeList: 86400,  // 24 hours (~4K hotels per city)
+  HotelDetails: 604800,  // 7 days (per hotel)
+  airports: 0,           // Cache forever
+};
+
 function l1Key(dataType: string, qualifier?: string): string {
   return qualifier ? `${dataType}:${qualifier}` : dataType;
 }
@@ -39,7 +48,9 @@ export async function cacheGet<T>(dataType: string, qualifier?: string): Promise
   try {
     const row = await prisma.staticCache.findUnique({ where: { cacheKey } });
     if (!row) return null;
-    if (new Date(row.expiresAt).getTime() < Date.now()) {
+    // Check expiry (year 9999 = never expires)
+    const expiresAt = new Date(row.expiresAt);
+    if (expiresAt.getFullYear() < 9000 && expiresAt.getTime() < Date.now()) {
       await prisma.staticCache.delete({ where: { cacheKey } }).catch(() => {});
       return null;
     }
@@ -59,8 +70,9 @@ export async function cacheSet<T>(
   opts?: { ttlSeconds?: number; metadata?: Record<string, unknown> },
 ): Promise<void> {
   const cacheKey = qualifier ? `${dataType}:${qualifier}` : dataType;
-  const ttlSeconds = opts?.ttlSeconds ?? 86400;
-  const expiresAt = new Date(Date.now() + ttlSeconds * 1000);
+  const ttlSeconds = opts?.ttlSeconds ?? DEFAULT_TTL_SECONDS[dataType] ?? 86400;
+  // For TTL=0 (cache forever), set expiry to year 9999
+  const expiresAt = ttlSeconds === 0 ? new Date("9999-12-31T23:59:59Z") : new Date(Date.now() + ttlSeconds * 1000);
   try {
     await prisma.staticCache.upsert({
       where: { cacheKey },
@@ -147,9 +159,9 @@ export async function getCacheConfigs(): Promise<
 export async function getTTLSeconds(dataType: string): Promise<number> {
   try {
     const cfg = await prisma.cacheConfig.findUnique({ where: { dataType } });
-    return cfg?.ttlSeconds ?? 86400;
+    return cfg?.ttlSeconds ?? DEFAULT_TTL_SECONDS[dataType] ?? 86400;
   } catch {
-    return 86400;
+    return DEFAULT_TTL_SECONDS[dataType] ?? 86400;
   }
 }
 
