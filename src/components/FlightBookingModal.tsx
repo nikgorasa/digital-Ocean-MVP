@@ -20,6 +20,7 @@ import FormGst from "./ui/FormGst";
 import FormPassport from "./ui/FormPassport";
 import FormSection from "./ui/FormSection";
 import StepProgress from "./ui/StepProgress";
+import { getRouteVisaWarnings } from "@/lib/visa-requirements";
 
 interface Flight {
   id: string;
@@ -52,6 +53,8 @@ interface Flight {
   validatingAirline?: string;
   gstAllowed?: boolean;
   resultIndex?: string;
+  isDomestic?: boolean;
+  isPassportRequiredAtBook?: boolean;
 }
 
 interface SSRBaggage {
@@ -137,6 +140,46 @@ export default function FlightBookingModal({
     corporateDiscount?: number;
   } | null>(null);
 
+  // International detection
+  const isInternational = flight.isDomestic === false || flight.isPassportRequiredAtBook === true;
+  const passportRequired = isInternational || flight.isPassportRequiredAtBook === true;
+
+  // Visa warnings for Indian passport holders
+  const visaWarnings = getRouteVisaWarnings(
+    flight.origin,
+    flight.destination,
+    flight.stops,
+  );
+
+  // Multi-passenger data for international flights
+  interface PassengerData {
+    firstName: string;
+    lastName: string;
+    dateOfBirth: string;
+    gender: string;
+    nationality: string;
+    passportNo: string;
+    passportExpiry: string;
+  }
+
+  const otherAdultCount = Math.max(0, adults - 1);
+  const childCount = children;
+  const infantCount = infants;
+  const otherPaxCount = otherAdultCount + childCount + infantCount;
+
+  const [otherPassengers, setOtherPassengers] = useState<PassengerData[]>([]);
+
+  if (isInternational && otherPaxCount > 0 && otherPassengers.length !== otherPaxCount) {
+    const newPassengers: PassengerData[] = [];
+    for (let i = 0; i < otherPaxCount; i++) {
+      newPassengers.push(otherPassengers[i] || {
+        firstName: "", lastName: "", dateOfBirth: "", gender: "",
+        nationality: "Indian", passportNo: "", passportExpiry: "",
+      });
+    }
+    setOtherPassengers(newPassengers);
+  }
+
   // Price change confirmation state
   const [priceChangeDialog, setPriceChangeDialog] = useState<{
     oldFare: number;
@@ -162,7 +205,21 @@ export default function FlightBookingModal({
   const finalPrice = totalFlightPrice - discountApplied;
   const demoDiscount = demoMode ? 500 : 0;
   const totalPayable = finalPrice - demoDiscount + addonsTotal;
-  const isValid = firstName.trim() && lastName.trim() && phone.trim().length >= 10 && email.trim();
+
+  const otherPassengersValid = !isInternational || otherPaxCount === 0 || otherPassengers.every(
+    (p, i) => {
+      if (!p.firstName.trim() || !p.lastName.trim()) return false;
+      if (i < otherAdultCount) {
+        return p.dateOfBirth && p.gender;
+      }
+      return true;
+    },
+  );
+
+  const passportValid = !passportRequired || (passportNo.trim() && passportExpiry);
+
+  const isValid = firstName.trim() && lastName.trim() && phone.trim().length >= 7 && email.trim()
+    && otherPassengersValid && passportValid;
   const prefilled = firstName && lastName && phone && email;
 
   useEscapeKey(() => {
@@ -191,6 +248,7 @@ export default function FlightBookingModal({
     setSsrMeals([]);
     setSsrSeats([]);
     setFormErrors({});
+    setOtherPassengers([]);
     dirtyRef.current = false;
   };
 
@@ -200,7 +258,7 @@ export default function FlightBookingModal({
     switch (name) {
       case "firstName": return !value.trim() ? "First name is required" : "";
       case "lastName": return !value.trim() ? "Last name is required" : "";
-      case "phone": return value.trim().length < 10 ? "Phone must be 10 digits" : "";
+      case "phone": return value.trim().length < 7 ? "Phone must be at least 7 digits" : "";
       case "email": return !value.trim() ? "Email is required" : "";
       case "pan": return value && !/^[A-Z]{5}[0-9]{4}[A-Z]$/.test(value) ? "Invalid PAN format" : "";
       default: return "";
@@ -316,34 +374,47 @@ export default function FlightBookingModal({
         if (s) addOns.seat = { code: s.Code, seatNo: `${s.RowNo}${s.SeatNo}`, type: s.SeatType, price: s.Price };
       }
 
-      const buildPassenger = (paxId: number, paxType: number, isLead: boolean) => ({
-        PaxId: paxId,
-        Title: isLead ? (gender === "Female" ? "Ms" : "Mr") : "Mr",
-        FirstName: isLead ? firstName.trim() : `Guest ${paxId}`,
-        LastName: isLead ? lastName.trim() : "Traveler",
-        PaxType: paxType,
-        DateOfBirth: isLead ? (dateOfBirth || "1990-01-01") : "1990-01-01",
-        Gender: isLead ? (gender === "Female" ? 2 : 1) : 1,
-        AddressLine1: "",
-        City: "",
-        CountryCode: "IN",
-        CountryName: "India",
-        ContactNo: isLead ? (phone || "") : "",
-        Email: isLead ? (email || user.email) : "",
-        IsLeadPax: isLead,
-        Nationality: "IN",
-        PassportNo: isLead ? (passportNo || "") : "",
-        PassportExpiry: isLead ? (passportExpiry || "") : "",
-        Fare: {
-          BaseFare: flight.baseFare || 0,
-          Tax: flight.tax || 0,
-          TransactionFee: 0,
-          YQTax: flight.yqTax || 0,
-          AdditionalTxnFeeOfrd: 0,
-          AdditionalTxnFeePub: 0,
-          AirTransFee: 0,
-        },
-      });
+      const nationalityCode = nationality === "Indian" ? "IN" : nationality.slice(0, 2).toUpperCase();
+
+      const buildPassenger = (paxId: number, paxType: number, isLead: boolean) => {
+        const paxFirstName = isLead ? firstName.trim() : (otherPassengers[paxId - 2]?.firstName || `Guest ${paxId}`);
+        const paxLastName = isLead ? lastName.trim() : (otherPassengers[paxId - 2]?.lastName || "Traveler");
+        const paxDob = isLead ? (dateOfBirth || "1990-01-01") : (otherPassengers[paxId - 2]?.dateOfBirth || "1990-01-01");
+        const paxGender = isLead ? gender : (otherPassengers[paxId - 2]?.gender || "M");
+        const paxNationality = isLead ? nationality : (otherPassengers[paxId - 2]?.nationality || "Indian");
+        const paxNatCode = paxNationality === "Indian" ? "IN" : paxNationality.slice(0, 2).toUpperCase();
+        const paxPassportNo = isLead ? passportNo : (otherPassengers[paxId - 2]?.passportNo || "");
+        const paxPassportExpiry = isLead ? passportExpiry : (otherPassengers[paxId - 2]?.passportExpiry || "");
+
+        return {
+          PaxId: paxId,
+          Title: (isLead ? gender : otherPassengers[paxId - 2]?.gender) === "F" ? "Ms" : "Mr",
+          FirstName: paxFirstName,
+          LastName: paxLastName,
+          PaxType: paxType,
+          DateOfBirth: paxDob,
+          Gender: paxGender === "F" ? 2 : 1,
+          AddressLine1: "",
+          City: "",
+          CountryCode: nationalityCode,
+          CountryName: nationality,
+          ContactNo: isLead ? (phone || "") : "",
+          Email: isLead ? (email || user.email) : "",
+          IsLeadPax: isLead,
+          Nationality: paxNatCode,
+          PassportNo: paxPassportNo,
+          PassportExpiry: paxPassportExpiry,
+          Fare: {
+            BaseFare: flight.baseFare || 0,
+            Tax: flight.tax || 0,
+            TransactionFee: 0,
+            YQTax: flight.yqTax || 0,
+            AdditionalTxnFeeOfrd: 0,
+            AdditionalTxnFeePub: 0,
+            AirTransFee: 0,
+          },
+        };
+      };
 
       const passengers: ReturnType<typeof buildPassenger>[] = [];
       let paxId = 1;
@@ -455,7 +526,7 @@ export default function FlightBookingModal({
           seatOrRoom: flight.tier,
           paxCount: passengerCount,
           travelDates: date || "TBD",
-          leadGuestPan: pan || undefined,
+          leadGuestPan: isInternational ? undefined : (pan || undefined),
           supplierBookingRef: tboBookingId || undefined,
           metadata: {
             traceId: traceId || undefined,
@@ -650,6 +721,16 @@ export default function FlightBookingModal({
               </div>
             </div>
 
+            {/* Visa Requirement Warning */}
+            {visaWarnings.length > 0 && (
+              <div className="bg-amber-50 border border-amber-200 rounded-xl p-3">
+                <p className="text-xs font-bold text-amber-800 mb-1">Visa Requirements</p>
+                {visaWarnings.map((w, i) => (
+                  <p key={i} className="text-xs text-amber-700">{w}</p>
+                ))}
+              </div>
+            )}
+
             {/* Promo Code */}
             <div>
               <label className="text-[10px] font-bold uppercase tracking-widest text-slate-400 mb-2 block">Promo Code</label>
@@ -735,6 +816,7 @@ export default function FlightBookingModal({
                   id="flight-pan"
                   value={pan}
                   onChange={(e) => { setPan(e.target.value); markDirty(); }}
+                  hidden={isInternational}
                 />
                 <FormInput
                   id="flight-nationality"
@@ -750,8 +832,143 @@ export default function FlightBookingModal({
                 passportExpiry={passportExpiry}
                 onPassportNoChange={(v) => { setPassportNo(v); markDirty(); }}
                 onPassportExpiryChange={(v) => { setPassportExpiry(v); markDirty(); }}
+                required={passportRequired}
+                label={passportRequired ? "(Required for international)" : undefined}
+                travelDate={date}
               />
             </FormSection>
+
+            {/* Additional Passengers — International only */}
+            {isInternational && otherPaxCount > 0 && (
+              <FormSection icon={User} title={`Additional Passengers (${otherPaxCount})`}>
+                {otherPassengers.map((pax, idx) => {
+                  const paxLabel = idx < otherAdultCount
+                    ? `Adult ${idx + 2}`
+                    : idx < otherAdultCount + childCount
+                      ? `Child ${idx - otherAdultCount + 1}`
+                      : `Infant ${idx - otherAdultCount - childCount + 1}`;
+                  return (
+                    <div key={idx} className="mb-4 pb-4 border-b border-slate-100 last:border-0 last:mb-0 last:pb-0">
+                      <p className="text-xs font-bold text-slate-600 mb-2">{paxLabel}</p>
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        <FormInput
+                          id={`pax-${idx}-firstName`}
+                          label="First Name"
+                          required
+                          value={pax.firstName}
+                          onChange={(e) => {
+                            const updated = [...otherPassengers];
+                            updated[idx] = { ...updated[idx], firstName: e.target.value };
+                            setOtherPassengers(updated);
+                            markDirty();
+                          }}
+                          placeholder="First Name"
+                        />
+                        <FormInput
+                          id={`pax-${idx}-lastName`}
+                          label="Last Name"
+                          required
+                          value={pax.lastName}
+                          onChange={(e) => {
+                            const updated = [...otherPassengers];
+                            updated[idx] = { ...updated[idx], lastName: e.target.value };
+                            setOtherPassengers(updated);
+                            markDirty();
+                          }}
+                          placeholder="Last Name"
+                        />
+                      </div>
+                      {idx < otherAdultCount && (
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-3">
+                          <FormInput
+                            id={`pax-${idx}-dob`}
+                            label="Date of Birth"
+                            required
+                            type="date"
+                            value={pax.dateOfBirth}
+                            onChange={(e) => {
+                              const updated = [...otherPassengers];
+                              updated[idx] = { ...updated[idx], dateOfBirth: e.target.value };
+                              setOtherPassengers(updated);
+                              markDirty();
+                            }}
+                          />
+                          <div>
+                            <label htmlFor={`pax-${idx}-gender`} className="text-[11px] font-bold uppercase tracking-widest text-slate-500 mb-1.5 block">
+                              Gender <span className="text-red-500">*</span>
+                            </label>
+                            <select
+                              id={`pax-${idx}-gender`}
+                              value={pax.gender}
+                              onChange={(e) => {
+                                const updated = [...otherPassengers];
+                                updated[idx] = { ...updated[idx], gender: e.target.value };
+                                setOtherPassengers(updated);
+                                markDirty();
+                              }}
+                              className="w-full px-3 py-3 bg-white border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-brand-saffron focus:ring-offset-2 outline-none transition-all"
+                            >
+                              <option value="">Select</option>
+                              <option value="M">Male</option>
+                              <option value="F">Female</option>
+                            </select>
+                          </div>
+                        </div>
+                      )}
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-3">
+                        <FormInput
+                          id={`pax-${idx}-nationality`}
+                          label="Nationality"
+                          value={pax.nationality}
+                          onChange={(e) => {
+                            const updated = [...otherPassengers];
+                            updated[idx] = { ...updated[idx], nationality: e.target.value };
+                            setOtherPassengers(updated);
+                            markDirty();
+                          }}
+                        />
+                        <div />
+                      </div>
+                      <div className="grid grid-cols-2 gap-3 mt-3">
+                        <div>
+                          <label className="text-[11px] font-bold uppercase tracking-widest text-slate-500 mb-1.5 block">
+                            Passport No <span className="text-red-500">*</span>
+                          </label>
+                          <input
+                            value={pax.passportNo}
+                            onChange={(e) => {
+                              const updated = [...otherPassengers];
+                              updated[idx] = { ...updated[idx], passportNo: e.target.value.toUpperCase() };
+                              setOtherPassengers(updated);
+                              markDirty();
+                            }}
+                            placeholder="Passport No"
+                            maxLength={15}
+                            className="w-full px-3 py-3 bg-white border border-slate-200 rounded-xl text-sm uppercase focus:ring-2 focus:ring-brand-saffron focus:ring-offset-2 outline-none transition-all"
+                          />
+                        </div>
+                        <div>
+                          <label className="text-[11px] font-bold uppercase tracking-widest text-slate-500 mb-1.5 block">
+                            Passport Expiry <span className="text-red-500">*</span>
+                          </label>
+                          <input
+                            type="date"
+                            value={pax.passportExpiry}
+                            onChange={(e) => {
+                              const updated = [...otherPassengers];
+                              updated[idx] = { ...updated[idx], passportExpiry: e.target.value };
+                              setOtherPassengers(updated);
+                              markDirty();
+                            }}
+                            className="w-full px-3 py-3 bg-white border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-brand-saffron focus:ring-offset-2 outline-none transition-all"
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </FormSection>
+            )}
 
             {/* Contact Info */}
             <FormSection icon={Phone} title="Contact Info">
@@ -787,7 +1004,11 @@ export default function FlightBookingModal({
               gstCompanyName={gstCompanyName}
               onGstNumberChange={(v) => { setGstNumber(v); markDirty(); }}
               onGstCompanyNameChange={(v) => { setGstCompanyName(v); markDirty(); }}
+              hidden={isInternational}
             />
+            {isInternational && (
+              <p className="text-[10px] text-slate-400">GST applicable for domestic bookings only</p>
+            )}
 
             {/* Save to Profile */}
             {user && (

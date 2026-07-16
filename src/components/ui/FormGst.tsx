@@ -12,6 +12,7 @@ interface FormGstProps {
   onGstNumberChange: (value: string) => void;
   onGstCompanyNameChange: (value: string) => void;
   error?: string;
+  hidden?: boolean;
 }
 
 export default function FormGst({
@@ -21,7 +22,9 @@ export default function FormGst({
   onGstNumberChange,
   onGstCompanyNameChange,
   error: externalError,
+  hidden,
 }: FormGstProps) {
+  if (hidden) return null;
   const [expanded, setExpanded] = useState(false);
   const [touched, setTouched] = useState(false);
   const [internalError, setInternalError] = useState("");

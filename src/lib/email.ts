@@ -1,4 +1,5 @@
 import nodemailer from 'nodemailer';
+import { formatCurrency } from './utils';
 
 interface EmailOptions {
   to: string;
@@ -62,6 +63,7 @@ export const emailTemplates = {
     checkOut: string;
     confirmationNo: string;
     amount: number;
+    currency?: string;
   }) => ({
     subject: `Booking Confirmed - ${booking.hotelName}`,
     html: `
@@ -74,7 +76,7 @@ export const emailTemplates = {
           <p style="margin: 5px 0;"><strong>Confirmation No:</strong> ${booking.confirmationNo}</p>
           <p style="margin: 5px 0;"><strong>Check-in:</strong> ${booking.checkIn}</p>
           <p style="margin: 5px 0;"><strong>Check-out:</strong> ${booking.checkOut}</p>
-          <p style="margin: 5px 0;"><strong>Total:</strong> ₹${booking.amount.toLocaleString()}</p>
+          <p style="margin: 5px 0;"><strong>Total:</strong> ${formatCurrency(booking.amount, booking.currency || 'INR')}</p>
         </div>
         <p>View your booking details in <a href="https://cckr.vercel.app/trips">My Trips</a>.</p>
         <p>Best regards,<br/>GoRASA Team</p>
@@ -87,6 +89,7 @@ export const emailTemplates = {
     hotelName: string;
     amount: number;
     bookingId: string;
+    currency?: string;
   }) => ({
     subject: `Complete Your Payment - ${booking.hotelName}`,
     html: `
@@ -95,7 +98,7 @@ export const emailTemplates = {
         <p>Dear ${booking.guestName},</p>
         <p>Your booking for <strong>${booking.hotelName}</strong> is still pending payment.</p>
         <div style="background: #fef3c7; padding: 20px; border-radius: 8px; margin: 20px 0; border-left: 4px solid #f59e0b;">
-          <p style="margin: 5px 0;"><strong>Amount:</strong> ₹${booking.amount.toLocaleString()}</p>
+          <p style="margin: 5px 0;"><strong>Amount:</strong> ${formatCurrency(booking.amount, booking.currency || 'INR')}</p>
           <p style="margin: 5px 0; color: #92400e;"><strong>Note:</strong> This booking will be automatically cancelled in 12 hours if payment is not completed.</p>
         </div>
         <p><a href="https://cckr.vercel.app/trips" style="background: #059669; color: white; padding: 12px 24px; text-decoration: none; border-radius: 8px; display: inline-block;">Complete Payment</a></p>

@@ -246,13 +246,13 @@ async function fetchHotelImages(hotelCodes: string[], requestId?: string): Promi
   console.log(`[fetchHotelImages] ${succeeded}/${batches.length} batches succeeded, ${failed} failed`);
 }
 
-async function resolveHotelCodes(city?: string, hotelCodes?: string, cityCode?: string, requestId?: string): Promise<string> {
+async function resolveHotelCodes(city?: string, hotelCodes?: string, cityCode?: string, requestId?: string, countryCode = "IN"): Promise<string> {
   if (hotelCodes) return hotelCodes;
 
   let resolvedCode = cityCode;
 
   if (!resolvedCode && city) {
-    resolvedCode = await lookupTboCityCode(city, requestId) || undefined;
+    resolvedCode = await lookupTboCityCode(city, requestId, countryCode) || undefined;
   }
 
   if (!resolvedCode) {
@@ -281,7 +281,7 @@ async function resolveHotelCodes(city?: string, hotelCodes?: string, cityCode?: 
   }
 
   if (cityCode && city) {
-    const lookedUp = await lookupTboCityCode(city, requestId);
+    const lookedUp = await lookupTboCityCode(city, requestId, countryCode);
     if (lookedUp && lookedUp !== cityCode) {
       console.log(`Retrying with looked-up city code ${lookedUp} for "${city}"`);
       const retryRes = await api.getHotelCodeList(lookedUp, { requestId });
@@ -313,14 +313,16 @@ export async function searchHotels(params: {
   hotelCodes?: string;
   city?: string;
   cityCode?: string;
+  countryCode?: string;
   rooms: { adults: number; children: number; childrenAges: number[] }[];
   guestNationality?: string;
   preferredCurrency?: string;
 }): Promise<TBOHotelSearchOutput> {
   await validateCredentials();
   const requestId = `search_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
+  const countryCode = params.countryCode || params.guestNationality || "IN";
 
-  const resolvedCodes = await resolveHotelCodes(params.city, params.hotelCodes, params.cityCode, requestId);
+  const resolvedCodes = await resolveHotelCodes(params.city, params.hotelCodes, params.cityCode, requestId, countryCode);
   await fetchHotelImages(resolvedCodes.split(","), requestId);
 
   const tokenId = await ensureToken();
@@ -328,7 +330,7 @@ export async function searchHotels(params: {
     CheckIn: params.checkIn,
     CheckOut: params.checkOut,
     HotelCodes: resolvedCodes,
-    GuestNationality: params.guestNationality || "IN",
+    GuestNationality: params.guestNationality || countryCode,
     PaxRooms: params.rooms.map(r => ({ Adults: r.adults, Children: r.children, ChildrenAges: r.childrenAges })),
     PreferredCurrency: params.preferredCurrency || "INR",
     ResponseTime: 29,

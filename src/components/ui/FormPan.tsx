@@ -10,6 +10,7 @@ interface FormPanProps extends Omit<React.InputHTMLAttributes<HTMLInputElement>,
   label?: string;
   error?: string;
   onValidationChange?: (isValid: boolean) => void;
+  hidden?: boolean;
 }
 
 export default function FormPan({
@@ -17,11 +18,14 @@ export default function FormPan({
   label = "PAN Card Number",
   error: externalError,
   onValidationChange,
+  hidden,
   value,
   onChange,
   className = "",
   ...props
 }: FormPanProps) {
+  if (hidden) return null;
+
   const [touched, setTouched] = useState(false);
   const [internalError, setInternalError] = useState("");
 

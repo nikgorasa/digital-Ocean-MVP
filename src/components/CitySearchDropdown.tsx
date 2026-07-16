@@ -17,7 +17,25 @@ interface CitySearchDropdownProps {
   placeholder?: string;
   label?: string;
   className?: string;
+  countryCode?: string;
 }
+
+const COUNTRY_OPTIONS = [
+  { code: "IN", label: "India" },
+  { code: "AE", label: "UAE" },
+  { code: "GB", label: "UK" },
+  { code: "US", label: "USA" },
+  { code: "SG", label: "Singapore" },
+  { code: "TH", label: "Thailand" },
+  { code: "DE", label: "Germany" },
+  { code: "FR", label: "France" },
+  { code: "AU", label: "Australia" },
+  { code: "JP", label: "Japan" },
+  { code: "LK", label: "Sri Lanka" },
+  { code: "MV", label: "Maldives" },
+  { code: "MY", label: "Malaysia" },
+  { code: "HK", label: "Hong Kong" },
+];
 
 const FALLBACK_CITIES: City[] = [
   { code: "15648", name: "Goa", state: "Goa", source: "fallback", iata_code: "GOI" },
@@ -40,23 +58,30 @@ export default function CitySearchDropdown({
   placeholder = "Search cities...",
   label = "Location",
   className = "",
+  countryCode: initialCountryCode = "IN",
 }: CitySearchDropdownProps) {
   const [cities, setCities] = useState<City[]>([]);
   const [loading, setLoading] = useState(true);
   const [open, setOpen] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
+  const [countryCode, setCountryCode] = useState(initialCountryCode);
 
   useEffect(() => {
-    fetch("/api/cities/tbo")
+    setLoading(true);
+    fetch(`/api/cities/tbo?countryCode=${countryCode}`)
       .then((r) => r.json())
       .then((data) => {
         setCities(data.cities || []);
       })
       .catch(() => {
-        setCities(FALLBACK_CITIES);
+        if (countryCode === "IN") {
+          setCities(FALLBACK_CITIES);
+        } else {
+          setCities([]);
+        }
       })
       .finally(() => setLoading(false));
-  }, []);
+  }, [countryCode]);
 
   // Close on click outside
   useEffect(() => {
@@ -129,7 +154,24 @@ export default function CitySearchDropdown({
       {open && (
         <div className="absolute z-50 mt-1 w-full bg-white border border-slate-200 rounded-xl shadow-lg overflow-hidden">
           <Command shouldFilter={true} className="max-h-72 overflow-auto">
-            <div className="sticky top-0 bg-white border-b border-slate-100 px-3 py-2">
+            <div className="sticky top-0 bg-white border-b border-slate-100 px-3 py-2 space-y-2">
+              <div className="flex items-center gap-1 overflow-x-auto pb-1 scrollbar-none">
+                {COUNTRY_OPTIONS.map((opt) => (
+                  <button
+                    key={opt.code}
+                    onClick={() => {
+                      setCountryCode(opt.code);
+                    }}
+                    className={`px-2 py-1 text-[10px] font-bold rounded-full whitespace-nowrap cursor-pointer transition-colors ${
+                      countryCode === opt.code
+                        ? "bg-brand-antique-gold text-white"
+                        : "bg-slate-100 text-slate-500 hover:bg-slate-200"
+                    }`}
+                  >
+                    {opt.label}
+                  </button>
+                ))}
+              </div>
               <Command.Input
                 autoFocus
                 placeholder={placeholder}

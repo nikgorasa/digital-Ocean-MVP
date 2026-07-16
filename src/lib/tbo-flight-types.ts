@@ -519,6 +519,8 @@ export interface TBOFlightDisplay {
   isUpsellAllowed?: boolean;
   gstAllowed?: boolean;
   isGSTMandatory?: boolean;
+  isPassportRequiredAtBook?: boolean;
+  isPanRequiredAtBook?: boolean;
   validatingAirline?: string;
   penaltyCharges?: TBOFlightPenaltyCharge[];
   ticketAdvisory?: string;

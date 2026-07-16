@@ -54,6 +54,7 @@ export default function HotelsPage() {
   const { demoMode } = useDemoMode();
   const [showLogin, setShowLogin] = useState(false);
   const [selectedCity, setSelectedCity] = useState<City>({ code: "15648", name: "Goa", state: "Goa", source: "fallback" });
+  const [hotelCountryCode, setHotelCountryCode] = useState("IN");
   const [checkIn, setCheckIn] = useState("");
   const [checkOut, setCheckOut] = useState("");
   const [roomCount, setRoomCount] = useState(1);
@@ -135,15 +136,16 @@ export default function HotelsPage() {
           params: {
             CheckInDate: checkIn,
             CheckOutDate: checkOut,
-            CountryName: "India",
+            CountryName: hotelCountryCode === "IN" ? "India" : hotelCountryCode,
             CityName: selectedCity.name,
             CityCode: selectedCity.code,
             IsNearBySearchAllowed: false,
             NoOfRooms: roomCount,
-            GuestNationality: "IN",
+            GuestNationality: hotelCountryCode,
             RoomGuests,
             PreferredCurrencyCode: "INR",
             ResultCount: 0,
+            countryCode: hotelCountryCode,
             Filters: { StarRating: "All", OrderBy: "PriceAsc" },
           },
         }),
@@ -224,6 +226,7 @@ export default function HotelsPage() {
                   onChange={setSelectedCity}
                   placeholder="Search cities..."
                   label="Location"
+                  countryCode={hotelCountryCode}
                 />
                 <div className="md:col-span-2">
                   <DateRangePicker
@@ -669,9 +672,10 @@ export default function HotelsPage() {
 
                 {/* Check-in/out Info */}
                 <div className="bg-brand-ivory rounded-xl p-3 mb-4 flex items-center gap-4 text-xs text-brand-sand">
-                  <span>Check-in: <strong>{checkIn || "TBD"} at 2:00 PM</strong></span>
-                  <span>Check-out: <strong>{checkOut || "TBD"} at 12:00 PM</strong></span>
+                  <span>Check-in: <strong>{checkIn || "TBD"}</strong></span>
+                  <span>Check-out: <strong>{checkOut || "TBD"}</strong></span>
                   <span className="text-brand-antique-gold font-bold">{nights} night{nights > 1 ? "s" : ""}</span>
+                  <span className="text-[10px] text-brand-sand/70">Times per hotel policy</span>
                 </div>
 
                 {/* Rooms Section */}

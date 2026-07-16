@@ -40,14 +40,48 @@ function matchesRule(rule: any, ctx: PricingContext): boolean {
   return true;
 }
 
-const EXCHANGE_RATES: Record<string, number> = {
+const STATIC_EXCHANGE_RATES: Record<string, number> = {
   INR: 1,
   USD: 0.012,
   EUR: 0.011,
   GBP: 0.0095,
   AED: 0.044,
   SGD: 0.016,
+  THB: 0.42,
 };
+
+let liveRatesCache: Record<string, number> | null = null;
+let liveRatesCacheTime = 0;
+const RATES_CACHE_TTL_MS = 3_600_000; // 1 hour
+
+async function getExchangeRates(): Promise<Record<string, number>> {
+  const now = Date.now();
+  if (liveRatesCache && now - liveRatesCacheTime < RATES_CACHE_TTL_MS) {
+    return liveRatesCache;
+  }
+
+  try {
+    const res = await fetch("https://open.er-api.com/v6/latest/INR", {
+      signal: AbortSignal.timeout(5000),
+    });
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const data = await res.json();
+    if (data.result === "success" && data.rates) {
+      const rates: Record<string, number> = { INR: 1 };
+      for (const [code, rate] of Object.entries(data.rates)) {
+        rates[code] = rate as number;
+      }
+      liveRatesCache = rates;
+      liveRatesCacheTime = now;
+      console.log("[Pricing] Live exchange rates fetched successfully");
+      return liveRatesCache;
+    }
+    throw new Error("Invalid API response");
+  } catch (err) {
+    console.warn("[Pricing] Failed to fetch live exchange rates, using static fallback:", err);
+    return STATIC_EXCHANGE_RATES;
+  }
+}
 
 export async function calculatePrice(
   baseRate: number,
@@ -93,7 +127,8 @@ export async function calculatePrice(
   const originalPrice = Math.round(displayedPrice * 1.25);
 
   if (currency !== "INR") {
-    const rate = EXCHANGE_RATES[currency] || 1;
+    const rates = await getExchangeRates();
+    const rate = rates[currency] || 1;
     return {
       baseRate: Math.round(baseRate * rate * 100) / 100,
       markupAmount: Math.round(markupAmount * rate * 100) / 100,

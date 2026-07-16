@@ -60,6 +60,18 @@ interface Flight {
 
 const CABIN_OPTIONS = ["Economy", "Premium Economy", "Business", "First"] as const;
 
+const AIRPORT_TIMEZONES: Record<string, string> = {
+  BOM: "IST", DEL: "IST", BLR: "IST", MAA: "IST", CCU: "IST", HYD: "IST",
+  GOI: "IST", JAI: "IST", PNQ: "IST", AMD: "IST", COK: "IST", TRV: "IST",
+  DXB: "GST", AUH: "GST", SHJ: "GST", DOH: "AST", BAH: "AST", KWI: "AST",
+  MCT: "GST", RUH: "AST", JED: "AST",
+  LHR: "GMT", LGW: "GMT", CDG: "CET", FRA: "CET", MUC: "CET", AMS: "CET",
+  JFK: "EST", LAX: "PST", ORD: "EST", SFO: "PST",
+  SIN: "SGT", BKK: "ICT", KUL: "MYT", HKG: "HKT", NRT: "JST", HND: "JST",
+  SYD: "AEST", MEL: "AEST",
+  CMB: "IST", MLE: "MVT",
+};
+
 function todayStr() {
   return new Date().toISOString().slice(0, 10);
 }
@@ -267,10 +279,14 @@ export default function FlightsPage() {
     }
   };
 
-  const formatFlightTime = (iso: string) => {
+  const formatFlightTime = (iso: string, airportCode?: string) => {
     const parts = iso.split("T");
     if (parts.length < 2) return iso;
     const time = parts[1].slice(0, 5);
+    if (airportCode) {
+      const tz = AIRPORT_TIMEZONES[airportCode.toUpperCase()];
+      if (tz) return `${time} ${tz}`;
+    }
     return time;
   };
 
@@ -367,7 +383,7 @@ export default function FlightsPage() {
 
         <div className="flex items-center gap-10">
           <div className="text-center min-w-[72px]">
-            <p className="text-lg font-bold text-brand-charcoal">{formatFlightTime(flight.departureTime)}</p>
+            <p className="text-lg font-bold text-brand-charcoal">{formatFlightTime(flight.departureTime, flight.origin)}</p>
             <p className="text-[10px] text-brand-sand font-medium">{formatFlightDate(flight.departureTime)}</p>
             <p className="text-xs text-brand-sand font-semibold mt-0.5">{flight.origin}</p>
           </div>
@@ -377,7 +393,7 @@ export default function FlightsPage() {
             <p className="text-xs font-medium text-brand-sand">{flight.stops === 0 ? "Non-stop" : `${flight.stops} stop${flight.stops > 1 ? "s" : ""}`}</p>
           </div>
           <div className="text-center min-w-[72px]">
-            <p className="text-lg font-bold text-brand-charcoal">{formatFlightTime(flight.arrivalTime)}</p>
+            <p className="text-lg font-bold text-brand-charcoal">{formatFlightTime(flight.arrivalTime, flight.destination)}</p>
             <p className="text-[10px] text-brand-sand font-medium">{formatFlightDate(flight.arrivalTime)}</p>
             <p className="text-xs text-brand-sand font-semibold mt-0.5">{flight.destination}</p>
           </div>
@@ -425,7 +441,7 @@ export default function FlightsPage() {
                 <Plane size={28} className="text-white" />
               </div>
               <h1 className="text-3xl font-serif font-bold text-white mb-1">Search Flights</h1>
-              <p className="text-white/70 text-sm">Find the best airfares across India</p>
+              <p className="text-white/70 text-sm">Find the best airfares worldwide</p>
             </motion.div>
 
             <motion.div
@@ -936,7 +952,7 @@ export default function FlightsPage() {
               <div className="space-y-4">
                 <div className="flex items-center justify-between p-4 bg-brand-ivory rounded-xl">
                   <div className="text-center">
-                    <p className="text-2xl font-bold text-brand-charcoal">{formatFlightTime(selectedFlight.departureTime)}</p>
+                    <p className="text-2xl font-bold text-brand-charcoal">{formatFlightTime(selectedFlight.departureTime, selectedFlight.origin)}</p>
                     <p className="text-xs text-brand-sand">{formatFlightDate(selectedFlight.departureTime)}</p>
                     <p className="text-sm text-brand-sand font-semibold mt-0.5">{selectedFlight.origin}</p>
                   </div>
@@ -946,7 +962,7 @@ export default function FlightsPage() {
                     <p className="text-xs font-medium text-brand-sand">{selectedFlight.stops === 0 ? "Non-stop" : `${selectedFlight.stops} stop${selectedFlight.stops > 1 ? "s" : ""}`}</p>
                   </div>
                   <div className="text-center">
-                    <p className="text-2xl font-bold text-brand-charcoal">{formatFlightTime(selectedFlight.arrivalTime)}</p>
+                    <p className="text-2xl font-bold text-brand-charcoal">{formatFlightTime(selectedFlight.arrivalTime, selectedFlight.destination)}</p>
                     <p className="text-xs text-brand-sand">{formatFlightDate(selectedFlight.arrivalTime)}</p>
                     <p className="text-sm text-brand-sand font-semibold mt-0.5">{selectedFlight.destination}</p>
                   </div>

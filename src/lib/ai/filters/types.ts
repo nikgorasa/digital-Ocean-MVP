@@ -28,7 +28,7 @@ export interface FilterOption {
 }
 
 export const DEFAULT_HOTEL_FILTERS: HotelFilters = {
-  priceRange: [0, 100000],
+  priceRange: [0, 500000],
   starRating: [],
   amenities: [],
   propertyType: [],
@@ -37,7 +37,7 @@ export const DEFAULT_HOTEL_FILTERS: HotelFilters = {
 };
 
 export const DEFAULT_FLIGHT_FILTERS: FlightFilters = {
-  priceRange: [0, 100000],
+  priceRange: [0, 500000],
   stops: [],
   airlines: [],
   departureTime: [],
@@ -84,6 +84,19 @@ export const AIRLINES: FilterOption[] = [
   { label: "Vistara", value: "UK" },
   { label: "GoFirst", value: "G8" },
   { label: "AirAsia", value: "I5" },
+  { label: "Emirates", value: "EK" },
+  { label: "Qatar Airways", value: "QR" },
+  { label: "Etihad", value: "EY" },
+  { label: "Singapore Airlines", value: "SQ" },
+  { label: "Lufthansa", value: "LH" },
+  { label: "British Airways", value: "BA" },
+  { label: "Thai Airways", value: "TG" },
+  { label: "Cathay Pacific", value: "CX" },
+  { label: "Air Arabia", value: "G9" },
+  { label: "SriLankan", value: "UL" },
+  { label: "Kuwait Airways", value: "KU" },
+  { label: "Oman Air", value: "WY" },
+  { label: "Saudia", value: "SV" },
 ];
 
 export const DEPARTURE_TIMES: FilterOption[] = [

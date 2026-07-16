@@ -104,7 +104,8 @@ export default function HotelBookingModal({
   const demoDiscount = demoMode ? 500 : 0;
   const totalPayable = finalPrice - demoDiscount;
   const perNightTotal = (room.roomFare || room.totalFare / nights) + room.roomTax;
-  const isValid = firstName.trim() && lastName.trim() && phone.trim().length >= 10 && email.trim();
+  const passportValid = !isInternational || (passportNo.trim() && passportExpiry);
+  const isValid = firstName.trim() && lastName.trim() && phone.trim().length >= 7 && email.trim() && passportValid;
 
   const prefilled = firstName && lastName && phone && email && pan;
   const dirtyRef = useRef(false);
@@ -115,7 +116,7 @@ export default function HotelBookingModal({
     switch (name) {
       case "firstName": return !value.trim() ? "First name is required" : "";
       case "lastName": return !value.trim() ? "Last name is required" : "";
-      case "phone": return value.trim().length < 10 ? "Phone must be 10 digits" : "";
+      case "phone": return value.trim().length < 7 ? "Phone must be at least 7 digits" : "";
       case "email": return !value.trim() ? "Email is required" : "";
       case "pan": return value && !/^[A-Z]{5}[0-9]{4}[A-Z]$/.test(value) ? "Invalid PAN format" : "";
       default: return "";
@@ -269,7 +270,7 @@ export default function HotelBookingModal({
               age: guestAge,
               email: email.trim(),
               phone: phone.trim(),
-              pan: pan.trim().toUpperCase(),
+              pan: isInternational ? undefined : pan.trim().toUpperCase(),
               passportNo: isInternational ? passportNo || undefined : undefined,
               passportExpiry: isInternational ? passportExpiry || undefined : undefined,
               addressLine1: addressLine1 || undefined,
@@ -349,7 +350,7 @@ export default function HotelBookingModal({
           seatOrRoom: room.name,
           paxCount: guestCount,
           travelDates: `${checkIn} to ${checkOut}`,
-          leadGuestPan: pan.trim().toUpperCase(),
+          leadGuestPan: isInternational ? undefined : pan.trim().toUpperCase(),
           supplierBookingRef: bookData?.bookingId ? String(bookData.bookingId) : undefined,
           metadata: {
             tboBookingId: bookData?.bookingId,
@@ -713,15 +714,17 @@ export default function HotelBookingModal({
             </FormSection>
 
             {/* Identity - PAN */}
-            <FormSection icon={CreditCard} title="Identity (Required)">
-              <FormPan
-                id="hotel-pan"
-                label="PAN Card Number"
-                value={pan}
-                onChange={(e) => { setPan(e.target.value); markDirty(); }}
-                placeholder="ABCDE1234F"
-              />
-            </FormSection>
+            {!isInternational && (
+              <FormSection icon={CreditCard} title="Identity (Required)">
+                <FormPan
+                  id="hotel-pan"
+                  label="PAN Card Number"
+                  value={pan}
+                  onChange={(e) => { setPan(e.target.value); markDirty(); }}
+                  placeholder="ABCDE1234F"
+                />
+              </FormSection>
+            )}
 
             {/* Passport (International Hotels) */}
             {isInternational && (
@@ -732,6 +735,8 @@ export default function HotelBookingModal({
                 onPassportNoChange={(v) => { setPassportNo(v); markDirty(); }}
                 onPassportExpiryChange={(v) => { setPassportExpiry(v); markDirty(); }}
                 required
+                travelDate={checkIn}
+                returnDate={checkOut}
               />
             )}
 
@@ -790,7 +795,9 @@ export default function HotelBookingModal({
                   onChange={(e) => setSaveToProfile(e.target.checked)}
                   className="w-4 h-4 text-emerald-600 rounded border-slate-300"
                 />
-                <span className="text-sm text-slate-600">Save PAN to my profile for future bookings</span>
+                <span className="text-sm text-slate-600">
+                  {isInternational ? "Save traveller to my profile for future bookings" : "Save PAN to my profile for future bookings"}
+                </span>
               </label>
             )}
 
@@ -801,7 +808,11 @@ export default function HotelBookingModal({
               gstCompanyName={gstCompanyName}
               onGstNumberChange={(v) => { setGstNumber(v); markDirty(); }}
               onGstCompanyNameChange={(v) => { setGstCompanyName(v); markDirty(); }}
+              hidden={isInternational}
             />
+            {isInternational && (
+              <p className="text-[10px] text-slate-400">GST applicable for domestic bookings only</p>
+            )}
 
             {/* Action */}
             <button
@@ -897,6 +908,17 @@ export default function HotelBookingModal({
                     ))}
                   </div>
                 )}
+                {prebookTaxBreakup && (() => {
+                  const cityTax = prebookTaxBreakup.find(t =>
+                    /city\s*tax|tourist\s*tax|tourism\s*fee|municipal/i.test(t.chargeType)
+                  );
+                  return cityTax ? (
+                    <div className="flex justify-between text-sm bg-amber-50 border border-amber-200 rounded-lg px-2 py-1.5">
+                      <span className="text-amber-800 font-medium">{cityTax.chargeType}</span>
+                      <span className="font-bold text-amber-800">{formatCurrency(cityTax.amount)}</span>
+                    </div>
+                  ) : null;
+                })()}
                 <div className="flex justify-between text-sm">
                   <span className="text-slate-600">Subtotal</span>
                   <span className="text-slate-900">{formatCurrency(room.totalFare + room.totalTax)}</span>
