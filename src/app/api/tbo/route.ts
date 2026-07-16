@@ -6,6 +6,7 @@ import {
   bookFlight,
   ticketFlight,
   getBookingDetail,
+  getSSR,
   setEndUserIp,
 } from "@/lib/tbo-flight-client";
 
@@ -35,7 +36,7 @@ export async function POST(req: NextRequest) {
           PreferredDepartureTime: p.departureDate || "",
           PreferredArrivalTime: p.returnDate || "",
           CabinClass: p.cabinClass || "Economy",
-          multiCityDates: journeyType === 3 ? p.multiCityDates : undefined,
+          multiCityLegs: journeyType === 3 ? p.multiCityLegs : undefined,
         });
         return NextResponse.json(result);
       }
@@ -87,6 +88,15 @@ export async function POST(req: NextRequest) {
           fareBreakdown: p.fareBreakdown || [],
           isLCC: p.isLCC || false,
         });
+        return NextResponse.json(result);
+      }
+
+      case "ssr": {
+        const p = body.params || body;
+        if (!p.traceId || !p.resultIndex) {
+          return NextResponse.json({ error: "traceId and resultIndex required" }, { status: 400 });
+        }
+        const result = await getSSR({ traceId: p.traceId, resultIndex: p.resultIndex });
         return NextResponse.json(result);
       }
 

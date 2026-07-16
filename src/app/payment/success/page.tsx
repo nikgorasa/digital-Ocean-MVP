@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, Suspense } from "react";
+import React, { useEffect, useState, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import PaymentStatusPage from "@/components/PaymentStatusPage";
 
@@ -10,6 +10,7 @@ function PaymentSuccessContent() {
   const orderId = searchParams.get("order_id") || "";
   const isMock = searchParams.get("mock") === "true";
   const mockAmount = searchParams.get("amount");
+  const [mockWebhookDone, setMockWebhookDone] = useState(false);
 
   useEffect(() => {
     if (isMock && orderId && bookingId) {
@@ -24,7 +25,12 @@ function PaymentSuccessContent() {
           responseCode: "0",
           responseMessage: "Success",
         }),
-      }).catch(console.error);
+      })
+        .then(res => res.json())
+        .then(() => setMockWebhookDone(true))
+        .catch(console.error);
+    } else {
+      setMockWebhookDone(true);
     }
   }, [isMock, orderId, bookingId, mockAmount]);
 
@@ -45,7 +51,16 @@ function PaymentSuccessContent() {
   return (
     <div className="min-h-screen bg-slate-50 flex items-center justify-center p-4">
       <div className="bg-white rounded-3xl shadow-xl p-8 max-w-md w-full">
-        <PaymentStatusPage bookingId={bookingId} orderId={orderId} isMock={isMock} />
+        {mockWebhookDone ? (
+          <PaymentStatusPage bookingId={bookingId} orderId={orderId} isMock={isMock} />
+        ) : (
+          <div className="text-center py-8">
+            <div className="w-12 h-12 mx-auto mb-4 rounded-full bg-emerald-100 flex items-center justify-center">
+              <div className="w-5 h-5 border-2 border-emerald-600 border-t-transparent rounded-full animate-spin" />
+            </div>
+            <p className="text-sm text-slate-500">Completing booking...</p>
+          </div>
+        )}
       </div>
     </div>
   );

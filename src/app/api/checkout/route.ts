@@ -135,35 +135,41 @@ export async function POST(request: NextRequest) {
 
       const finalAmount = corporateDiscount.finalPrice;
 
+      // Calculate tax based on company tax rate
+      const taxRate = company.taxRate ?? 0;
+      const taxAmount = Math.round(finalAmount * taxRate) / 100;
+      const totalWithTax = finalAmount + taxAmount;
+
       // Check wallet balance
-      if (company.walletBalance < finalAmount) {
-        const shortfall = finalAmount - company.walletBalance;
+      if (company.walletBalance < totalWithTax) {
+        const shortfall = totalWithTax - company.walletBalance;
         return NextResponse.json({
           error: "Insufficient company credit",
           shortfall,
           walletBalance: company.walletBalance,
-          required: finalAmount,
+          required: totalWithTax,
         }, { status: 400 });
       }
 
-      // Atomic: deduct wallet + confirm booking + create invoice + create payment
+      // Set due date based on company payment terms
+      const paymentTermsDays = company.paymentTermsDays ?? 30;
       const dueDate = new Date();
-      dueDate.setDate(dueDate.getDate() + 45);
+      dueDate.setDate(dueDate.getDate() + paymentTermsDays);
       const invoiceNumber = generateInvoiceNumber();
 
       const [updatedCompany] = await prisma.$transaction([
         // Deduct wallet
         prisma.company.update({
           where: { id: user.companyId },
-          data: { walletBalance: { decrement: finalAmount } },
+          data: { walletBalance: { decrement: totalWithTax } },
         }),
         // Wallet ledger entry
         prisma.walletLedger.create({
           data: {
             companyId: user.companyId,
             type: "DEDUCTION",
-            amount: -finalAmount,
-            balanceAfter: company.walletBalance - finalAmount,
+            amount: -totalWithTax,
+            balanceAfter: company.walletBalance - totalWithTax,
             referenceType: "BOOKING",
             referenceId: bookingId,
             description: `Booking: ${booking.itemName}`,
@@ -186,7 +192,7 @@ export async function POST(request: NextRequest) {
         prisma.payment.create({
           data: {
             bookingId,
-            amount: finalAmount,
+            amount: totalWithTax,
             method: "corporate_wallet",
             gateway: "corporate",
             status: "COMPLETED",
@@ -198,9 +204,9 @@ export async function POST(request: NextRequest) {
             companyId: user.companyId,
             bookingId,
             number: invoiceNumber,
-            amount: booking.price,
-            taxAmount: 0,
-            totalAmount: finalAmount,
+            amount: finalAmount,
+            taxAmount,
+            totalAmount: totalWithTax,
             status: "PENDING",
             dueDate,
           },
@@ -213,7 +219,8 @@ export async function POST(request: NextRequest) {
         paymentMethod: "corporate_wallet",
         corporateDiscount: corporateDiscount.discountAmount,
         corporateRuleName: corporateDiscount.ruleName,
-        finalAmount,
+        finalAmount: totalWithTax,
+        taxAmount,
         walletBalance: updatedCompany.walletBalance,
         invoiceNumber,
         dueDate: dueDate.toISOString(),

@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { getCurrentUser } from "@/lib/auth-helpers";
 import { z } from "zod";
 import { sendEmail, emailTemplates } from "@/lib/email";
+import { cancelBooking } from "@/lib/tbo-hotel-client";
 
 const cancellationSchema = z.object({
   bookingId: z.string().min(1, "bookingId is required"),
@@ -134,11 +135,32 @@ export async function POST(request: NextRequest) {
       console.error("[Email] Failed to send cancellation email:", e);
     }
 
+    // Call TBO cancel API if this is a TBO hotel booking
+    let tboCancelResult: { changeRequestId?: number; changeRequestStatus?: number } | null = null;
+    if (booking.type === "HOTEL" && booking.metadata && typeof booking.metadata === "object") {
+      const metadata = booking.metadata as Record<string, unknown>;
+      const tboBookingId = metadata.tboBookingId;
+      if (tboBookingId && typeof tboBookingId === "number") {
+        try {
+          tboCancelResult = await cancelBooking({
+            bookingId: tboBookingId,
+            remarks: reason,
+          });
+          console.log(`[TBO Cancel] Success for booking ${bookingId}, changeRequestId: ${tboCancelResult.changeRequestId}`);
+        } catch (e) {
+          console.error(`[TBO Cancel] Failed for booking ${bookingId}:`, e);
+          tboCancelResult = null;
+        }
+      }
+    }
+
     return NextResponse.json({
       ...cancellation,
       refundAmount,
       cancellationFee,
       refundPercentage,
+      tboCancelled: !!tboCancelResult,
+      tboChangeRequestId: tboCancelResult?.changeRequestId,
     }, { status: 201 });
   } catch (error) {
     console.error("Cancellation error:", error);

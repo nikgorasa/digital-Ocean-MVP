@@ -300,6 +300,8 @@ export interface TBOHotelCity {
   CityName: string;
   CountryCode: string;
   CountryName: string;
+  Name?: string;
+  Code?: string;
 }
 
 export interface TBOHotelCodeItem {

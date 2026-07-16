@@ -68,6 +68,7 @@ export default function HotelsPage() {
   const [hotelRoomsLoading, setHotelRoomsLoading] = useState(false);
   const [selectedRoom, setSelectedRoom] = useState<TBODisplayRoom | null>(null);
   const [sessionId, setSessionId] = useState("");
+  const [searchTraceId, setSearchTraceId] = useState("");
   const [showBookingModal, setShowBookingModal] = useState(false);
   const [sortBy, setSortBy] = useState<HotelSortKey>("recommended");
   const { filters, updateFilter, resetFilters, hasActiveFilters, activeFilterCount } = useHotelFilters();
@@ -144,7 +145,6 @@ export default function HotelsPage() {
             PreferredCurrencyCode: "INR",
             ResultCount: 0,
             Filters: { StarRating: "All", OrderBy: "PriceAsc" },
-            ResponseTime: 10,
           },
         }),
       });
@@ -156,6 +156,7 @@ export default function HotelsPage() {
       } else {
         setResults(data.hotels || []);
         setSessionId(data.sessionId || "");
+        setSearchTraceId(data.traceId || "");
       }
     } catch (e) {
       setError("Failed to search hotels. Please try again.");
@@ -792,6 +793,7 @@ export default function HotelsPage() {
           hotel={selectedHotel}
           room={selectedRoom}
           sessionId={sessionId}
+          traceId={searchTraceId}
           user={user}
           location={selectedCity.name}
           checkIn={checkIn}

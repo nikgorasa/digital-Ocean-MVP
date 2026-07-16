@@ -51,6 +51,7 @@ interface Flight {
   isFreeMealAvailable?: boolean;
   validatingAirline?: string;
   gstAllowed?: boolean;
+  resultIndex?: string;
 }
 
 interface SSRBaggage {
@@ -79,19 +80,27 @@ interface SSRSeat {
 interface FlightBookingModalProps {
   isOpen: boolean;
   onClose: () => void;
-  flight: Flight;
+  flights: Flight[];
   user: { id: string; email: string; name: string; companyId?: string } | null;
   date: string;
   passengerCount: number;
+  adults: number;
+  children: number;
+  infants: number;
   traceId?: string;
 }
 
 type BookingStep = "form" | "addons" | "saving" | "checkout" | "done" | "error";
 
 export default function FlightBookingModal({
-  isOpen, onClose, flight, user, date, passengerCount, traceId,
+  isOpen, onClose, flights, user, date, passengerCount, adults, children, infants, traceId,
 }: FlightBookingModalProps) {
+  const flight = flights[0];
   const { demoMode } = useDemoMode();
+  const totalFlightPrice = flights.reduce((s, f) => s + f.price, 0);
+  const totalBaseFare = flights.reduce((s, f) => s + (f.baseFare || 0), 0);
+  const totalTax = flights.reduce((s, f) => s + (f.tax || 0), 0);
+  const totalYqTax = flights.reduce((s, f) => s + (f.yqTax || 0), 0);
   const [step, setStep] = useState<BookingStep>("form");
   const [saveToProfile, setSaveToProfile] = useState(false);
   const [formErrors, setFormErrors] = useState<Record<string, string>>({});
@@ -128,6 +137,14 @@ export default function FlightBookingModal({
     corporateDiscount?: number;
   } | null>(null);
 
+  // Price change confirmation state
+  const [priceChangeDialog, setPriceChangeDialog] = useState<{
+    oldFare: number;
+    newFare: number;
+    fare: Record<string, unknown>;
+    resolve: (accept: boolean) => void;
+  } | null>(null);
+
   // SSR Add-ons state
   const [ssrLoading, setSsrLoading] = useState(false);
   const [ssrBaggage, setSsrBaggage] = useState<SSRBaggage[]>([]);
@@ -142,7 +159,7 @@ export default function FlightBookingModal({
   const seatFee = ssrSeats.find(s => s.Code === selectedSeat)?.Price || 0;
   const addonsTotal = baggageFee + mealsFee + seatFee;
 
-  const finalPrice = flight.price - discountApplied;
+  const finalPrice = totalFlightPrice - discountApplied;
   const demoDiscount = demoMode ? 500 : 0;
   const totalPayable = finalPrice - demoDiscount + addonsTotal;
   const isValid = firstName.trim() && lastName.trim() && phone.trim().length >= 10 && email.trim();
@@ -225,7 +242,7 @@ export default function FlightBookingModal({
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           code: promoCode.trim(),
-          bookingAmount: flight.price,
+          bookingAmount: totalFlightPrice,
           category: "FLIGHT",
           userId: user.id,
         }),
@@ -256,10 +273,10 @@ export default function FlightBookingModal({
     setStep("addons");
     setSsrLoading(true);
     try {
-      const res = await fetch("/api/tbo-flights", {
+      const res = await fetch("/api/tbo", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ action: "ssr", traceId: "demo", resultIndex: flight.id }),
+        body: JSON.stringify({ action: "ssr", params: { traceId, resultIndex: flight.id } }),
       });
       const data = await res.json();
       setSsrBaggage(data.baggage || []);
@@ -299,21 +316,24 @@ export default function FlightBookingModal({
         if (s) addOns.seat = { code: s.Code, seatNo: `${s.RowNo}${s.SeatNo}`, type: s.SeatType, price: s.Price };
       }
 
-      const passengers = [{
-        Title: "Mr",
-        FirstName: firstName.trim(),
-        LastName: lastName.trim(),
-        PaxType: 1,
-        DateOfBirth: dateOfBirth || "1990-01-01",
-        Gender: gender === "Female" ? 2 : 1,
+      const buildPassenger = (paxId: number, paxType: number, isLead: boolean) => ({
+        PaxId: paxId,
+        Title: isLead ? (gender === "Female" ? "Ms" : "Mr") : "Mr",
+        FirstName: isLead ? firstName.trim() : `Guest ${paxId}`,
+        LastName: isLead ? lastName.trim() : "Traveler",
+        PaxType: paxType,
+        DateOfBirth: isLead ? (dateOfBirth || "1990-01-01") : "1990-01-01",
+        Gender: isLead ? (gender === "Female" ? 2 : 1) : 1,
         AddressLine1: "",
         City: "",
         CountryCode: "IN",
         CountryName: "India",
-        ContactNo: phone || "",
-        Email: email || user.email,
-        IsLeadPax: true,
+        ContactNo: isLead ? (phone || "") : "",
+        Email: isLead ? (email || user.email) : "",
+        IsLeadPax: isLead,
         Nationality: "IN",
+        PassportNo: isLead ? (passportNo || "") : "",
+        PassportExpiry: isLead ? (passportExpiry || "") : "",
         Fare: {
           BaseFare: flight.baseFare || 0,
           Tax: flight.tax || 0,
@@ -323,7 +343,13 @@ export default function FlightBookingModal({
           AdditionalTxnFeePub: 0,
           AirTransFee: 0,
         },
-      }];
+      });
+
+      const passengers: ReturnType<typeof buildPassenger>[] = [];
+      let paxId = 1;
+      for (let i = 0; i < adults; i++) passengers.push(buildPassenger(paxId++, 1, i === 0));
+      for (let i = 0; i < children; i++) passengers.push(buildPassenger(paxId++, 2, false));
+      for (let i = 0; i < infants; i++) passengers.push(buildPassenger(paxId++, 3, false));
 
       let tboBookingId: string | null = null;
       let tboPnr: string | null = null;
@@ -341,38 +367,71 @@ export default function FlightBookingModal({
           });
           const fqData = await fqRes.json();
           if (fqData.isPriceChanged) {
-            // Price changed — could show confirmation dialog here
-            console.warn("Flight price changed:", fqData.fare);
+            const userAccepted = await new Promise<boolean>(resolve => {
+              setPriceChangeDialog({
+                oldFare: totalFlightPrice,
+                newFare: fqData.fare?.PublishedFare || flight.price,
+                fare: fqData.fare,
+                resolve,
+              });
+            });
+            if (!userAccepted) {
+              setStep("form");
+              return;
+            }
           }
         } catch (e) {
           console.warn("FareQuote failed, continuing:", e);
         }
 
-        // Step 2: Book + Ticket via TBO
+        // Step 2: Book via TBO — creates a reservation
         try {
-          const ticketRes = await fetch("/api/tbo", {
+          const bookRes = await fetch("/api/tbo", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
-              action: "ticket",
-              params: {
-                traceId,
-                resultIndex: flight.id,
-                passengers,
-                isLCC: flight.isLCC,
-                segments: [],
-                fare: { BaseFare: flight.baseFare, Tax: flight.tax, YQTax: flight.yqTax || 0 },
-                fareBreakdown: [],
-              },
+              action: "book",
+              params: { traceId, resultIndex: flight.id, passengers },
             }),
           });
-          const ticketData = await ticketRes.json();
-          if (ticketData.bookingId || ticketData.results?.[0]?.bookingId) {
-            tboBookingId = ticketData.bookingId || ticketData.results?.[0]?.bookingId;
-            tboPnr = ticketData.pnr || ticketData.results?.[0]?.pnr || null;
+          const bookData = await bookRes.json();
+          if (bookData.bookingId) {
+            tboBookingId = bookData.bookingId;
+            tboPnr = bookData.pnr || null;
           }
         } catch (e) {
-          console.warn("TBO ticket failed:", e);
+          console.warn("TBO book failed:", e);
+        }
+
+        // Step 3: Ticket — finalize the booking
+        if (tboBookingId) {
+          try {
+            const ticketRes = await fetch("/api/tbo", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                action: "ticket",
+                params: {
+                  traceId,
+                  resultIndex: flight.id,
+                  passengers,
+                  bookingId: tboBookingId,
+                  pnr: tboPnr,
+                  isLCC: flight.isLCC,
+                  segments: [],
+                  fare: { BaseFare: flight.baseFare, Tax: flight.tax, YQTax: flight.yqTax || 0 },
+                  fareBreakdown: [],
+                },
+              }),
+            });
+            const ticketData = await ticketRes.json();
+            if (ticketData.results?.[0]?.bookingId) {
+              tboBookingId = ticketData.results[0].bookingId;
+              tboPnr = ticketData.results[0].pnr || tboPnr;
+            }
+          } catch (e) {
+            console.warn("TBO ticket failed:", e);
+          }
         }
       }
 
@@ -383,10 +442,12 @@ export default function FlightBookingModal({
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           type: "FLIGHT",
-          itemName: `${flight.airline} • ${flight.origin} → ${flight.destination}`,
+          itemName: flights.length === 1
+            ? `${flight.airline} • ${flight.origin} → ${flight.destination}`
+            : flights.map(f => `${f.airline} ${f.origin}→${f.destination}`).join(" + "),
           providerOrAirline: flight.airline,
           price: totalPayable,
-          originalPrice: flight.price,
+          originalPrice: totalFlightPrice,
           discountApplied: discountApplied,
           promoCost: discountApplied,
           couponCodeUsed: couponCodeUsed || undefined,
@@ -401,8 +462,8 @@ export default function FlightBookingModal({
             resultIndex: flight.id,
             isLCC: flight.isLCC,
             isRefundable: flight.isRefundable,
-            baseFare: flight.baseFare,
-            tax: flight.tax,
+            baseFare: totalBaseFare,
+            tax: totalTax,
             addOns: Object.keys(addOns).length > 0 ? addOns : undefined,
           },
         }),
@@ -555,23 +616,28 @@ export default function FlightBookingModal({
             )}
 
             {/* Booking Summary */}
-            <div className="bg-blue-50 rounded-xl p-4 space-y-2">
-              <div className="flex items-start gap-3">
-                <Plane size={16} className="text-blue-500 mt-0.5 shrink-0" />
-                <div>
-                  <p className="font-bold text-slate-900 text-sm">{flight.airline}</p>
-                  <p className="text-xs text-slate-500">{flight.flightNumber}</p>
+            <div className="bg-blue-50 rounded-xl p-4 space-y-3">
+              {flights.map((f, idx) => (
+                <div key={f.id}>
+                  <div className="flex items-start gap-3">
+                    <Plane size={16} className="text-blue-500 mt-0.5 shrink-0" />
+                    <div>
+                      <p className="font-bold text-slate-900 text-sm">{f.airline}</p>
+                      <p className="text-xs text-slate-500">{f.flightNumber}</p>
+                    </div>
+                  </div>
+                  <div className="flex items-center justify-between text-xs text-slate-500 ml-7">
+                    <span className="flex items-center gap-1"><MapPin size={10} />{f.origin}</span>
+                    <ArrowIcon />
+                    <span className="flex items-center gap-1"><MapPin size={10} />{f.destination}</span>
+                  </div>
+                  <div className="flex items-center gap-4 text-xs text-slate-500 ml-7">
+                    <span className="flex items-center gap-1"><Clock size={12} />{formatTime(f.departureTime)} – {formatTime(f.arrivalTime)}</span>
+                    <span className="flex items-center gap-1"><Luggage size={12} />{f.stops === 0 ? "Non-stop" : `${f.stops} stop`}</span>
+                  </div>
+                  {idx < flights.length - 1 && <div className="border-t border-blue-200/50 my-2" />}
                 </div>
-              </div>
-              <div className="flex items-center justify-between text-xs text-slate-500">
-                <span className="flex items-center gap-1"><MapPin size={10} />{flight.origin}</span>
-                <ArrowIcon />
-                <span className="flex items-center gap-1"><MapPin size={10} />{flight.destination}</span>
-              </div>
-              <div className="flex items-center gap-4 text-xs text-slate-500">
-                <span className="flex items-center gap-1"><Clock size={12} />{formatTime(flight.departureTime)} – {formatTime(flight.arrivalTime)}</span>
-                <span className="flex items-center gap-1"><Luggage size={12} />{flight.stops === 0 ? "Non-stop" : `${flight.stops} stop`}</span>
-              </div>
+              ))}
               {date && (
                 <div className="flex items-center gap-1 text-xs text-slate-500">
                   <Calendar size={12} />{date}
@@ -582,45 +648,6 @@ export default function FlightBookingModal({
                 <span className="flex items-center gap-1 text-slate-600"><Luggage size={12} />{flight.cabinBaggage || "7 KG"} cabin</span>
                 {flight.isLCC && <span className="px-1.5 py-0.5 bg-amber-100 text-amber-700 rounded text-[10px] font-bold">LCC</span>}
               </div>
-
-              {/* Fare Type & Inclusions */}
-              {flight.fareType && flight.fareType !== "Unknown" && (
-                <div className="flex items-center gap-2">
-                  <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${getFareTypeColor(flight.fareType)}`}>
-                    {formatFareType(flight.fareType)} Fare
-                  </span>
-                  {flight.fareClass && (
-                    <span className="text-[10px] text-slate-400">Class {flight.fareClass}</span>
-                  )}
-                </div>
-              )}
-
-              {flight.fareInclusions && flight.fareInclusions.length > 0 && (
-                <div className="p-3 bg-emerald-50 rounded-xl">
-                  <p className="text-[10px] font-bold text-emerald-700 uppercase mb-1.5">What's Included</p>
-                  <div className="space-y-1">
-                    {flight.fareInclusions.map((inc, idx) => (
-                      <div key={idx} className="flex items-center gap-1.5 text-[11px] text-emerald-800">
-                        <span className="w-1 h-1 rounded-full bg-emerald-500 flex-shrink-0" />
-                        {inc}
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              {flight.isRefundable !== undefined && (
-                <div className={`p-3 rounded-xl ${flight.isRefundable ? 'bg-green-50' : 'bg-red-50'}`}>
-                  <p className={`text-[10px] font-bold uppercase mb-0.5 ${flight.isRefundable ? 'text-green-700' : 'text-red-700'}`}>
-                    {flight.isRefundable ? 'Refundable' : 'Non-Refundable'}
-                  </p>
-                  <p className={`text-[11px] ${flight.isRefundable ? 'text-green-600' : 'text-red-600'}`}>
-                    {flight.isRefundable
-                      ? 'Cancellation charges may apply as per airline policy.'
-                      : 'Changes may be subject to fees. No refund on cancellation.'}
-                  </p>
-                </div>
-              )}
             </div>
 
             {/* Promo Code */}
@@ -902,7 +929,7 @@ export default function FlightBookingModal({
                   <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400">Price Summary</p>
                   <div className="flex justify-between text-sm">
                     <span className="text-slate-600">Flight Fare</span>
-                    <span className="text-slate-900">{formatCurrency(flight.price)}</span>
+                    <span className="text-slate-900">{formatCurrency(totalFlightPrice)}</span>
                   </div>
                   {discountApplied > 0 && (
                     <div className="flex justify-between text-sm">
@@ -983,32 +1010,26 @@ export default function FlightBookingModal({
                 <span className="text-xs text-slate-500">PNR</span>
                 <span className="text-sm font-bold font-mono text-slate-900">{confirmation?.pnr}</span>
               </div>
-              <div className="flex justify-between items-center">
-                <span className="text-xs text-slate-500">Flight</span>
-                <span className="text-sm font-bold text-slate-900">{flight.airline} {flight.flightNumber}</span>
-              </div>
-              <div className="flex justify-between items-center">
-                <span className="text-xs text-slate-500">Route</span>
-                <span className="text-sm font-bold text-slate-900">{flight.origin} → {flight.destination}</span>
-              </div>
-              <div className="flex justify-between items-center">
-                <span className="text-xs text-slate-500">Class</span>
-                <span className="text-sm font-bold text-slate-900">{flight.tier}</span>
-              </div>
+              {flights.map((f, i) => (
+                <div key={f.id} className="flex justify-between items-center">
+                  <span className="text-xs text-slate-500">{i === 0 ? "Flight" : "Leg"}</span>
+                  <span className="text-sm font-bold text-slate-900 text-right">{f.airline} {f.flightNumber}<br /><span className="text-xs font-normal text-slate-500">{f.origin} → {f.destination}</span></span>
+                </div>
+              ))}
 
               <div className="border-t border-slate-200 pt-3 space-y-2">
                 <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400">Price Breakup</p>
                 <div className="flex justify-between text-sm">
                   <span className="text-slate-600">Base Fare ({passengerCount} pax)</span>
-                  <span className="text-slate-900">{formatCurrency(flight.baseFare || 0)}</span>
+                  <span className="text-slate-900">{formatCurrency(totalBaseFare)}</span>
                 </div>
                 <div className="flex justify-between text-sm">
                   <span className="text-slate-600">Taxes & Surcharges</span>
-                  <span className="text-slate-900">{formatCurrency(flight.tax || 0)}</span>
+                  <span className="text-slate-900">{formatCurrency(totalTax)}</span>
                 </div>
                 <div className="flex justify-between text-sm">
                   <span className="text-slate-600">Subtotal</span>
-                  <span className="text-slate-900">{formatCurrency(flight.price)}</span>
+                  <span className="text-slate-900">{formatCurrency(totalFlightPrice)}</span>
                 </div>
                 {discountApplied > 0 && (
                   <div className="flex justify-between text-sm">
@@ -1121,6 +1142,43 @@ export default function FlightBookingModal({
               </div>
             )}
             <button onClick={handleClose} className="w-full py-3 bg-brand-saffron text-white rounded-xl font-bold hover:bg-brand-burnt cursor-pointer active:scale-[0.98]">Done</button>
+          </div>
+        )}
+
+        {/* PRICE CHANGE CONFIRMATION */}
+        {priceChangeDialog && (
+          <div className="p-6 text-left">
+            <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-amber-100 flex items-center justify-center">
+              <AlertCircle size={32} className="text-amber-600" />
+            </div>
+            <h3 className="text-xl font-bold text-slate-900 mb-1 text-center">Price Changed</h3>
+            <p className="text-sm text-slate-500 mb-6 text-center">
+              The fare has changed since your search. Please review below.
+            </p>
+            <div className="bg-slate-50 rounded-xl p-4 space-y-2 mb-6">
+              <div className="flex justify-between items-center">
+                <span className="text-sm text-slate-500">Original Fare</span>
+                <span className="text-sm font-bold text-slate-400 line-through">{formatCurrency(priceChangeDialog.oldFare)}</span>
+              </div>
+              <div className="flex justify-between items-center">
+                <span className="text-sm text-slate-500">New Fare</span>
+                <span className="text-lg font-bold text-amber-600">{formatCurrency(priceChangeDialog.newFare)}</span>
+              </div>
+            </div>
+            <div className="flex gap-2">
+              <button
+                onClick={() => { priceChangeDialog.resolve(false); setPriceChangeDialog(null); }}
+                className="flex-1 py-3 bg-slate-200 text-slate-700 rounded-xl font-bold hover:bg-slate-300 cursor-pointer"
+              >
+                Cancel Booking
+              </button>
+              <button
+                onClick={() => { priceChangeDialog.resolve(true); setPriceChangeDialog(null); }}
+                className="flex-1 py-3 bg-brand-saffron text-white rounded-xl font-bold hover:bg-brand-burnt cursor-pointer active:scale-[0.98]"
+              >
+                Accept New Price
+              </button>
+            </div>
           </div>
         )}
 

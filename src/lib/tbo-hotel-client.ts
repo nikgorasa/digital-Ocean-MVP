@@ -17,6 +17,10 @@ import type {
   TBOHotelCancelOutput,
   TBOHotelCancelStatusOutput,
   TBOHotelPassenger,
+  TBOHotelResult,
+  TBOHotelRoom,
+  TBOHotelDayRate,
+  TBOHotelCity,
 } from "./tbo-hotel-types";
 import * as api from "./tbo-hotel-api";
 import { calculatePrice } from "./pricing";
@@ -74,17 +78,17 @@ async function ensureToken(): Promise<string> {
 }
 
 async function toDisplay(
-  h: { HotelCode: string; Currency: string; Rooms: any[] },
+  h: TBOHotelResult,
   context?: { destination?: string; hotelName?: string },
 ): Promise<TBOHotelDisplay> {
   const details = _hotelDetailsCache[h.HotelCode] || {};
   const hotelAmenities = details.amenities || [];
 
-  const rooms: TBOHotelRoomDisplay[] = h.Rooms.map((r: any, ri: number) => {
+  const rooms: TBOHotelRoomDisplay[] = h.Rooms.map((r: TBOHotelRoom, ri: number) => {
     const roomName = Array.isArray(r.Name) ? r.Name[0] : (r.Name || "Room");
     const totalFare = r.TotalFare || 0;
     const totalTax = r.TotalTax || 0;
-    const dayRates = r.DayRates?.[0] || [];
+    const dayRates: TBOHotelDayRate[] = r.DayRates?.[0] || [];
     const cancelPolicies = r.CancelPolicies || [];
 
     return {
@@ -97,7 +101,7 @@ async function toDisplay(
       totalFare,
       totalTax,
       inclusion: r.Inclusion || "",
-      dayRates: dayRates.map((dr: any) => ({
+      dayRates: dayRates.map((dr: TBOHotelDayRate) => ({
         basePrice: dr.BasePrice || 0,
       })),
       cancelPolicy: cancelPolicies[0]
@@ -156,8 +160,6 @@ async function toDisplay(
   };
 }
 
-let _lastTraceId = "";
-
 let _hotelCodesCache: Record<string, string> = {};
 let _hotelDetailsCache: Record<string, { name: string; rating: string; address: string; city: string; imageUrl?: string; amenities: string[]; facilities: string[] }> = {};
 let _cityNameToCodeCache: Record<string, string> = {};
@@ -171,9 +173,9 @@ async function lookupTboCityCode(cityName: string, requestId?: string, countryCo
     if (res.CityList) {
       let bestMatch: { code: string; name: string } | null = null;
       for (const c of res.CityList) {
-        const fullName = c.CityName || (c as any).Name || "";
+        const fullName = c.CityName || c.Name || "";
         const name = fullName.split(",")[0].trim().toLowerCase();
-        const code = c.CityCode || (c as any).Code;
+        const code = c.CityCode || c.Code;
         if (!name || !code) continue;
 
         if (name === cityName.toLowerCase()) {
@@ -336,23 +338,24 @@ export async function searchHotels(params: {
     TokenId: tokenId,
   };
   const res = await api.searchHotels(searchReq, { requestId });
-  if (res.TraceId) _lastTraceId = res.TraceId;
+  const traceId = res.TraceId || "";
   if (res.Status?.Code !== 200 || !res.HotelResult?.length) {
     throw new Error(`Hotel search failed: ${res.Status?.Description || "No hotels found"}`);
   }
   const hotels = await Promise.all(
     res.HotelResult.map(h => toDisplay(h, { destination: params.city }))
   );
-  return { hotels, traceId: _lastTraceId };
+  return { hotels, traceId };
 }
 
 export async function preBook(params: {
   bookingCode: string;
+  paymentMode?: string;
 }): Promise<TBOHotelPreBookOutput> {
   await validateCredentials();
   const req: TBOHotelPreBookRequest = {
     BookingCode: params.bookingCode,
-    PaymentMode: "Limit",
+    PaymentMode: params.paymentMode || "Default",
   };
   const res = await api.preBook(req);
   if (res.Status?.Code !== 200) {
@@ -442,13 +445,14 @@ export async function bookHotel(params: {
 
 export async function getBookingDetail(params: {
   bookingId: number;
+  traceId?: string;
 }): Promise<TBOHotelBookingDetailOutput> {
   await validateCredentials();
   const req: TBOHotelBookingDetailRequest = {
     BookingId: params.bookingId,
     EndUserIp: getEndUserIp(),
     TokenId: await ensureToken(),
-    TraceId: _lastTraceId || undefined,
+    TraceId: params.traceId || undefined,
   };
   const res = await api.getBookingDetail(req);
   const result = res.GetBookingDetailResult;

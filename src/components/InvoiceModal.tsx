@@ -199,6 +199,15 @@ export default function InvoiceModal({ isOpen, onClose, booking, userName, userE
                   <p className={`text-sm font-medium ${invoiceStatus === "PAID" || invoiceStatus === "CONFIRMED" ? "text-green-700" : "text-amber-700"}`}>
                     ✓ Payment Status: {invoiceStatus === "PAID" || invoiceStatus === "CONFIRMED" ? "Paid" : invoiceStatus}
                   </p>
+                  {inv?.dueDate && invoiceStatus === "PENDING" && (
+                    <p className="text-xs text-amber-600 mt-1">
+                      Due: {formatDate(inv.dueDate)}
+                      {(() => {
+                        const days = Math.ceil((new Date(inv.dueDate).getTime() - Date.now()) / 86400000);
+                        return days >= 0 ? ` (${days} days remaining)` : ` (${Math.abs(days)} days overdue)`;
+                      })()}
+                    </p>
+                  )}
                 </div>
 
                 {inv?.notes && (

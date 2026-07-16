@@ -22,7 +22,8 @@ export async function createOrder(params: {
 }): Promise<{ merchantTxnId: string; checkoutUrl: string }> {
   if (PAYMENT_CONFIG.mock) {
     const orderId = generateMockOrderId();
-    const checkoutUrl = getMockCheckoutUrl(orderId, PAYMENT_CONFIG.appUrl);
+    const bookingId = new URL(params.returnUrl).searchParams.get("bookingId") || "";
+    const checkoutUrl = getMockCheckoutUrl(orderId, PAYMENT_CONFIG.appUrl, bookingId, params.amount);
     return { merchantTxnId: orderId, checkoutUrl };
   }
 

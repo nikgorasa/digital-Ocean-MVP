@@ -73,18 +73,24 @@ export async function POST(req: NextRequest) {
         if (!bookingCode) {
           return NextResponse.json({ error: "bookingCode required" }, { status: 400 });
         }
-        const result = await preBook({ bookingCode });
+        const paymentMode = body.paymentMode;
+        const result = await preBook({ bookingCode, paymentMode });
+        const searchTotalFare = body.room?.totalFare;
+        const prebookNetAmount = result.netAmount;
+        const isPriceChanged = typeof searchTotalFare === "number" && searchTotalFare > 0
+          ? Math.abs(searchTotalFare - prebookNetAmount) > 1
+          : false;
         return NextResponse.json({
           success: true,
           bookingCode,
-          isPriceChanged: false,
+          isPriceChanged,
           ...result,
         });
       }
 
       case "book": {
         const {
-          bookingCode, guestNationality, netAmount, hotelRoomsDetails,
+          bookingCode, guestNationality, netAmount, hotelRoomsDetails, traceId,
         } = body;
         if (!bookingCode || !hotelRoomsDetails) {
           return NextResponse.json(
@@ -98,15 +104,15 @@ export async function POST(req: NextRequest) {
           netAmount: netAmount || 0,
           hotelRoomsDetails,
         });
-        return NextResponse.json({ success: true, ...result });
+        return NextResponse.json({ success: true, traceId, ...result });
       }
 
       case "booking-detail": {
-        const { bookingId } = body;
+        const { bookingId, traceId } = body;
         if (!bookingId) {
           return NextResponse.json({ error: "bookingId required" }, { status: 400 });
         }
-        const result = await getBookingDetail({ bookingId: Number(bookingId) });
+        const result = await getBookingDetail({ bookingId: Number(bookingId), traceId });
         return NextResponse.json(result);
       }
 

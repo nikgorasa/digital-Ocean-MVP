@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useRef } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import { motion } from "motion/react";
 import { formatCurrency } from "@/lib";
 import { useDemoMode } from "@/hooks/useDemoMode";
@@ -27,6 +27,7 @@ interface HotelBookingModalProps {
   hotel: TBODisplayHotel;
   room: TBODisplayRoom;
   sessionId: string;
+  traceId?: string;
   user: { id: string; email: string; name: string; companyId?: string } | null;
   location: string;
   checkIn: string;
@@ -37,7 +38,7 @@ interface HotelBookingModalProps {
 type BookingStep = "form" | "blocking" | "book-confirming" | "saving" | "checkout" | "done" | "error";
 
 export default function HotelBookingModal({
-  isOpen, onClose, hotel, room, sessionId, user, location,
+  isOpen, onClose, hotel, room, sessionId, traceId, user, location,
   checkIn, checkOut, guestCount,
 }: HotelBookingModalProps) {
   const { demoMode } = useDemoMode();
@@ -52,6 +53,8 @@ export default function HotelBookingModal({
   const [addressCity, setAddressCity] = useState(location);
   const [passportNo, setPassportNo] = useState("");
   const [passportExpiry, setPassportExpiry] = useState("");
+  const [guestAge, setGuestAge] = useState(25);
+  const [guestNationality, setGuestNationality] = useState("IN");
   const [showGstFields, setShowGstFields] = useState(false);
   const [gstNumber, setGstNumber] = useState("");
   const [gstCompanyName, setGstCompanyName] = useState("");
@@ -61,6 +64,7 @@ export default function HotelBookingModal({
   const [discountApplied, setDiscountApplied] = useState(0);
   const [couponCodeUsed, setCouponCodeUsed] = useState("");
   const [bookingId, setBookingId] = useState<string | null>(null);
+  const [tboBookingId, setTboBookingId] = useState<number | null>(null);
   const [confirmation, setConfirmation] = useState<{
     bookingId?: string;
     pnr?: string;
@@ -77,6 +81,19 @@ export default function HotelBookingModal({
     corporateDiscount?: number;
     corporateRuleName?: string;
   } | null>(null);
+  const [voucherStatus, setVoucherStatus] = useState<string | null>(null);
+  const [bookingDetail, setBookingDetail] = useState<Record<string, unknown> | null>(null);
+  const [actionLoading, setActionLoading] = useState<string | null>(null);
+  const [companyName, setCompanyName] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (user?.companyId) {
+      fetch(`/api/companies/${user.companyId}`)
+        .then(r => r.ok ? r.json() : null)
+        .then(data => { if (data?.name) setCompanyName(data.name); })
+        .catch(() => {});
+    }
+  }, [user?.companyId]);
 
   const isInternational = hotel.hotelCode >= 10000000;
   const nights = Math.max(1, Math.ceil(
@@ -125,11 +142,15 @@ export default function HotelBookingModal({
     setErrorMessage("");
     setConfirmation(null);
     setBookingId(null);
+    setTboBookingId(null);
     setDiscountApplied(0);
     setCouponCodeUsed("");
     setPromoCode("");
     setPromoError("");
     setFormErrors({});
+    setVoucherStatus(null);
+    setBookingDetail(null);
+    setActionLoading(null);
     dirtyRef.current = false;
   };
 
@@ -235,8 +256,9 @@ export default function HotelBookingModal({
         const bookReqPayload = {
           action: "book",
           bookingCode: blockData.bookingCode,
-          guestNationality: "IN",
-          netAmount: room.totalFare,
+          guestNationality: guestNationality,
+          netAmount: blockData.netAmount || room.totalFare,
+          traceId: traceId || undefined,
           hotelRoomsDetails: [{
             passengers: [{
               title: "Mr",
@@ -244,7 +266,7 @@ export default function HotelBookingModal({
               lastName: lastName.trim(),
               paxType: 1,
               leadPassenger: true,
-              age: 30,
+              age: guestAge,
               email: email.trim(),
               phone: phone.trim(),
               pan: pan.trim().toUpperCase(),
@@ -252,8 +274,8 @@ export default function HotelBookingModal({
               passportExpiry: isInternational ? passportExpiry || undefined : undefined,
               addressLine1: addressLine1 || undefined,
               city: addressCity || location,
-              countryCode: "IN",
-              nationality: "IN",
+              countryCode: guestNationality,
+              nationality: guestNationality,
             }]
           }]
         };
@@ -274,6 +296,41 @@ export default function HotelBookingModal({
 
         pnrCode = bookData.confirmationNo || clientRef;
         confirmationNo = bookData.confirmationNo || "";
+        setTboBookingId(bookData.bookingId || null);
+
+        if (bookData.bookingId) {
+          try {
+            const voucherRes = await fetch("/api/tbo-hotels", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ action: "generate-voucher", bookingId: bookData.bookingId }),
+            });
+            const voucherData = await voucherRes.json();
+            if (voucherData.voucherStatus) {
+              setVoucherStatus("Voucher Generated");
+            }
+          } catch (e) {
+            console.warn("GenerateVoucher failed:", e);
+          }
+
+          try {
+            const detailRes = await fetch("/api/tbo-hotels", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                action: "booking-detail",
+                bookingId: bookData.bookingId,
+                traceId: traceId || undefined,
+              }),
+            });
+            const detailData = await detailRes.json();
+            if (!detailData.error) {
+              setBookingDetail(detailData);
+            }
+          } catch (e) {
+            console.warn("BookingDetail failed:", e);
+          }
+        }
       }
 
       const saveRes = await fetch("/api/bookings", {
@@ -344,6 +401,76 @@ export default function HotelBookingModal({
     } catch (err) {
       setErrorMessage("Something went wrong. Please try again.");
       setStep("error");
+    }
+  };
+
+  const handleGenerateVoucher = async () => {
+    if (!tboBookingId) return;
+    setActionLoading("voucher");
+    try {
+      const res = await fetch("/api/tbo-hotels", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "generate-voucher", bookingId: tboBookingId }),
+      });
+      const data = await res.json();
+      if (data.voucherStatus) {
+        setVoucherStatus("Voucher Generated");
+      } else {
+        setVoucherStatus("Voucher Failed");
+      }
+    } catch {
+      setVoucherStatus("Voucher Failed");
+    } finally {
+      setActionLoading(null);
+    }
+  };
+
+  const handleViewBookingDetail = async () => {
+    if (!tboBookingId) return;
+    setActionLoading("detail");
+    try {
+      const res = await fetch("/api/tbo-hotels", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          action: "booking-detail",
+          bookingId: tboBookingId,
+          traceId: traceId || undefined,
+        }),
+      });
+      const data = await res.json();
+      if (!data.error) {
+        setBookingDetail(data);
+      }
+    } catch {
+      // ignore
+    } finally {
+      setActionLoading(null);
+    }
+  };
+
+  const handleCancelBooking = async () => {
+    if (!bookingId) return;
+    const confirmed = window.confirm("Are you sure you want to cancel this booking? This action cannot be undone.");
+    if (!confirmed) return;
+    setActionLoading("cancel");
+    try {
+      const res = await fetch("/api/cancellations", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ bookingId, reason: "Customer requested cancellation" }),
+      });
+      const data = await res.json();
+      if (res.ok) {
+        setConfirmation(prev => prev ? { ...prev, status: "Cancelled" } : null);
+      } else {
+        setErrorMessage(data.error || "Cancellation failed");
+      }
+    } catch {
+      setErrorMessage("Cancellation request failed");
+    } finally {
+      setActionLoading(null);
     }
   };
 
@@ -549,6 +676,38 @@ export default function HotelBookingModal({
                   placeholder="Last Name"
                   autoComplete="family-name"
                 />
+              </div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-3">
+                <div>
+                  <label className="text-[10px] font-bold uppercase tracking-widest text-slate-400 mb-1.5 block">Age</label>
+                  <input
+                    type="number"
+                    min={1}
+                    max={120}
+                    value={guestAge}
+                    onChange={(e) => { setGuestAge(Math.max(1, Math.min(120, parseInt(e.target.value) || 25))); markDirty(); }}
+                    className="w-full px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm"
+                  />
+                </div>
+                <div>
+                  <label className="text-[10px] font-bold uppercase tracking-widest text-slate-400 mb-1.5 block">Nationality</label>
+                  <select
+                    value={guestNationality}
+                    onChange={(e) => { setGuestNationality(e.target.value); markDirty(); }}
+                    className="w-full px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm"
+                  >
+                    <option value="IN">India (IN)</option>
+                    <option value="US">United States (US)</option>
+                    <option value="GB">United Kingdom (GB)</option>
+                    <option value="AE">UAE (AE)</option>
+                    <option value="SG">Singapore (SG)</option>
+                    <option value="AU">Australia (AU)</option>
+                    <option value="DE">Germany (DE)</option>
+                    <option value="FR">France (FR)</option>
+                    <option value="JP">Japan (JP)</option>
+                    <option value="CA">Canada (CA)</option>
+                  </select>
+                </div>
               </div>
               <p className="text-[10px] text-slate-400">Lead guest name for booking</p>
             </FormSection>
@@ -766,7 +925,9 @@ export default function HotelBookingModal({
                 <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 mb-4 text-left">
                   <div className="flex items-center gap-2 mb-2">
                     <Building2 size={16} className="text-blue-600" />
-                    <span className="text-sm font-bold text-blue-900">Corporate Booking</span>
+                    <span className="text-sm font-bold text-blue-900">
+                      {companyName ? `${companyName} — Corporate Booking` : "Corporate Booking"}
+                    </span>
                   </div>
                   <p className="text-xs text-blue-700">
                     This booking will be charged to your company account. Payment will be settled within 45 days.
@@ -860,6 +1021,61 @@ export default function HotelBookingModal({
             </div>
 
             <p className="text-xs text-slate-400 mb-4">A confirmation has been saved to My Trips.</p>
+
+            {/* Voucher / Booking Detail / Cancel Actions */}
+            {tboBookingId && (
+              <div className="bg-slate-50 rounded-xl p-4 mb-4 text-left space-y-3">
+                <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400">Booking Actions</p>
+
+                {voucherStatus && (
+                  <div className="flex items-center gap-2 text-sm">
+                    <CheckCircle size={14} className={voucherStatus === "Voucher Generated" ? "text-emerald-600" : "text-red-500"} />
+                    <span className={voucherStatus === "Voucher Generated" ? "text-emerald-700" : "text-red-600"}>{voucherStatus}</span>
+                  </div>
+                )}
+
+                {bookingDetail && (
+                  <div className="text-xs text-slate-600 space-y-1">
+                    <p><span className="font-semibold">Status:</span> {(bookingDetail as Record<string, unknown>).status as string || "N/A"}</p>
+                    <p><span className="font-semibold">Hotel:</span> {(bookingDetail as Record<string, unknown>).hotelName as string || "N/A"}</p>
+                    <p><span className="font-semibold">Check-in:</span> {(bookingDetail as Record<string, unknown>).checkIn as string || "N/A"}</p>
+                    <p><span className="font-semibold">Check-out:</span> {(bookingDetail as Record<string, unknown>).checkOut as string || "N/A"}</p>
+                  </div>
+                )}
+
+                <div className="flex gap-2">
+                  {!voucherStatus && (
+                    <button
+                      onClick={handleGenerateVoucher}
+                      disabled={actionLoading === "voucher"}
+                      className="flex-1 py-2 bg-emerald-600 text-white rounded-xl text-xs font-bold hover:bg-emerald-700 disabled:opacity-50 cursor-pointer"
+                    >
+                      {actionLoading === "voucher" ? "Generating..." : "Generate Voucher"}
+                    </button>
+                  )}
+                  {!bookingDetail && (
+                    <button
+                      onClick={handleViewBookingDetail}
+                      disabled={actionLoading === "detail"}
+                      className="flex-1 py-2 bg-slate-700 text-white rounded-xl text-xs font-bold hover:bg-slate-800 disabled:opacity-50 cursor-pointer"
+                    >
+                      {actionLoading === "detail" ? "Loading..." : "View Details"}
+                    </button>
+                  )}
+                </div>
+
+                {confirmation?.status !== "Cancelled" && (
+                  <button
+                    onClick={handleCancelBooking}
+                    disabled={actionLoading === "cancel"}
+                    className="w-full py-2 bg-red-50 text-red-600 border border-red-200 rounded-xl text-xs font-bold hover:bg-red-100 disabled:opacity-50 cursor-pointer"
+                  >
+                    {actionLoading === "cancel" ? "Cancelling..." : "Cancel Booking"}
+                  </button>
+                )}
+              </div>
+            )}
+
             <button
               onClick={handleClose}
               className="w-full py-3 bg-brand-saffron text-white rounded-xl font-bold hover:bg-brand-burnt cursor-pointer active:scale-[0.98]"

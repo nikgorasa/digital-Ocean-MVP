@@ -89,6 +89,8 @@ model Company {
   walletBalance  Float           @default(0)
   creditLimit    Float           @default(0)
   discountRate   Float           @default(0)
+  taxRate        Float           @default(0)
+  paymentTermsDays Int           @default(30)
   isActive       Boolean         @default(true)
   approvedBy     String?
   createdAt      DateTime        @default(now())
