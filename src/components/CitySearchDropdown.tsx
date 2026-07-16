@@ -37,20 +37,75 @@ const COUNTRY_OPTIONS = [
   { code: "HK", label: "Hong Kong" },
 ];
 
-const FALLBACK_CITIES: City[] = [
-  { code: "15648", name: "Goa", state: "Goa", source: "fallback", iata_code: "GOI" },
-  { code: "13484", name: "Mumbai", state: "Maharashtra", source: "fallback", iata_code: "BOM" },
-  { code: "13482", name: "Delhi", state: "Delhi", source: "fallback", iata_code: "DEL" },
-  { code: "14565", name: "Bangalore", state: "Karnataka", source: "fallback", iata_code: "BLR" },
-  { code: "15664", name: "Hyderabad", state: "Telangana", source: "fallback", iata_code: "HYD" },
-  { code: "14564", name: "Chennai", state: "Tamil Nadu", source: "fallback", iata_code: "MAA" },
-  { code: "15197", name: "Jaipur", state: "Rajasthan", source: "fallback", iata_code: "JAI" },
-  { code: "13543", name: "Kolkata", state: "West Bengal", source: "fallback", iata_code: "CCU" },
-  { code: "14612", name: "Pune", state: "Maharashtra", source: "fallback", iata_code: "PNQ" },
-  { code: "123608", name: "Kodaikanal", state: "Tamil Nadu", source: "fallback" },
-  { code: "13014", name: "Ooty", state: "Tamil Nadu", source: "fallback" },
-  { code: "12597", name: "Manali", state: "Himachal Pradesh", source: "fallback" },
-];
+const FALLBACK_CITIES: Record<string, City[]> = {
+  IN: [
+    { code: "15648", name: "Goa", state: "Goa", source: "fallback", iata_code: "GOI" },
+    { code: "13484", name: "Mumbai", state: "Maharashtra", source: "fallback", iata_code: "BOM" },
+    { code: "13482", name: "Delhi", state: "Delhi", source: "fallback", iata_code: "DEL" },
+    { code: "14565", name: "Bangalore", state: "Karnataka", source: "fallback", iata_code: "BLR" },
+    { code: "15664", name: "Hyderabad", state: "Telangana", source: "fallback", iata_code: "HYD" },
+    { code: "14564", name: "Chennai", state: "Tamil Nadu", source: "fallback", iata_code: "MAA" },
+    { code: "15197", name: "Jaipur", state: "Rajasthan", source: "fallback", iata_code: "JAI" },
+    { code: "13543", name: "Kolkata", state: "West Bengal", source: "fallback", iata_code: "CCU" },
+    { code: "14612", name: "Pune", state: "Maharashtra", source: "fallback", iata_code: "PNQ" },
+  ],
+  AE: [
+    { code: "13084", name: "Dubai", state: "Dubai", source: "fallback", iata_code: "DXB" },
+    { code: "13085", name: "Abu Dhabi", state: "Abu Dhabi", source: "fallback", iata_code: "AUH" },
+    { code: "13086", name: "Sharjah", state: "Sharjah", source: "fallback", iata_code: "SHJ" },
+  ],
+  TH: [
+    { code: "13046", name: "Bangkok", state: "Bangkok", source: "fallback", iata_code: "BKK" },
+    { code: "13047", name: "Phuket", state: "Phuket", source: "fallback", iata_code: "HKT" },
+    { code: "13048", name: "Pattaya", state: "Chonburi", source: "fallback", iata_code: "UTP" },
+    { code: "13049", name: "Chiang Mai", state: "Chiang Mai", source: "fallback", iata_code: "CNX" },
+  ],
+  SG: [
+    { code: "13050", name: "Singapore", state: "Singapore", source: "fallback", iata_code: "SIN" },
+  ],
+  MY: [
+    { code: "13051", name: "Kuala Lumpur", state: "Federal Territory", source: "fallback", iata_code: "KUL" },
+    { code: "13052", name: "Langkawi", state: "Kedah", source: "fallback", iata_code: "LGK" },
+    { code: "13053", name: "Penang", state: "Penang", source: "fallback", iata_code: "PEN" },
+  ],
+  US: [
+    { code: "13054", name: "New York", state: "New York", source: "fallback", iata_code: "JFK" },
+    { code: "13055", name: "Los Angeles", state: "California", source: "fallback", iata_code: "LAX" },
+    { code: "13056", name: "Las Vegas", state: "Nevada", source: "fallback", iata_code: "LAS" },
+    { code: "13057", name: "Miami", state: "Florida", source: "fallback", iata_code: "MIA" },
+    { code: "13058", name: "San Francisco", state: "California", source: "fallback", iata_code: "SFO" },
+  ],
+  GB: [
+    { code: "13059", name: "London", state: "England", source: "fallback", iata_code: "LHR" },
+    { code: "13060", name: "Manchester", state: "England", source: "fallback", iata_code: "MAN" },
+    { code: "13061", name: "Edinburgh", state: "Scotland", source: "fallback", iata_code: "EDI" },
+  ],
+  FR: [
+    { code: "13062", name: "Paris", state: "Ile-de-France", source: "fallback", iata_code: "CDG" },
+    { code: "13063", name: "Nice", state: "Provence-Alpes-Cote d'Azur", source: "fallback", iata_code: "NCE" },
+  ],
+  DE: [
+    { code: "13064", name: "Berlin", state: "Berlin", source: "fallback", iata_code: "BER" },
+    { code: "13065", name: "Munich", state: "Bavaria", source: "fallback", iata_code: "MUC" },
+    { code: "13066", name: "Frankfurt", state: "Hesse", source: "fallback", iata_code: "FRA" },
+  ],
+  AU: [
+    { code: "13067", name: "Sydney", state: "New South Wales", source: "fallback", iata_code: "SYD" },
+    { code: "13068", name: "Melbourne", state: "Victoria", source: "fallback", iata_code: "MEL" },
+    { code: "13069", name: "Gold Coast", state: "Queensland", source: "fallback", iata_code: "OOL" },
+  ],
+  JP: [
+    { code: "13070", name: "Tokyo", state: "Tokyo", source: "fallback", iata_code: "NRT" },
+    { code: "13071", name: "Osaka", state: "Osaka", source: "fallback", iata_code: "KIX" },
+  ],
+  LK: [
+    { code: "13072", name: "Colombo", state: "Western", source: "fallback", iata_code: "CMB" },
+    { code: "13073", name: "Kandy", state: "Central", source: "fallback", iata_code: "KDZ" },
+  ],
+  MV: [
+    { code: "13074", name: "Male", state: "Male", source: "fallback", iata_code: "MLE" },
+  ],
+};
 
 export default function CitySearchDropdown({
   value,
@@ -74,11 +129,7 @@ export default function CitySearchDropdown({
         setCities(data.cities || []);
       })
       .catch(() => {
-        if (countryCode === "IN") {
-          setCities(FALLBACK_CITIES);
-        } else {
-          setCities([]);
-        }
+        setCities(FALLBACK_CITIES[countryCode] || FALLBACK_CITIES["IN"] || []);
       })
       .finally(() => setLoading(false));
   }, [countryCode]);
