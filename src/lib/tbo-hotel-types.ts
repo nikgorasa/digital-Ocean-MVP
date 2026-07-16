@@ -414,6 +414,7 @@ export interface TBOHotelPreBookOutput {
   amenities: string[];
   rateConditions: string[];
   taxBreakup: { chargeType: string; taxableAmount: number; taxPercentage: number; amount: number }[];
+  lastCancellationDeadline?: string;
   traceId: string;
 }
 

@@ -388,6 +388,7 @@ export async function preBook(params: {
     amenities: room?.Amenities || [],
     rateConditions: hotel?.RateConditions || [],
     taxBreakup: (priceBreakup?.TaxBreakup || []).map(t => ({ chargeType: t.TaxType, taxableAmount: t.TaxableAmount, taxPercentage: t.TaxPercentage, amount: t.TaxAmount })),
+    lastCancellationDeadline: room?.LastCancellationDeadline || undefined,
     traceId: '',
   };
 }

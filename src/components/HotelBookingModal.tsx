@@ -9,7 +9,7 @@ import { formatMealPlan } from "@/lib/format-meal-plan";
 import {
   X, Loader2, CheckCircle, AlertCircle, Building2,
   Bed, MapPin, Calendar, Phone, Mail, User, CreditCard,
-  Tag, ChevronDown, ChevronUp, Globe, Home, Zap, FlaskConical
+  Tag, ChevronDown, ChevronUp, Globe, Home, Zap, FlaskConical, Clock
 } from "lucide-react";
 import type { TBODisplayHotel, TBODisplayRoom } from "@/lib/tbo-hotel-types";
 import CheckoutButton from "./CheckoutButton";
@@ -86,6 +86,7 @@ export default function HotelBookingModal({
   const [actionLoading, setActionLoading] = useState<string | null>(null);
   const [companyName, setCompanyName] = useState<string | null>(null);
   const [validationInfo, setValidationInfo] = useState<{ PanMandatory?: boolean; PanPassport?: boolean; PassportMandatory?: boolean } | null>(null);
+  const [lastCancellationDeadline, setLastCancellationDeadline] = useState<string | null>(null);
 
   useEffect(() => {
     if (user?.companyId) {
@@ -251,6 +252,10 @@ export default function HotelBookingModal({
 
         if (blockData.validationInfo) {
           setValidationInfo(blockData.validationInfo);
+        }
+
+        if (blockData.lastCancellationDeadline) {
+          setLastCancellationDeadline(blockData.lastCancellationDeadline);
         }
 
         if (blockData.isPriceChanged) {
@@ -952,6 +957,17 @@ export default function HotelBookingModal({
                 </div>
               </div>
             </div>
+
+            {lastCancellationDeadline && (
+              <div className="bg-green-50 border border-green-200 rounded-xl p-3 mb-4 text-left">
+                <div className="flex items-center gap-2">
+                  <Clock size={14} className="text-green-600" />
+                  <span className="text-xs font-bold text-green-800">
+                    Free cancellation until {new Date(lastCancellationDeadline).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit" })}
+                  </span>
+                </div>
+              </div>
+            )}
 
             {user?.companyId ? (
               <>
