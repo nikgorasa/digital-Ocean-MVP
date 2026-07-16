@@ -74,11 +74,17 @@ export default function HotelsPage() {
   const [sortBy, setSortBy] = useState<HotelSortKey>("recommended");
   const { filters, updateFilter, resetFilters, hasActiveFilters, activeFilterCount } = useHotelFilters();
   const [error, setError] = useState("");
+  const [hotelNameFilter, setHotelNameFilter] = useState("");
 
   const filteredResults = useMemo(() => {
-    const filtered = applyHotelFilters(results as HotelResult[], filters);
-    return sortHotels(filtered, sortBy) as TBODisplayHotel[];
-  }, [results, filters, sortBy]);
+    let filtered = results;
+    if (hotelNameFilter.trim()) {
+      const q = hotelNameFilter.toLowerCase();
+      filtered = filtered.filter(h => h.name.toLowerCase().includes(q));
+    }
+    const applyFiltered = applyHotelFilters(filtered as HotelResult[], filters);
+    return sortHotels(applyFiltered, sortBy) as TBODisplayHotel[];
+  }, [results, filters, sortBy, hotelNameFilter]);
 
   const showConcierge = roomCount > 9;
 
@@ -433,7 +439,6 @@ export default function HotelsPage() {
                 <Building2 size={48} className="mx-auto text-brand-sand/50 mb-4" />
                 <h2 className="text-xl font-bold text-brand-charcoal mb-2">Search Hotels</h2>
                 <p className="text-brand-sand">Enter your destination and dates to find hotels from our global inventory.</p>
-                <p className="text-brand-sand/70 text-xs mt-2">22% markup applied. Pricing hierarchy: Hotel &gt; Destination &gt; Global.</p>
               </div>
             ) : loading ? (
               <div className="text-center py-16">
@@ -456,6 +461,16 @@ export default function HotelsPage() {
               <div>
                 {/* Sort + Filter Bar */}
                 <div className="flex items-center justify-between gap-3 mb-4 flex-wrap">
+                  <div className="relative flex-1 max-w-xs">
+                    <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+                    <input
+                      type="text"
+                      value={hotelNameFilter}
+                      onChange={(e) => setHotelNameFilter(e.target.value)}
+                      placeholder="Search by hotel name..."
+                      className="w-full pl-9 pr-3 py-2 bg-white border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-brand-antique-gold/30 outline-none"
+                    />
+                  </div>
                   <SortBar
                     options={[
                       { value: "recommended", label: "Recommended" },
