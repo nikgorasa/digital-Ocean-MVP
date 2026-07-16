@@ -26,6 +26,7 @@ import * as api from "./tbo-hotel-api";
 import { calculatePrice } from "./pricing";
 import { HOTEL_BOOKING_MODE } from "./tbo-hotel-types";
 import { readConfig } from "./config-service";
+import { cacheGet, cacheSet } from "./static-cache";
 
 let cachedToken: { tokenId: string; date: string } | null = null;
 
@@ -81,7 +82,7 @@ async function toDisplay(
   h: TBOHotelResult,
   context?: { destination?: string; hotelName?: string; countryCode?: string },
 ): Promise<TBOHotelDisplay> {
-  const details = _hotelDetailsCache[h.HotelCode] || {};
+  const details = (await getHotelDetailsFromCache(h.HotelCode)) || {} as { name: string; rating: string; address: string; city: string; imageUrl?: string; amenities: string[]; facilities: string[]; countryCode?: string; checkInTime?: string; checkOutTime?: string };
   const hotelAmenities = details.amenities || [];
   const countryCode = context?.countryCode || details.countryCode || "IN";
 
@@ -168,13 +169,98 @@ let _hotelCodesCache: Record<string, string> = {};
 let _hotelDetailsCache: Record<string, { name: string; rating: string; address: string; city: string; imageUrl?: string; amenities: string[]; facilities: string[]; countryCode?: string; checkInTime?: string; checkOutTime?: string }> = {};
 let _cityNameToCodeCache: Record<string, string> = {};
 
+function dbHotelDetailsToCache(d: Record<string, unknown>): { name: string; rating: string; address: string; city: string; imageUrl?: string; amenities: string[]; facilities: string[]; countryCode?: string; checkInTime?: string; checkOutTime?: string } {
+  return {
+    name: (d.HotelName as string) || "",
+    rating: (d.HotelRating as string) || "",
+    address: (d.Address as string) || "",
+    city: (d.CityName as string) || "",
+    imageUrl: (d.Images as string[])?.[0],
+    amenities: (d.Amenities as string[]) || [],
+    facilities: (d.HotelFacilities as string[]) || [],
+    countryCode: d.CountryCode as string | undefined,
+    checkInTime: d.CheckInTime as string | undefined,
+    checkOutTime: d.CheckOutTime as string | undefined,
+  };
+}
+
+async function getHotelDetailsFromCache(hotelCode: string): Promise<{ name: string; rating: string; address: string; city: string; imageUrl?: string; amenities: string[]; facilities: string[]; countryCode?: string; checkInTime?: string; checkOutTime?: string } | null> {
+  if (_hotelDetailsCache[hotelCode]) return _hotelDetailsCache[hotelCode];
+  try {
+    const dbEntry = await cacheGet<Record<string, unknown>>("HotelDetails", hotelCode);
+    if (dbEntry) {
+      const converted = dbHotelDetailsToCache(dbEntry);
+      _hotelDetailsCache[hotelCode] = converted;
+      return converted;
+    }
+  } catch (e) {
+    console.warn(`[tbo-hotel-client] DB cache read failed for HotelDetails:${hotelCode}:`, e);
+  }
+  return null;
+}
+
+async function getHotelCodesFromCache(cityCode: string): Promise<string | null> {
+  const cacheKey = `code:${cityCode}`;
+  if (_hotelCodesCache[cacheKey]) return _hotelCodesCache[cacheKey];
+  try {
+    const dbEntry = await cacheGet<Array<{ HotelCode: string; HotelName: string; HotelRating: string; Address?: string; CityName?: string; CountryCode?: string }>>("HotelCodeList", cityCode);
+    if (dbEntry && dbEntry.length > 0) {
+      const codeStr = dbEntry.slice(0, 50).map(c => c.HotelCode).join(",");
+      _hotelCodesCache[cacheKey] = codeStr;
+      for (const h of dbEntry) {
+        _hotelDetailsCache[h.HotelCode] = {
+          name: h.HotelName,
+          rating: h.HotelRating,
+          address: h.Address || "",
+          city: h.CityName || "",
+          amenities: [],
+          facilities: [],
+          countryCode: h.CountryCode || "IN",
+        };
+      }
+      return codeStr;
+    }
+  } catch (e) {
+    console.warn(`[tbo-hotel-client] DB cache read failed for HotelCodeList:${cityCode}:`, e);
+  }
+  return null;
+}
+
+async function getCityCodeFromCache(countryCode: string, cityName: string): Promise<string | null> {
+  const cacheKey = `${countryCode}:${cityName.toLowerCase()}`;
+  if (_cityNameToCodeCache[cacheKey]) return _cityNameToCodeCache[cacheKey];
+  try {
+    const dbEntry = await cacheGet<Array<{ Code: string; Name: string; CityCode?: string; CityName?: string }>>("CityList", countryCode);
+    if (dbEntry) {
+      for (const c of dbEntry) {
+        const fullName = c.CityName || c.Name || "";
+        const code = c.CityCode || c.Code;
+        if (!code) continue;
+        const name = fullName.split(",")[0].trim().toLowerCase();
+        if (name === cityName.toLowerCase()) {
+          _cityNameToCodeCache[cacheKey] = String(code);
+          return String(code);
+        }
+      }
+    }
+  } catch (e) {
+    console.warn(`[tbo-hotel-client] DB cache read failed for CityList:${countryCode}:`, e);
+  }
+  return null;
+}
+
 async function lookupTboCityCode(cityName: string, requestId?: string, countryCode = "IN"): Promise<string | null> {
   const cacheKey = `${countryCode}:${cityName.toLowerCase()}`;
   if (_cityNameToCodeCache[cacheKey]) return _cityNameToCodeCache[cacheKey];
 
+  const dbCode = await getCityCodeFromCache(countryCode, cityName);
+  if (dbCode) return dbCode;
+
   try {
     const res = await api.getCities(countryCode);
     if (res.CityList) {
+      const ttl = 86400;
+      try { await cacheSet("CityList", res.CityList, countryCode, { ttlSeconds: ttl }); } catch {}
       let bestMatch: { code: string; name: string } | null = null;
       for (const c of res.CityList) {
         const fullName = c.CityName || c.Name || "";
@@ -206,7 +292,14 @@ async function lookupTboCityCode(cityName: string, requestId?: string, countryCo
 }
 
 async function fetchHotelImages(hotelCodes: string[], requestId?: string): Promise<void> {
-  const uncached = hotelCodes.filter(code => !_hotelDetailsCache[code]?.imageUrl);
+  const uncached: string[] = [];
+  for (const code of hotelCodes) {
+    const existing = _hotelDetailsCache[code];
+    if (!existing?.imageUrl) {
+      const dbEntry = await getHotelDetailsFromCache(code);
+      if (!dbEntry?.imageUrl) uncached.push(code);
+    }
+  }
   if (uncached.length === 0) return;
 
   const BATCH_SIZE = 15;
@@ -239,6 +332,7 @@ async function fetchHotelImages(hotelCodes: string[], requestId?: string): Promi
               checkInTime: detail.CheckInTime || existing.checkInTime,
               checkOutTime: detail.CheckOutTime || existing.checkOutTime,
             };
+            try { await cacheSet("HotelDetails", detail, detail.HotelCode, { ttlSeconds: 86400 }); } catch {}
           }
         }
       } catch (error) {
@@ -269,6 +363,9 @@ async function resolveHotelCodes(city?: string, hotelCodes?: string, cityCode?: 
   const cacheKey = `code:${resolvedCode}`;
   if (_hotelCodesCache[cacheKey]) return _hotelCodesCache[cacheKey];
 
+  const dbCodes = await getHotelCodesFromCache(resolvedCode);
+  if (dbCodes) return dbCodes;
+
   const res = await api.getHotelCodeList(resolvedCode, { requestId });
   if (res.Status?.Code === 200 && res.Hotels?.length > 0) {
     const codeStr = res.Hotels.slice(0, 50).map(c => c.HotelCode).join(",");
@@ -284,6 +381,7 @@ async function resolveHotelCodes(city?: string, hotelCodes?: string, cityCode?: 
         countryCode: h.CountryCode || countryCode,
       };
     }
+    try { await cacheSet("HotelCodeList", res.Hotels, resolvedCode, { ttlSeconds: 86400 }); } catch {}
     console.log(`Resolved ${res.Hotels.length} hotel codes for city code ${resolvedCode} (showing first 50)`);
     return codeStr;
   }
@@ -307,6 +405,7 @@ async function resolveHotelCodes(city?: string, hotelCodes?: string, cityCode?: 
             countryCode: h.CountryCode || countryCode,
           };
         }
+        try { await cacheSet("HotelCodeList", retryRes.Hotels, lookedUp, { ttlSeconds: 86400 }); } catch {}
         console.log(`Resolved ${retryRes.Hotels.length} hotel codes with looked-up code ${lookedUp}`);
         return codeStr;
       }

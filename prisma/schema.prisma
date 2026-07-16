@@ -608,3 +608,33 @@ model ConfigAuditLog {
   @@index([provider, createdAt(sort: Desc)])
   @@map("config_audit_logs")
 }
+
+model StaticCache {
+  id        String   @id @default(cuid())
+  cacheKey  String   @unique
+  dataType  String
+  data      Json
+  metadata  Json?
+  expiresAt DateTime @db.Timestamptz
+  createdAt DateTime @default(now()) @db.Timestamptz
+  updatedAt DateTime @updatedAt @db.Timestamptz
+
+  @@index([dataType])
+  @@index([expiresAt])
+  @@index([dataType, expiresAt])
+  @@map("static_cache")
+}
+
+model CacheConfig {
+  id            String    @id @default(cuid())
+  dataType      String    @unique
+  ttlSeconds    Int
+  isActive      Boolean   @default(true)
+  lastRefreshAt DateTime? @db.Timestamptz
+  refreshStatus String?
+  refreshError  String?
+  createdAt     DateTime  @default(now()) @db.Timestamptz
+  updatedAt     DateTime  @updatedAt @db.Timestamptz
+
+  @@map("cache_config")
+}

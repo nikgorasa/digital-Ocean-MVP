@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import * as cities from "@/lib/db/cities";
 import * as api from "@/lib/tbo-hotel-api";
+import { cacheGet, cacheSet } from "@/lib/static-cache";
 
 interface TBOCity {
   Code: string;
@@ -38,8 +39,19 @@ async function fetchTBOCities(countryCode: string): Promise<CityResult[]> {
     return _tboCitiesCache;
   }
 
-  const res = await api.getCities(countryCode);
-  const tboCities: TBOCity[] = (res as any).CityList || [];
+  let tboCities: TBOCity[] = [];
+  try {
+    const dbCached = await cacheGet<TBOCity[]>("CityList", countryCode);
+    if (dbCached && dbCached.length > 0) {
+      tboCities = dbCached;
+    }
+  } catch {}
+
+  if (tboCities.length === 0) {
+    const res = await api.getCities(countryCode);
+    tboCities = (res as any).CityList || [];
+    try { await cacheSet("CityList", tboCities, countryCode, { ttlSeconds: 86400 }); } catch {}
+  }
 
   const iataMap = await fetchIATACodes();
 
