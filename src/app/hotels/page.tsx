@@ -7,7 +7,7 @@ import LoginModal from "@/components/LoginModal";
 import { useAuth } from "@/hooks/useAuth";
 import { useDemoMode } from "@/hooks/useDemoMode";
 import { motion, AnimatePresence } from "motion/react";
-import { formatCurrency } from "@/lib";
+import { formatCurrency, getCurrencyForCountry } from "@/lib";
 import { formatMealPlan } from "@/lib/format-meal-plan";
 import { getCancellationSummary } from "@/lib/format-cancel-policy";
 import { Building2, Search, MapPin, X, Star, Wifi, Coffee, Car, Loader2, ChevronDown, Bed, Users, Minus, Plus, User, SlidersHorizontal } from "lucide-react";
@@ -149,7 +149,7 @@ export default function HotelsPage() {
             NoOfRooms: roomCount,
             GuestNationality: hotelCountryCode,
             RoomGuests,
-            PreferredCurrencyCode: "INR",
+            PreferredCurrency: getCurrencyForCountry(hotelCountryCode),
             ResultCount: 0,
             countryCode: hotelCountryCode,
             Filters: { StarRating: "All", OrderBy: "PriceAsc" },

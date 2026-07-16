@@ -13,6 +13,7 @@ import {
   setEndUserIp,
 } from "@/lib/tbo-hotel-client";
 import * as api from "@/lib/tbo-hotel-api";
+import { getCurrencyForCountry } from "@/lib/utils";
 
 export const maxDuration = 30;
 
@@ -62,7 +63,7 @@ export async function POST(req: NextRequest) {
           cityCode,
           rooms: roomsArray,
           guestNationality: p.GuestNationality || p.guestNationality || "IN",
-          preferredCurrency: p.PreferredCurrency || p.preferredCurrency || "INR",
+          preferredCurrency: p.PreferredCurrency || p.preferredCurrency || getCurrencyForCountry(p.GuestNationality || p.guestNationality || "IN"),
         });
         return NextResponse.json(result);
       }
