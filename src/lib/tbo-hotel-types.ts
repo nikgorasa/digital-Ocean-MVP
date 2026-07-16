@@ -392,6 +392,8 @@ export interface TBOHotelDisplay {
   originalPrice: number;
   source?: "tbo" | "mock" | "fallback";
   countryCode?: string;
+  checkInTime?: string;
+  checkOutTime?: string;
 }
 
 export interface TBOHotelSearchOutput {
@@ -422,6 +424,7 @@ export interface TBOHotelBookOutput {
   invoiceNumber: string;
   hotelBookingStatus: string;
   isPriceChanged: boolean;
+  isCancellationPolicyChanged?: boolean;
 }
 
 export interface TBOHotelBookingDetailOutput {

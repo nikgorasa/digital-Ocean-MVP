@@ -159,6 +159,8 @@ async function toDisplay(
     starRating: numericRating,
     originalPrice: pricing.originalPrice,
     countryCode,
+    checkInTime: details.checkInTime,
+    checkOutTime: details.checkOutTime,
   };
 }
 
@@ -403,6 +405,8 @@ export async function bookHotel(params: {
     city?: string;
     countryCode?: string;
     nationality?: string;
+    passportNo?: string;
+    passportExpiry?: string;
   }[] }[];
   EndUserIp?: string;
 }): Promise<TBOHotelBookOutput> {
@@ -434,6 +438,8 @@ export async function bookHotel(params: {
         if (p.city && p.city.trim()) passenger.City = p.city;
         if (p.countryCode && p.countryCode.trim()) passenger.CountryCode = p.countryCode;
         if (p.nationality && p.nationality.trim()) passenger.Nationality = p.nationality;
+        if (p.passportNo && p.passportNo.trim()) passenger.PassportNo = p.passportNo;
+        if (p.passportExpiry && p.passportExpiry.trim()) passenger.PassportExpiry = p.passportExpiry;
         return passenger as TBOHotelPassenger;
       }),
     })),
@@ -449,6 +455,7 @@ export async function bookHotel(params: {
     invoiceNumber: res.BookResult.InvoiceNumber,
     hotelBookingStatus: res.BookResult.HotelBookingStatus,
     isPriceChanged: res.BookResult.IsPriceChanged,
+    isCancellationPolicyChanged: res.BookResult.IsCancellationPolicyChanged,
   };
 }
 
