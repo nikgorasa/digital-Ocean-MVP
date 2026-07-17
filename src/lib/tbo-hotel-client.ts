@@ -147,7 +147,7 @@ async function toDisplay(
     name: details.name || `Hotel ${h.HotelCode}`,
     hotelRating: numericRating,
     location: details.city || details.address || "",
-    currency: h.Currency,
+    currency: h.Currency || "INR",
     minTotalFare: pricing.displayedPrice,
     rooms,
     resultIndex: 1,
