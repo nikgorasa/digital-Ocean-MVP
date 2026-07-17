@@ -25,6 +25,36 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     priority: 0.8,
   }));
 
+  const HOTEL_CITY_SLUGS = [
+    'dubai', 'bangkok', 'singapore', 'bali', 'maldives', 'goa', 'kashmir', 'manali',
+  ];
+  const hotelCityRoutes: MetadataRoute.Sitemap = HOTEL_CITY_SLUGS.map((slug) => ({
+    url: `${BASE_URL}/hotels/${slug}`,
+    lastModified: new Date(),
+    changeFrequency: 'weekly' as const,
+    priority: 0.8,
+  }));
+
+  const FLIGHT_ROUTE_SLUGS = [
+    'mumbai-dubai', 'delhi-bangkok', 'delhi-dubai', 'mumbai-singapore', 'delhi-singapore',
+    'mumbai-bangkok', 'mumbai-bali', 'delhi-bali', 'mumbai-maldives', 'delhi-maldives',
+  ];
+  const flightRouteRoutes: MetadataRoute.Sitemap = FLIGHT_ROUTE_SLUGS.map((slug) => ({
+    url: `${BASE_URL}/flights/${slug}`,
+    lastModified: new Date(),
+    changeFrequency: 'weekly' as const,
+    priority: 0.8,
+  }));
+
+  const visaRoutes: MetadataRoute.Sitemap = [
+    {
+      url: `${BASE_URL}/visa`,
+      lastModified: new Date(),
+      changeFrequency: 'monthly',
+      priority: 0.8,
+    },
+  ];
+
   try {
     const [packages, blogPosts, faqCategories] = await Promise.all([
       prisma.package.findMany({
@@ -73,7 +103,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       };
     });
 
-    return [...staticRoutes, ...destinationRoutes, ...packageRoutes, ...blogRoutes, ...faqRoutes];
+    return [...staticRoutes, ...destinationRoutes, ...hotelCityRoutes, ...flightRouteRoutes, ...visaRoutes, ...packageRoutes, ...blogRoutes, ...faqRoutes];
   } catch {
     return staticRoutes;
   }
