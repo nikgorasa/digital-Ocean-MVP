@@ -96,7 +96,7 @@ interface Flight {
   resultIndex?: string;
 }
 
-const CABIN_OPTIONS = ["Economy", "Premium Economy", "Business", "First"] as const;
+const CABIN_OPTIONS = ["Economy", "Premium Economy", "Business", "First Class"] as const;
 
 const AIRPORT_TIMEZONES: Record<string, string> = {
   BOM: "IST", DEL: "IST", BLR: "IST", MAA: "IST", CCU: "IST", HYD: "IST",
@@ -363,7 +363,8 @@ export default function FlightsPage() {
 
   const getTierColor = (tier: string) => {
     switch (tier) {
-      case "Business": return "bg-purple-100 text-purple-700";
+      case "Business":
+      case "First Class": return "bg-purple-100 text-purple-700";
       case "Flexi Plus": return "bg-blue-100 text-blue-700";
       case "Standard": return "bg-green-100 text-green-700";
       default: return "bg-brand-ivory text-brand-charcoal/80";
