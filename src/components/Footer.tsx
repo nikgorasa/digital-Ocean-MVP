@@ -36,7 +36,7 @@ export default function Footer() {
             <div className="mb-4">
               <Image src="/logo.svg" alt="GoRASA" width={120} height={36} className="h-9 w-auto" />
             </div>
-            <p className="text-brand-sand text-sm leading-relaxed mb-4">
+            <p className="text-brand-charcoal/70 text-sm leading-relaxed mb-4">
               Premium travel experiences crafted for the discerning traveler.
               Flights, hotels, and curated holiday packages.
             </p>
@@ -61,7 +61,7 @@ export default function Footer() {
                     <li key={link.id}>
                       <Link
                         href={link.href || "#"}
-                        className="text-brand-sand hover:text-brand-antique-gold text-sm transition-colors"
+                        className="text-brand-charcoal/60 hover:text-brand-antique-gold text-sm transition-colors"
                       >
                         {link.label}
                       </Link>
@@ -89,7 +89,7 @@ export default function Footer() {
                       {link.href ? (
                         <Link
                           href={link.href}
-                          className="text-brand-sand hover:text-brand-antique-gold text-sm transition-colors"
+                          className="text-brand-charcoal/60 hover:text-brand-antique-gold text-sm transition-colors"
                         >
                           {link.label}
                         </Link>
@@ -113,19 +113,19 @@ export default function Footer() {
             <ul className="space-y-3">
               <li className="flex items-start gap-2">
                 <Phone size={16} className="text-brand-antique-gold mt-0.5 shrink-0" />
-                <span className="text-brand-sand text-sm">
+                <span className="text-brand-charcoal/60 text-sm">
                   {siteConfig.contact_phone || "+91 95285 00383"}
                 </span>
               </li>
               <li className="flex items-start gap-2">
                 <Mail size={16} className="text-brand-antique-gold mt-0.5 shrink-0" />
-                <span className="text-brand-sand text-sm">
+                <span className="text-brand-charcoal/60 text-sm">
                   {siteConfig.contact_email || "rasatravelindia@gmail.com"}
                 </span>
               </li>
               <li className="flex items-start gap-2">
                 <MapPin size={16} className="text-brand-antique-gold mt-0.5 shrink-0" />
-                <span className="text-brand-sand text-sm">
+                <span className="text-brand-charcoal/60 text-sm">
                   {siteConfig.contact_company ||
                     "RASA Travel Services India Pvt Ltd"}
                 </span>
@@ -136,11 +136,11 @@ export default function Footer() {
 
         {/* Bottom bar */}
         <div className="mt-12 pt-6 border-t border-brand-champagne/30 flex flex-col md:flex-row items-center justify-between gap-4">
-          <p className="text-caption text-brand-sand">
+          <p className="text-caption text-brand-charcoal/50">
             &copy; {new Date().getFullYear()} RASA Travel Services India Private
             Limited. All rights reserved.
           </p>
-          <p className="text-caption text-brand-sand/70 font-serif italic">
+          <p className="text-caption text-brand-charcoal/40 font-serif italic">
             Crafted with care for travelers who demand the finest
           </p>
         </div>

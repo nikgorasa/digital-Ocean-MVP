@@ -113,7 +113,7 @@ export default function Navbar({
   };
 
   const navLinkClass = (href: string) =>
-    `flex items-center space-x-1.3 py-2 text-sm font-medium transition-colors ${
+    `flex items-center space-x-1.3 py-2 text-sm font-medium transition-colors relative ${
       isActive(href)
         ? "text-white font-bold"
         : "text-white/70 hover:text-white"
@@ -157,6 +157,7 @@ export default function Navbar({
               <motion.span whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }} className="flex items-center gap-1">
                 <Home size={18} /><span>Home</span>
               </motion.span>
+              {isActive("/") && <span className="absolute -bottom-1 left-0 right-0 h-0.5 bg-brand-antique-gold rounded-full" />}
             </Link>
             {navItems.map((item) => (
               <Link key={item.href} href={item.href} className={navLinkClass(item.href)} aria-current={isActive(item.href) ? "page" : undefined}>

@@ -118,7 +118,7 @@ export default function HomePageClient({
         <HeroSection />
 
         {/* Value Propositions */}
-        <section className="py-16 bg-brand-ivory">
+        <section className="py-10 bg-brand-ivory">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <StaggerContainer className="grid grid-cols-2 md:grid-cols-4 gap-6">
               {valueProps.map((prop) => (
@@ -220,7 +220,7 @@ export default function HomePageClient({
                 <StaggerItem key={dest.slug}>
                   <Link
                     href={`/destinations/${dest.slug}`}
-                    className="group relative block h-48 rounded-2xl overflow-hidden"
+                    className="group relative block h-48 rounded-2xl overflow-hidden shadow-sm hover:shadow-xl transition-all duration-300"
                   >
                     <Image
                       src={dest.image}
@@ -230,10 +230,15 @@ export default function HomePageClient({
                       className="object-cover group-hover:scale-110 transition-transform duration-500"
                       loading="lazy"
                     />
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent" />
-                    <div className="absolute bottom-4 left-4">
-                      <p className="text-white font-bold text-lg">{dest.name}</p>
-                      <p className="text-white/70 text-xs">{dest.country}</p>
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/10 to-transparent group-hover:from-black/80 transition-colors duration-300" />
+                    <div className="absolute bottom-4 left-4 right-4 flex items-end justify-between">
+                      <div>
+                        <p className="text-white font-bold text-lg">{dest.name}</p>
+                        <p className="text-white/70 text-xs">{dest.country}</p>
+                      </div>
+                      <span className="text-white/0 group-hover:text-white/90 text-xs font-medium transition-all duration-300 translate-x-2 group-hover:translate-x-0">
+                        Explore →
+                      </span>
                     </div>
                   </Link>
                 </StaggerItem>
@@ -257,16 +262,17 @@ export default function HomePageClient({
             <StaggerContainer className="grid grid-cols-1 md:grid-cols-3 gap-6">
               {testimonials.map((testimonial) => (
                 <StaggerItem key={testimonial.id || testimonial.name}>
-                  <div className="bg-white rounded-2xl p-6 border border-brand-sand/20 card-elevated">
+                  <div className="bg-white rounded-2xl p-6 border border-brand-sand/20 card-elevated relative">
+                    <div className="text-5xl text-brand-antique-gold/20 font-serif absolute top-3 right-5 leading-none select-none">&ldquo;</div>
                     <div className="flex items-center gap-1 mb-3">
                       {[...Array(testimonial.rating)].map((_, j) => (
                         <Star key={j} size={16} className="fill-brand-antique-gold text-brand-antique-gold" />
                       ))}
                     </div>
-                    <p className="text-brand-charcoal/80 text-sm mb-4 italic">&ldquo;{testimonial.text}&rdquo;</p>
+                    <p className="text-brand-charcoal/80 text-sm mb-4 italic relative z-10">{testimonial.text}</p>
                     <div>
                       <p className="font-bold text-brand-charcoal text-sm">{testimonial.name}</p>
-                      <p className="text-brand-sand text-xs">{testimonial.role}</p>
+                      <p className="text-brand-charcoal/50 text-xs">{testimonial.role}</p>
                     </div>
                   </div>
                 </StaggerItem>
@@ -326,7 +332,7 @@ export default function HomePageClient({
                   <motion.div whileHover={{ scale: 1.03 }} whileTap={{ scale: 0.97 }}>
                     <Link
                       href="/holidays"
-                      className="btn btn-ghost text-white border border-white/15 hover:bg-white/10"
+                      className="btn text-white border border-white/30 hover:bg-white/10 hover:border-white/50"
                     >
                       Learn More
                     </Link>
@@ -349,36 +355,36 @@ export default function HomePageClient({
                   </div>
 
                   <div className="absolute -bottom-6 left-6 right-6 flex gap-3">
-                    <div className="flex-1 card-glass rounded-2xl p-4 shadow-xl">
+                    <div className="flex-1 bg-white/90 backdrop-blur-md rounded-2xl p-4 shadow-xl border border-white/50">
                       <div className="flex items-center gap-3">
                         <div className="w-10 h-10 bg-brand-emerald/10 rounded-full flex items-center justify-center">
                           <Shield size={20} className="text-brand-emerald" />
                         </div>
                         <div>
                           <p className="font-bold text-brand-charcoal text-lg">{stats.companies}</p>
-                          <p className="text-brand-sand text-xs">Corporate Partners</p>
+                          <p className="text-brand-charcoal/50 text-xs">Corporate Partners</p>
                         </div>
                       </div>
                     </div>
-                    <div className="flex-1 card-glass rounded-2xl p-4 shadow-xl">
+                    <div className="flex-1 bg-white/90 backdrop-blur-md rounded-2xl p-4 shadow-xl border border-white/50">
                       <div className="flex items-center gap-3">
                         <div className="w-10 h-10 bg-brand-antique-gold/10 rounded-full flex items-center justify-center">
                           <Building2 size={20} className="text-brand-antique-gold" />
                         </div>
                         <div>
                           <p className="font-bold text-brand-charcoal text-lg">{stats.bookings}</p>
-                          <p className="text-brand-sand text-xs">Bookings Made</p>
+                          <p className="text-brand-charcoal/50 text-xs">Bookings Made</p>
                         </div>
                       </div>
                     </div>
-                    <div className="flex-1 card-glass rounded-2xl p-4 shadow-xl">
+                    <div className="flex-1 bg-white/90 backdrop-blur-md rounded-2xl p-4 shadow-xl border border-white/50">
                       <div className="flex items-center gap-3">
                         <div className="w-10 h-10 bg-brand-champagne/30 rounded-full flex items-center justify-center">
                           <Star size={20} className="text-brand-champagne" />
                         </div>
                         <div>
                           <p className="font-bold text-brand-charcoal text-lg">{stats.rating}</p>
-                          <p className="text-brand-sand text-xs">Client Rating</p>
+                          <p className="text-brand-charcoal/50 text-xs">Client Rating</p>
                         </div>
                       </div>
                     </div>
@@ -390,7 +396,7 @@ export default function HomePageClient({
         </section>
 
         {/* CTA Section */}
-        <section className="py-16 bg-gradient-to-r from-brand-emerald to-brand-charcoal">
+        <section className="py-12 bg-gradient-to-r from-brand-emerald to-brand-charcoal">
           <FadeIn className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
             <h2 className="heading-section text-white mb-4">
               Ready to Experience The Finest?
@@ -398,26 +404,38 @@ export default function HomePageClient({
             <p className="text-white/80 mb-8 text-body-lg">
               Join thousands of travelers who trust GoRASA for their premium travel needs.
             </p>
-            {!user ? (
-              <motion.button
-                whileHover={{ scale: 1.04, y: -2 }}
-                whileTap={{ scale: 0.96 }}
-                transition={{ type: "spring", stiffness: 400, damping: 17 }}
-                onClick={() => setShowLogin(true)}
-                className="btn btn-primary px-8 py-3.5 text-base shadow-lg cursor-pointer"
-              >
-                Get Started
-              </motion.button>
-            ) : (
-              <motion.div whileHover={{ scale: 1.04, y: -2 }} whileTap={{ scale: 0.96 }}>
-                <Link
-                  href="/flights"
-                  className="btn btn-primary px-8 py-3.5 text-base shadow-lg"
-                >
-                  Search Flights
-                </Link>
-              </motion.div>
-            )}
+            <div className="flex items-center justify-center gap-4">
+              {!user ? (
+                <>
+                  <motion.button
+                    whileHover={{ scale: 1.04, y: -2 }}
+                    whileTap={{ scale: 0.96 }}
+                    transition={{ type: "spring", stiffness: 400, damping: 17 }}
+                    onClick={() => setShowLogin(true)}
+                    className="btn btn-primary px-8 py-3.5 text-base shadow-lg cursor-pointer"
+                  >
+                    Get Started
+                  </motion.button>
+                  <motion.div whileHover={{ scale: 1.04, y: -2 }} whileTap={{ scale: 0.96 }}>
+                    <Link
+                      href="/holidays"
+                      className="btn px-8 py-3.5 text-base text-white border border-white/20 hover:bg-white/10"
+                    >
+                      Browse Packages
+                    </Link>
+                  </motion.div>
+                </>
+              ) : (
+                <motion.div whileHover={{ scale: 1.04, y: -2 }} whileTap={{ scale: 0.96 }}>
+                  <Link
+                    href="/flights"
+                    className="btn btn-primary px-8 py-3.5 text-base shadow-lg"
+                  >
+                    Search Flights
+                  </Link>
+                </motion.div>
+              )}
+            </div>
           </FadeIn>
         </section>
       </main>

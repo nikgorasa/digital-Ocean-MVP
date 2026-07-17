@@ -32,7 +32,7 @@ export function formatCurrency(amount: number, currency: string = "INR"): string
   return new Intl.NumberFormat(locale, {
     style: "currency",
     currency,
-    maximumFractionDigits: currency === "JPY" ? 0 : 2,
+    maximumFractionDigits: 0,
   }).format(amount);
 }
 

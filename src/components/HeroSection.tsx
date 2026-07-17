@@ -145,10 +145,11 @@ export default function HeroSection({
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               transition={{ duration: 0.5, delay: 0.8 }}
-              className="mt-5 text-xs text-slate-400"
+              className="mt-5 text-sm text-slate-400"
             >
               Managing corporate travel?{" "}
-              <Link href="/admin" className="text-brand-saffron hover:text-brand-champagne font-medium transition-colors underline underline-offset-2">
+              <Link href="/admin" className="inline-flex items-center gap-1.5 text-brand-saffron hover:text-brand-champagne font-semibold transition-colors underline underline-offset-2 decoration-brand-saffron/40 hover:decoration-brand-champagne/60">
+                <Building2 size={14} />
                 Access dashboard
               </Link>
             </motion.p>
@@ -157,17 +158,17 @@ export default function HeroSection({
 
         {/* Scroll indicator */}
         <motion.div
-          className="absolute bottom-6 left-1/2 -translate-x-1/2 flex flex-col items-center gap-1.5 text-white/40"
+          className="absolute bottom-6 left-1/2 -translate-x-1/2 flex flex-col items-center gap-1.5 text-white/50"
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ delay: 1.2, duration: 0.5 }}
         >
-          <span className="text-[10px] uppercase tracking-[0.2em] font-medium">Scroll</span>
+          <span className="text-[11px] uppercase tracking-[0.2em] font-semibold">Scroll</span>
           <motion.div
-            animate={{ y: [0, 6, 0] }}
-            transition={{ duration: 1.5, repeat: Infinity, ease: "easeInOut" }}
+            animate={{ y: [0, 8, 0] }}
+            transition={{ duration: 1.8, repeat: Infinity, ease: "easeInOut" }}
           >
-            <ChevronDown size={16} />
+            <ChevronDown size={20} strokeWidth={2.5} />
           </motion.div>
         </motion.div>
       </motion.div>
