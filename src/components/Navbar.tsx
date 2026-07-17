@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useAuth } from "@/hooks/useAuth";
@@ -21,6 +21,8 @@ import {
   Building2,
   Palmtree,
   FlaskConical,
+  Globe,
+  ChevronDown,
 } from "lucide-react";
 
 const NAV_ICONS: Record<string, React.ReactNode> = {
@@ -32,6 +34,66 @@ const NAV_ICONS: Record<string, React.ReactNode> = {
   Palmtree: <Palmtree size={18} />,
   TrendingUp: <TrendingUp size={18} />,
 };
+
+const MORE_ITEMS = [
+  { href: "/destinations/dubai", label: "Destinations" },
+  { href: "/visa", label: "Visa Guide" },
+  { href: "/blog", label: "Blog" },
+  { href: "/faq", label: "FAQ" },
+  { href: "/about", label: "About" },
+];
+
+function MoreDropdown({ isActive, onClose }: { isActive: (h: string) => boolean; onClose: () => void }) {
+  const [open, setOpen] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+  const hasActive = MORE_ITEMS.some(i => isActive(i.href));
+
+  useEffect(() => {
+    const handler = (e: MouseEvent) => {
+      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
+    };
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, []);
+
+  return (
+    <div ref={ref} className="relative">
+      <button
+        onClick={() => setOpen(!open)}
+        className={`flex items-center gap-1 py-2 text-sm font-medium transition-colors cursor-pointer ${
+          hasActive ? "text-white font-bold" : "text-white/70 hover:text-white"
+        }`}
+      >
+        <Globe size={18} />
+        <span>More</span>
+        <ChevronDown size={14} className={`transition-transform ${open ? "rotate-180" : ""}`} />
+      </button>
+      <AnimatePresence>
+        {open && (
+          <motion.div
+            initial={{ opacity: 0, y: -8 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -8 }}
+            className="absolute top-full right-0 mt-2 w-48 bg-white rounded-xl shadow-xl border border-slate-200 overflow-hidden z-50"
+          >
+            {MORE_ITEMS.map((item) => (
+              <Link
+                key={item.href}
+                href={item.href}
+                onClick={() => { setOpen(false); onClose(); }}
+                className={`block px-4 py-2.5 text-sm font-medium transition-colors ${
+                  isActive(item.href) ? "bg-brand-emerald/5 text-brand-emerald" : "text-slate-700 hover:bg-slate-50"
+                }`}
+              >
+                {item.label}
+              </Link>
+            ))}
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </div>
+  );
+}
 
 export default function Navbar({
   onLoginClick,
@@ -91,66 +153,30 @@ export default function Navbar({
 
           {/* Desktop Nav */}
           <div className="hidden md:flex items-center space-x-6">
-            <Link
-              href="/"
-              className={navLinkClass("/")}
-              aria-current={isActive("/") ? "page" : undefined}
-            >
-              <motion.span
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
-                className="flex items-center gap-1"
-              >
-                <Home size={18} />
-                <span>Home</span>
+            <Link href="/" className={navLinkClass("/")} aria-current={isActive("/") ? "page" : undefined}>
+              <motion.span whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }} className="flex items-center gap-1">
+                <Home size={18} /><span>Home</span>
               </motion.span>
             </Link>
             {navItems.map((item) => (
-              <Link
-                key={item.href}
-                href={item.href}
-                className={navLinkClass(item.href)}
-                aria-current={isActive(item.href) ? "page" : undefined}
-              >
-                <motion.span
-                  whileHover={{ scale: 1.05 }}
-                  whileTap={{ scale: 0.95 }}
-                  className="flex items-center gap-1"
-                >
-                  {NAV_ICONS[item.icon] || item.icon}
-                  <span>{item.label}</span>
+              <Link key={item.href} href={item.href} className={navLinkClass(item.href)} aria-current={isActive(item.href) ? "page" : undefined}>
+                <motion.span whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }} className="flex items-center gap-1">
+                  {NAV_ICONS[item.icon] || item.icon}<span>{item.label}</span>
                 </motion.span>
               </Link>
             ))}
+            <MoreDropdown isActive={isActive} onClose={() => setMobileMenuOpen(false)} />
             {user && (
-              <Link
-                href="/profile"
-                className={navLinkClass("/profile")}
-                aria-current={isActive("/profile") ? "page" : undefined}
-              >
-                <motion.span
-                  whileHover={{ scale: 1.05 }}
-                  whileTap={{ scale: 0.95 }}
-                  className="flex items-center gap-1"
-                >
-                  <UserCheck className="w-4 h-4" />
-                  <span>Profile & Loyalty</span>
+              <Link href="/profile" className={navLinkClass("/profile")} aria-current={isActive("/profile") ? "page" : undefined}>
+                <motion.span whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }} className="flex items-center gap-1">
+                  <UserCheck className="w-4 h-4" /><span>Profile</span>
                 </motion.span>
               </Link>
             )}
             {isAdmin && (
-              <Link
-                href="/admin"
-                className={navLinkClass("/admin")}
-                aria-current={isActive("/admin") ? "page" : undefined}
-              >
-                <motion.span
-                  whileHover={{ scale: 1.05 }}
-                  whileTap={{ scale: 0.95 }}
-                  className="flex items-center gap-1"
-                >
-                  <TrendingUp className="w-4 h-4" />
-                  <span>Control Tower</span>
+              <Link href="/admin" className={navLinkClass("/admin")} aria-current={isActive("/admin") ? "page" : undefined}>
+                <motion.span whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }} className="flex items-center gap-1">
+                  <TrendingUp className="w-4 h-4" /><span>Admin</span>
                 </motion.span>
               </Link>
             )}
@@ -237,50 +263,38 @@ export default function Navbar({
             className="md:hidden bg-brand-emerald border-b border-brand-antique-gold/20 overflow-hidden"
           >
             <div className="px-4 py-3 space-y-1">
-              <Link
-                href="/"
-                onClick={() => setMobileMenuOpen(false)}
-                className="flex items-center gap-2 px-3 py-2.5 rounded-lg text-sm font-medium text-white/70 hover:bg-white/10"
-              >
-                <Home size={18} />
-                Home
+              <Link href="/" onClick={() => setMobileMenuOpen(false)} className="flex items-center gap-2 px-3 py-2.5 rounded-lg text-sm font-medium text-white/70 hover:bg-white/10">
+                <Home size={18} /> Home
               </Link>
               {navItems.map((item) => (
-                <Link
-                  key={item.href}
-                  href={item.href}
-                  onClick={() => setMobileMenuOpen(false)}
-                  className="flex items-center gap-2 px-3 py-2.5 rounded-lg text-sm font-medium text-white/70 hover:bg-white/10"
-                >
-                  {NAV_ICONS[item.icon] || item.icon}
-                  {item.label}
+                <Link key={item.href} href={item.href} onClick={() => setMobileMenuOpen(false)} className="flex items-center gap-2 px-3 py-2.5 rounded-lg text-sm font-medium text-white/70 hover:bg-white/10">
+                  {NAV_ICONS[item.icon] || item.icon} {item.label}
                 </Link>
               ))}
-              {user && (
-                <Link
-                  href="/profile"
-                  onClick={() => setMobileMenuOpen(false)}
-                  className="flex items-center gap-2 px-3 py-2.5 rounded-lg text-sm font-medium text-white/70 hover:bg-white/10"
-                >
-                  <UserCheck size={18} />
-                  Profile & Loyalty
+
+              <div className="h-px bg-white/10 my-2" />
+              <p className="px-3 text-[10px] font-bold uppercase tracking-widest text-white/40">Explore</p>
+              {MORE_ITEMS.map((item) => (
+                <Link key={item.href} href={item.href} onClick={() => setMobileMenuOpen(false)} className="flex items-center gap-2 px-3 py-2.5 rounded-lg text-sm font-medium text-white/70 hover:bg-white/10">
+                  <Globe size={16} /> {item.label}
                 </Link>
+              ))}
+
+              {user && (
+                <>
+                  <div className="h-px bg-white/10 my-2" />
+                  <Link href="/profile" onClick={() => setMobileMenuOpen(false)} className="flex items-center gap-2 px-3 py-2.5 rounded-lg text-sm font-medium text-white/70 hover:bg-white/10">
+                    <UserCheck size={18} /> Profile
+                  </Link>
+                </>
               )}
               {isAdmin && (
                 <>
                   <div className="h-px bg-white/10 my-2" />
-                  <p className="px-3 text-[10px] font-bold uppercase tracking-widest text-white/40">
-                    Admin
-                  </p>
+                  <p className="px-3 text-[10px] font-bold uppercase tracking-widest text-white/40">Admin</p>
                   {adminItems.map((item) => (
-                    <Link
-                      key={item.href}
-                      href={item.href}
-                      onClick={() => setMobileMenuOpen(false)}
-                      className="flex items-center gap-2 px-3 py-2.5 rounded-lg text-sm font-medium text-white/50 hover:bg-white/10"
-                    >
-                      {NAV_ICONS[item.icon] || item.icon}
-                      {item.label}
+                    <Link key={item.href} href={item.href} onClick={() => setMobileMenuOpen(false)} className="flex items-center gap-2 px-3 py-2.5 rounded-lg text-sm font-medium text-white/50 hover:bg-white/10">
+                      {NAV_ICONS[item.icon] || item.icon} {item.label}
                     </Link>
                   ))}
                 </>
