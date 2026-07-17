@@ -217,7 +217,15 @@ export default function CitySearchDropdown({
         className="w-full px-3 py-3 bg-white border border-slate-200 rounded-xl text-sm cursor-pointer flex items-center justify-between hover:border-brand-saffron/30 transition-colors focus:ring-2 focus:ring-brand-saffron focus:ring-offset-2 outline-none"
       >
         <span className={value ? "text-slate-900" : "text-slate-400"}>
-          {value || placeholder}
+          {(() => {
+            if (!value) return placeholder;
+            // In flight mode, show IATA code alongside city name
+            if (mode === "flight") {
+              const matchedCity = cities.find(c => c.name === value);
+              if (matchedCity?.iata_code) return `${value} (${matchedCity.iata_code})`;
+            }
+            return value;
+          })()}
         </span>
         <svg
           className={`w-4 h-4 text-slate-400 transition-transform ${open ? "rotate-180" : ""}`}

@@ -674,7 +674,7 @@ export default function FlightsPage() {
                       onEndDateChange={setReturnDate}
                       minDate={new Date()}
                       label="Departure / Return"
-                      showNightsCount={true}
+                      showNightsCount={false}
                     />
                   </div>
                 ) : (

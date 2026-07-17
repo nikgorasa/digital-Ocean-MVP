@@ -20,6 +20,31 @@ import { readConfig } from "./config-service";
 
 let cachedToken: { tokenId: string; date: string } | null = null;
 
+// Flight search result cache (5-minute TTL)
+const searchCache = new Map<string, { data: TBOFlightSearchOutput; ts: number }>();
+const SEARCH_CACHE_TTL_MS = 5 * 60 * 1000; // 5 minutes
+
+function getSearchCacheKey(params: {
+  Origin: string; Destination: string; AdultCount: number; ChildCount: number;
+  InfantCount: number; JourneyType: number; PreferredDepartureTime?: string;
+  PreferredArrivalTime?: string; CabinClass?: string;
+  multiCityLegs?: { origin: string; destination: string; date: string }[];
+}): string {
+  return JSON.stringify({
+    o: params.Origin, d: params.Destination, a: params.AdultCount,
+    c: params.ChildCount, i: params.InfantCount, j: params.JourneyType,
+    dep: params.PreferredDepartureTime, ret: params.PreferredArrivalTime,
+    cab: params.CabinClass, mcl: params.multiCityLegs,
+  });
+}
+
+function cleanSearchCache() {
+  const now = Date.now();
+  for (const [key, val] of searchCache) {
+    if (now - val.ts > SEARCH_CACHE_TTL_MS) searchCache.delete(key);
+  }
+}
+
 let _defaultEndUserIp = "192.168.1.1";
 
 function getEndUserIp(): string {
@@ -150,6 +175,14 @@ export async function searchFlights(params: {
   EndUserIp?: string;
   multiCityLegs?: { origin: string; destination: string; date: string }[];
 }): Promise<TBOFlightSearchOutput> {
+  // Check cache first
+  cleanSearchCache();
+  const cacheKey = getSearchCacheKey(params);
+  const cached = searchCache.get(cacheKey);
+  if (cached && Date.now() - cached.ts < SEARCH_CACHE_TTL_MS) {
+    return cached.data;
+  }
+
   await validateCredentials();
   const cabinClassMap: Record<string, number> = {
     "economy": 1,
@@ -204,6 +237,7 @@ export async function searchFlights(params: {
   if (res.Response?.ResponseStatus !== 1) {
     const errorMsg = res.Response?.Error?.ErrorMessage || "";
     // "No Result Found" is a valid TBO response — not an error, just no flights for this route/date
+    // Do NOT cache empty results (API might be temporarily unavailable)
     if (errorMsg.toLowerCase().includes("no result")) {
       return { flights: [], traceId: res.Response?.TraceId || "" };
     }
@@ -214,14 +248,11 @@ export async function searchFlights(params: {
     ? (results as TBOFlightResult[][]).flat()
     : (results as unknown as TBOFlightResult[]);
 
-  // Filter by requested cabin class (TBO's CabinClass is a hint, not a strict filter)
-  const requestedCabin = cabinClassNum; // 0 = all, 1 = economy, etc.
-  const filteredList = requestedCabin === 0
-    ? flightList
-    : flightList.filter((r) => {
-        const segCabin = r.Segments?.[0]?.[0]?.CabinClass;
-        return segCabin === requestedCabin;
-      });
+  // NOTE: TBO's CabinClass in responses is unreliable — it often returns 2 (Premium Economy)
+  // even when Economy (1) is requested. The API-side filtering is inconsistent.
+  // Do NOT filter by cabin class here — show all results and let the UI tier label reflect
+  // what TBO actually returns. This prevents "No flights found" for valid searches.
+  const filteredList = flightList;
 
   const flights = filteredList.map((r) => {
     const isReturn = params.JourneyType === 2 || params.JourneyType === 5;
@@ -232,7 +263,10 @@ export async function searchFlights(params: {
     else leg = "inbound";
     return toDisplay(r, leg);
   });
-  return { flights: await Promise.all(flights), traceId: res.Response.TraceId };
+  const result: TBOFlightSearchOutput = { flights: await Promise.all(flights), traceId: res.Response.TraceId };
+  // Cache the result
+  searchCache.set(cacheKey, { data: result, ts: Date.now() });
+  return result;
 }
 
 export async function getFareRule(params: {
