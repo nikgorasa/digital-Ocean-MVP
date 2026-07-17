@@ -12,6 +12,7 @@ import { motion } from "motion/react";
 import { formatCurrency, formatDate, formatTravelDates } from "@/lib";
 import { Plane, Package, CreditCard, MapPin, Calendar, Users, FileText, X, Ticket, Receipt, MessageSquare, Search, Clock, AlertTriangle, Loader2, Building2 } from "lucide-react";
 import PriceChangeModal from "@/components/PriceChangeModal";
+import { BreadcrumbJsonLd } from "@/components/Breadcrumb";
 
 interface Booking {
   id: string;
@@ -155,6 +156,10 @@ export default function TripsPage() {
       <LoginModal isOpen={showLogin} onClose={() => setShowLogin(false)} />
 
       <main className="min-h-screen pt-16 bg-slate-50">
+        <BreadcrumbJsonLd items={[
+          { name: "Home", href: "/" },
+          { name: "My Bookings", href: "/trips" },
+        ]} />
         <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
           <motion.div
             initial={{ opacity: 0, y: 20 }}

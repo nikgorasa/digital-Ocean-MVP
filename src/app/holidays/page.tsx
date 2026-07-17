@@ -6,6 +6,7 @@ import Footer from "@/components/Footer";
 import LoginModal from "@/components/LoginModal";
 import { useAuth } from "@/hooks/useAuth";
 import HolidayPlanner from "@/components/HolidayPlanner";
+import { BreadcrumbJsonLd } from "@/components/Breadcrumb";
 
 const DESTINATIONS = [
   { name: "Bali", country: "Indonesia", description: "Tropical paradise with stunning temples, rice terraces, and pristine beaches." },
@@ -44,6 +45,10 @@ export default function PlannerPage() {
   return (
     <>
       <TouristDestinationJsonLd />
+      <BreadcrumbJsonLd items={[
+        { name: "Home", href: "/" },
+        { name: "Holidays", href: "/holidays" },
+      ]} />
       <Navbar onLoginClick={() => setShowLogin(true)} />
       <LoginModal isOpen={showLogin} onClose={() => setShowLogin(false)} />
 
