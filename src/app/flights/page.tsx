@@ -9,7 +9,7 @@ import { useDemoMode } from "@/hooks/useDemoMode";
 import { motion, AnimatePresence } from "motion/react";
 import { formatCurrency } from "@/lib";
 import { parseFareType, parseFareInclusions, getFareTypeColor, formatFareType, type FareType } from "@/lib/fare-utils";
-import { Plane, Search, Calendar, Users, ArrowRight, Star, Clock, Luggage, X, Loader2, ChevronDown, Minus, Plus, User, AlertCircle, RefreshCw, SlidersHorizontal, Utensils, Armchair } from "lucide-react";
+import { Plane, Search, Calendar, Users, ArrowRight, Star, Clock, Luggage, X, Loader2, ChevronDown, ChevronUp, Minus, Plus, User, AlertCircle, RefreshCw, SlidersHorizontal, Utensils, Armchair } from "lucide-react";
 import FlightBookingModal from "@/components/FlightBookingModal";
 import CitySearchDropdown from "@/components/CitySearchDropdown";
 import DateRangePicker from "@/components/DateRangePicker";
@@ -198,14 +198,40 @@ export default function FlightsPage() {
     const filtered = applyFlightFilters(results as FlightResult[], filters);
     return sortFlights(filtered, sortBy) as Flight[];
   }, [results, filters, sortBy]);
-  const outboundFlights = useMemo(
-    () => filteredResults.filter(f => f.leg === "outbound" || f.leg === "oneway"),
-    [filteredResults]
+
+  // Group flights by identity (airline + flight number + departure time + route)
+  // TBO returns multiple fare options per physical flight — group them together
+  const groupedResults = useMemo(() => {
+    const groups = new Map<string, { key: string; representative: Flight; fares: Flight[] }>();
+    for (const flight of filteredResults) {
+      const groupKey = `${flight.airlineCode}-${flight.flightNumber}-${flight.departureTime}-${flight.origin}-${flight.destination}`;
+      const existing = groups.get(groupKey);
+      if (existing) {
+        existing.fares.push(flight);
+        // Keep cheapest fare as representative
+        if (flight.price < existing.representative.price) {
+          existing.representative = flight;
+        }
+      } else {
+        groups.set(groupKey, { key: groupKey, representative: flight, fares: [flight] });
+      }
+    }
+    return Array.from(groups.values());
+  }, [filteredResults]);
+
+  const [expandedGroup, setExpandedGroup] = useState<string | null>(null);
+
+  const outboundGroups = useMemo(
+    () => groupedResults.filter(g => g.representative.leg === "outbound" || g.representative.leg === "oneway"),
+    [groupedResults]
   );
-  const inboundFlights = useMemo(
-    () => filteredResults.filter(f => f.leg === "inbound"),
-    [filteredResults]
+  const inboundGroups = useMemo(
+    () => groupedResults.filter(g => g.representative.leg === "inbound"),
+    [groupedResults]
   );
+
+  const outboundFlights = outboundGroups.map(g => g.representative);
+  const inboundFlights = inboundGroups.map(g => g.representative);
 
   useEffect(() => {
     function handleClickOutside(e: MouseEvent) {
@@ -344,118 +370,217 @@ export default function FlightsPage() {
     }
   };
 
-  const renderFlightCard = (flight: Flight, i: number) => {
+  const renderFlightCard = (flight: Flight, i: number, fareCount?: number, groupKey?: string) => {
     const legKey = flight.leg === "inbound" ? "inbound" : "outbound";
     const isSelected = flightSelections.get(legKey)?.id === flight.id;
+    const isExpanded = groupKey ? expandedGroup === groupKey : false;
+    const hasMultipleFares = fareCount && fareCount > 1;
+    const group = groupKey ? groupedResults.find(g => g.key === groupKey) : null;
+
     return (
     <motion.div
       key={flight.id}
       initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay: i * 0.05 }}
-      className={`bg-white rounded-2xl p-5 border-2 transition-all ${
+      className={`bg-white rounded-2xl border-2 transition-all ${
         isSelected
           ? "border-brand-antique-gold shadow-lg ring-2 ring-brand-antique-gold/20"
           : "border-brand-sand/30 hover:shadow-lg"
       }`}
     >
-      <div className="flex items-center justify-between cursor-pointer" onClick={() => setSelectedFlight(flight)}>
-        <div className="flex items-center gap-4">
-          <div className="w-10 h-10 rounded-xl bg-brand-ivory flex items-center justify-center overflow-hidden">
-            <img
-              src={getAirlineLogo(flight.airlineCode)}
-              alt={flight.airline}
-              className="w-10 h-10 object-contain"
-              onError={(e) => {
-                (e.target as HTMLImageElement).style.display = "none";
-                (e.target as HTMLImageElement).parentElement!.innerHTML = '<div class="w-10 h-10 flex items-center justify-center"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-blue-600"><path d="M17.8 19.2 16 11l3.5-3.5C21 6 21.5 4 21 3c-1-.5-3 0-4.5 1.5L13 8 4.8 6.2c-.5-.1-.9.1-1.1.5l-.3.5c-.2.5-.1 1 .3 1.3L9 12l-2 3H4l-1 1 3 2 2 3 1-1v-3l3-2 3.5 5.3c.3.4.8.5 1.3.3l.5-.2c.4-.3.6-.7.5-1.2z"/></svg></div>';
-              }}
-            />
+      <div className="p-5">
+        <div className="flex items-center justify-between cursor-pointer" onClick={() => setSelectedFlight(flight)}>
+          <div className="flex items-center gap-4">
+            <div className="w-10 h-10 rounded-xl bg-brand-ivory flex items-center justify-center overflow-hidden">
+              <img
+                src={getAirlineLogo(flight.airlineCode)}
+                alt={flight.airline}
+                className="w-10 h-10 object-contain"
+                onError={(e) => {
+                  (e.target as HTMLImageElement).style.display = "none";
+                  (e.target as HTMLImageElement).parentElement!.innerHTML = '<div class="w-10 h-10 flex items-center justify-center"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-blue-600"><path d="M17.8 19.2 16 11l3.5-3.5C21 6 21.5 4 21 3c-1-.5-3 0-4.5 1.5L13 8 4.8 6.2c-.5-.1-.9.1-1.1.5l-.3.5c-.2.5-.1 1 .3 1.3L9 12l-2 3H4l-1 1 3 2 2 3 1-1v-3l3-2 3.5 5.3c.3.4.8.5 1.3.3l.5-.2c.4-.3.6-.7.5-1.2z"/></svg></div>';
+                }}
+              />
+            </div>
+            <div>
+              <p className="font-bold text-brand-charcoal">{flight.airline}</p>
+              <p className="text-xs text-brand-sand">{flight.flightNumber}</p>
+              <div className="flex items-center gap-2 mt-1 flex-wrap">
+                {flight.baggage && (
+                  <span className="text-[10px] text-brand-sand flex items-center gap-0.5">
+                    <Luggage size={10} /> {flight.baggage}
+                  </span>
+                )}
+                {flight.isRefundable ? (
+                  <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-full bg-green-50 text-green-600">Refundable</span>
+                ) : (
+                  <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-full bg-red-50 text-red-500">Non-Refundable</span>
+                )}
+                {flight.fareType && flight.fareType !== "Unknown" && (
+                  <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded-full ${getFareTypeColor(flight.fareType)}`}>
+                    {formatFareType(flight.fareType)}
+                  </span>
+                )}
+                {flight.isLCC && (
+                  <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-full bg-sky-50 text-sky-600">LCC</span>
+                )}
+              </div>
+              <div className="flex items-center gap-1.5 mt-1">
+                {flight.fareInclusions && flight.fareInclusions.length > 0 && (
+                  <>
+                    {flight.fareInclusions.some(inc => inc.toLowerCase().includes("meal")) && (
+                      <span className="text-[10px] text-emerald-600 flex items-center gap-0.5" title="Meal included">
+                        <Utensils size={10} /> Meal
+                      </span>
+                    )}
+                    {flight.fareInclusions.some(inc => inc.toLowerCase().includes("lounge")) && (
+                      <span className="text-[10px] text-purple-600 flex items-center gap-0.5" title="Lounge access">
+                        <Armchair size={10} /> Lounge
+                      </span>
+                    )}
+                    {flight.fareInclusions.some(inc => inc.toLowerCase().includes("reissue fees free")) && (
+                      <span className="text-[10px] text-teal-600 flex items-center gap-0.5" title="Free reissue">
+                        <RefreshCw size={10} /> Free Reissue
+                      </span>
+                    )}
+                  </>
+                )}
+              </div>
+            </div>
           </div>
-          <div>
-            <p className="font-bold text-brand-charcoal">{flight.airline}</p>
-            <p className="text-xs text-brand-sand">{flight.flightNumber}</p>
-            <div className="flex items-center gap-2 mt-1 flex-wrap">
-              {flight.baggage && (
-                <span className="text-[10px] text-brand-sand flex items-center gap-0.5">
-                  <Luggage size={10} /> {flight.baggage}
-                </span>
-              )}
-              {flight.isRefundable ? (
-                <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-full bg-green-50 text-green-600">Refundable</span>
-              ) : (
-                <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-full bg-red-50 text-red-500">Non-Refundable</span>
-              )}
-              {flight.fareType && flight.fareType !== "Unknown" && (
-                <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded-full ${getFareTypeColor(flight.fareType)}`}>
-                  {formatFareType(flight.fareType)}
-                </span>
-              )}
-              {flight.isLCC && (
-                <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-full bg-sky-50 text-sky-600">LCC</span>
-              )}
+
+          <div className="flex items-center gap-10">
+            <div className="text-center min-w-[72px]">
+              <p className="text-lg font-bold text-brand-charcoal">{formatFlightTime(flight.departureTime, flight.origin)}</p>
+              <p className="text-[10px] text-brand-sand font-medium">{formatFlightDate(flight.departureTime)}</p>
+              <p className="text-xs text-brand-sand font-semibold mt-0.5">{flight.origin}</p>
             </div>
-            <div className="flex items-center gap-1.5 mt-1">
-              {flight.fareInclusions && flight.fareInclusions.length > 0 && (
-                <>
-                  {flight.fareInclusions.some(inc => inc.toLowerCase().includes("meal")) && (
-                    <span className="text-[10px] text-emerald-600 flex items-center gap-0.5" title="Meal included">
-                      <Utensils size={10} /> Meal
-                    </span>
-                  )}
-                  {flight.fareInclusions.some(inc => inc.toLowerCase().includes("lounge")) && (
-                    <span className="text-[10px] text-purple-600 flex items-center gap-0.5" title="Lounge access">
-                      <Armchair size={10} /> Lounge
-                    </span>
-                  )}
-                  {flight.fareInclusions.some(inc => inc.toLowerCase().includes("reissue fees free")) && (
-                    <span className="text-[10px] text-teal-600 flex items-center gap-0.5" title="Free reissue">
-                      <RefreshCw size={10} /> Free Reissue
-                    </span>
-                  )}
-                </>
-              )}
+            <div className="flex flex-col items-center">
+              <p className="text-xs font-medium text-brand-sand">{flight.duration}</p>
+              <div className="w-24 h-0.5 bg-brand-sand/50 my-1.5 rounded-full" />
+              <p className="text-xs font-medium text-brand-sand">{flight.stops === 0 ? "Non-stop" : `${flight.stops} stop${flight.stops > 1 ? "s" : ""}`}</p>
             </div>
+            <div className="text-center min-w-[72px]">
+              <p className="text-lg font-bold text-brand-charcoal">{formatFlightTime(flight.arrivalTime, flight.destination)}</p>
+              <p className="text-[10px] text-brand-sand font-medium">{formatFlightDate(flight.arrivalTime)}</p>
+              <p className="text-xs text-brand-sand font-semibold mt-0.5">{flight.destination}</p>
+            </div>
+          </div>
+
+          <div className="text-right">
+            {isReturnTrip && (
+              <button
+                onClick={(e) => { e.stopPropagation(); toggleSelection(flight); }}
+                className={`mb-2 px-3 py-1 text-[10px] font-bold rounded-lg border transition-colors cursor-pointer ${
+                  isSelected
+                    ? "bg-brand-emerald text-white border-brand-emerald"
+                    : "bg-transparent text-brand-sand border-brand-sand/50 hover:border-brand-antique-gold hover:text-brand-antique-gold"
+                }`}
+              >
+                {isSelected ? "✓ Selected" : "Select"}
+              </button>
+            )}
+            <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${getTierColor(flight.tier)}`}>
+              {flight.tier}
+            </span>
+            <p className="text-2xl font-black text-brand-charcoal mt-1">{formatCurrency(flight.price)}</p>
+            <p className="text-[10px] text-brand-sand">total for {totalPassengers} pax</p>
           </div>
         </div>
 
-        <div className="flex items-center gap-10">
-          <div className="text-center min-w-[72px]">
-            <p className="text-lg font-bold text-brand-charcoal">{formatFlightTime(flight.departureTime, flight.origin)}</p>
-            <p className="text-[10px] text-brand-sand font-medium">{formatFlightDate(flight.departureTime)}</p>
-            <p className="text-xs text-brand-sand font-semibold mt-0.5">{flight.origin}</p>
-          </div>
-          <div className="flex flex-col items-center">
-            <p className="text-xs font-medium text-brand-sand">{flight.duration}</p>
-            <div className="w-24 h-0.5 bg-brand-sand/50 my-1.5 rounded-full" />
-            <p className="text-xs font-medium text-brand-sand">{flight.stops === 0 ? "Non-stop" : `${flight.stops} stop${flight.stops > 1 ? "s" : ""}`}</p>
-          </div>
-          <div className="text-center min-w-[72px]">
-            <p className="text-lg font-bold text-brand-charcoal">{formatFlightTime(flight.arrivalTime, flight.destination)}</p>
-            <p className="text-[10px] text-brand-sand font-medium">{formatFlightDate(flight.arrivalTime)}</p>
-            <p className="text-xs text-brand-sand font-semibold mt-0.5">{flight.destination}</p>
-          </div>
-        </div>
-
-        <div className="text-right">
-          {isReturnTrip && (
+        {/* Expandable fare options */}
+        {hasMultipleFares && group && (
+          <div className="mt-3 pt-3 border-t border-brand-sand/20">
             <button
-              onClick={(e) => { e.stopPropagation(); toggleSelection(flight); }}
-              className={`mb-2 px-3 py-1 text-[10px] font-bold rounded-lg border transition-colors cursor-pointer ${
-                isSelected
-                  ? "bg-brand-emerald text-white border-brand-emerald"
-                  : "bg-transparent text-brand-sand border-brand-sand/50 hover:border-brand-antique-gold hover:text-brand-antique-gold"
-              }`}
+              onClick={(e) => {
+                e.stopPropagation();
+                setExpandedGroup(isExpanded ? null : groupKey!);
+              }}
+              className="flex items-center gap-2 text-xs font-semibold text-brand-antique-gold hover:text-brand-emerald transition-colors cursor-pointer"
             >
-              {isSelected ? "✓ Selected" : "Select"}
+              {isExpanded ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
+              {isExpanded ? "Hide fare options" : `View ${fareCount} fare options`}
+              <span className="text-brand-sand font-normal">
+                (from {formatCurrency(Math.min(...group.fares.map(f => f.price)))})
+              </span>
             </button>
-          )}
-          <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${getTierColor(flight.tier)}`}>
-            {flight.tier}
-          </span>
-          <p className="text-2xl font-black text-brand-charcoal mt-1">{formatCurrency(flight.price)}</p>
-          <p className="text-[10px] text-brand-sand">total for {totalPassengers} pax</p>
-        </div>
+
+            <AnimatePresence>
+              {isExpanded && (
+                <motion.div
+                  initial={{ height: 0, opacity: 0 }}
+                  animate={{ height: "auto", opacity: 1 }}
+                  exit={{ height: 0, opacity: 0 }}
+                  transition={{ duration: 0.2 }}
+                  className="overflow-hidden"
+                >
+                  <div className="mt-3 space-y-2">
+                    {group.fares
+                      .sort((a, b) => a.price - b.price)
+                      .map((fare) => (
+                        <div
+                          key={fare.id}
+                          className={`flex items-center justify-between p-3 rounded-xl border transition-colors cursor-pointer ${
+                            flightSelections.get(legKey)?.id === fare.id
+                              ? "border-brand-antique-gold bg-brand-antique-gold/5"
+                              : "border-brand-sand/20 hover:border-brand-antique-gold/50 hover:bg-brand-ivory/50"
+                          }`}
+                          onClick={() => {
+                            setSelectedFlight(fare);
+                          }}
+                        >
+                          <div className="flex items-center gap-3">
+                            <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${getTierColor(fare.tier)}`}>
+                              {fare.tier}
+                            </span>
+                            {fare.fareType && fare.fareType !== "Unknown" && (
+                              <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded-full ${getFareTypeColor(fare.fareType)}`}>
+                                {formatFareType(fare.fareType)}
+                              </span>
+                            )}
+                            <span className="text-[10px] text-brand-sand">
+                              {fare.fareClass && `Class ${fare.fareClass}`}
+                            </span>
+                            {fare.baggage && (
+                              <span className="text-[10px] text-brand-sand flex items-center gap-0.5">
+                                <Luggage size={10} /> {fare.baggage}
+                              </span>
+                            )}
+                            {fare.isRefundable ? (
+                              <span className="text-[10px] font-bold text-green-600">Refundable</span>
+                            ) : (
+                              <span className="text-[10px] font-bold text-red-500">Non-Refundable</span>
+                            )}
+                          </div>
+                          <div className="flex items-center gap-4">
+                            <div className="flex items-center gap-1.5">
+                              {fare.fareInclusions?.some(inc => inc.toLowerCase().includes("meal")) && (
+                                <span className="text-[10px] text-emerald-600" title="Meal included"><Utensils size={10} /></span>
+                              )}
+                              {fare.fareInclusions?.some(inc => inc.toLowerCase().includes("lounge")) && (
+                                <span className="text-[10px] text-purple-600" title="Lounge access"><Armchair size={10} /></span>
+                              )}
+                            </div>
+                            <p className="text-lg font-black text-brand-charcoal">{formatCurrency(fare.price)}</p>
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                toggleSelection(fare);
+                              }}
+                              className="px-3 py-1.5 text-[10px] font-bold rounded-lg bg-brand-antique-gold text-white hover:bg-brand-emerald transition-colors cursor-pointer"
+                            >
+                              Select
+                            </button>
+                          </div>
+                        </div>
+                      ))}
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </div>
+        )}
       </div>
     </motion.div>
   );
@@ -911,10 +1036,10 @@ export default function FlightsPage() {
                       <div className="flex items-center gap-2 mb-3">
                         <div className="w-1 h-5 bg-brand-antique-gold rounded-full" />
                         <h3 className="text-lg font-serif font-bold text-brand-charcoal">Outbound</h3>
-                        <p className="text-xs text-brand-sand ml-auto">{outboundFlights.length} flights</p>
+                        <p className="text-xs text-brand-sand ml-auto">{outboundGroups.length} flights</p>
                       </div>
                       <div className="space-y-3">
-                        {outboundFlights.map((flight, i) => renderFlightCard(flight, i))}
+                        {outboundGroups.map((group, i) => renderFlightCard(group.representative, i, group.fares.length, group.key))}
                       </div>
                     </div>
 
@@ -922,18 +1047,18 @@ export default function FlightsPage() {
                       <div className="flex items-center gap-2 mb-3">
                         <div className="w-1 h-5 bg-brand-gold rounded-full" />
                         <h3 className="text-lg font-serif font-bold text-brand-charcoal">Inbound</h3>
-                        <p className="text-xs text-brand-sand ml-auto">{inboundFlights.length} flights</p>
+                        <p className="text-xs text-brand-sand ml-auto">{inboundGroups.length} flights</p>
                       </div>
                       <div className="space-y-3">
-                        {inboundFlights.map((flight, i) => renderFlightCard(flight, i))}
+                        {inboundGroups.map((group, i) => renderFlightCard(group.representative, i, group.fares.length, group.key))}
                       </div>
                     </div>
                   </>
                 ) : (
                   <>
-                    <p className="text-sm text-brand-sand mb-4">{filteredResults.length} flights found</p>
+                    <p className="text-sm text-brand-sand mb-4">{groupedResults.length} flights found</p>
                     <div className="space-y-3">
-                      {filteredResults.map((flight, i) => renderFlightCard(flight, i))}
+                      {groupedResults.map((group, i) => renderFlightCard(group.representative, i, group.fares.length, group.key))}
                     </div>
                   </>
                 )}

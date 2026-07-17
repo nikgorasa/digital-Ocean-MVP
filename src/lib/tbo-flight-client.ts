@@ -208,7 +208,17 @@ export async function searchFlights(params: {
   const flightList: TBOFlightResult[] = Array.isArray(results[0])
     ? (results as TBOFlightResult[][]).flat()
     : (results as unknown as TBOFlightResult[]);
-  const flights = flightList.map((r) => {
+
+  // Filter by requested cabin class (TBO's CabinClass is a hint, not a strict filter)
+  const requestedCabin = cabinClassNum; // 0 = all, 1 = economy, etc.
+  const filteredList = requestedCabin === 0
+    ? flightList
+    : flightList.filter((r) => {
+        const segCabin = r.Segments?.[0]?.[0]?.CabinClass;
+        return segCabin === requestedCabin;
+      });
+
+  const flights = filteredList.map((r) => {
     const isReturn = params.JourneyType === 2 || params.JourneyType === 5;
     const tripInd = r.Segments?.[0]?.[0]?.TripIndicator ?? 1;
     let leg: "outbound" | "inbound" | "oneway";

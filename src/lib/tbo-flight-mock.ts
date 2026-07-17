@@ -210,7 +210,7 @@ function makeSegments(
         Duration: parseInt(SECTORS[routeKey(origin, dest)]?.duration ?? "60", 10),
         Baggage: cfg.baggage,
         CabinBaggage: cfg.cabinBaggage,
-        CabinClass: cfg.cabinClass === "1" ? 1 : 2,
+        CabinClass: cfg.cabinClass === "Economy" ? 1 : cfg.cabinClass === "Premium Economy" ? 2 : cfg.cabinClass === "Business" ? 3 : cfg.cabinClass === "First" ? 5 : 1,
         NoOfSeatAvailable: 9,
         GroundTime: 0,
         Mile: 0,
