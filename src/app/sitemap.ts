@@ -11,6 +11,8 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     { url: `${BASE_URL}/holidays`, lastModified: new Date(), changeFrequency: 'weekly', priority: 0.8 },
     { url: `${BASE_URL}/support`, lastModified: new Date(), changeFrequency: 'monthly', priority: 0.5 },
     { url: `${BASE_URL}/faq`, lastModified: new Date(), changeFrequency: 'monthly', priority: 0.5 },
+    { url: `${BASE_URL}/about`, lastModified: new Date(), changeFrequency: 'monthly', priority: 0.6 },
+    { url: `${BASE_URL}/blog`, lastModified: new Date(), changeFrequency: 'weekly', priority: 0.7 },
   ];
 
   const DESTINATION_SLUGS = [
@@ -24,10 +26,20 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   }));
 
   try {
-    const packages = await prisma.package.findMany({
-      where: { isActive: true },
-      select: { id: true, updatedAt: true },
-    });
+    const [packages, blogPosts, faqCategories] = await Promise.all([
+      prisma.package.findMany({
+        where: { isActive: true },
+        select: { id: true, updatedAt: true },
+      }),
+      prisma.blogPost.findMany({
+        where: { status: 'PUBLISHED', isActive: true },
+        select: { slug: true, updatedAt: true },
+      }),
+      prisma.faqCategory.findMany({
+        where: { isactive: true },
+        select: { label: true },
+      }),
+    ]);
 
     const packageRoutes: MetadataRoute.Sitemap = packages.flatMap((pkg) => [
       {
@@ -44,7 +56,24 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       },
     ]);
 
-    return [...staticRoutes, ...destinationRoutes, ...packageRoutes];
+    const blogRoutes: MetadataRoute.Sitemap = blogPosts.map((post) => ({
+      url: `${BASE_URL}/blog/${post.slug}`,
+      lastModified: post.updatedAt,
+      changeFrequency: 'monthly' as const,
+      priority: 0.6,
+    }));
+
+    const faqRoutes: MetadataRoute.Sitemap = faqCategories.map((cat) => {
+      const slug = cat.label.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '');
+      return {
+        url: `${BASE_URL}/faq/${slug}`,
+        lastModified: new Date(),
+        changeFrequency: 'monthly' as const,
+        priority: 0.5,
+      };
+    });
+
+    return [...staticRoutes, ...destinationRoutes, ...packageRoutes, ...blogRoutes, ...faqRoutes];
   } catch {
     return staticRoutes;
   }

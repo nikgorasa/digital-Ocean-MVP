@@ -10,7 +10,27 @@ export default function robots(): MetadataRoute.Robots {
       },
       {
         userAgent: 'GPTBot',
-        allow: '/',
+        allow: ['/blog/', '/faq/', '/about', '/destinations/', '/holidays', '/llms.txt', '/llms-full.txt'],
+      },
+      {
+        userAgent: 'Google-Extended',
+        allow: ['/blog/', '/faq/', '/about', '/destinations/', '/holidays', '/llms.txt', '/llms-full.txt'],
+      },
+      {
+        userAgent: 'anthropic-ai',
+        allow: ['/blog/', '/faq/', '/about', '/destinations/', '/holidays', '/llms.txt', '/llms-full.txt'],
+      },
+      {
+        userAgent: 'ClaudeBot',
+        allow: ['/blog/', '/faq/', '/about', '/destinations/', '/holidays', '/llms.txt', '/llms-full.txt'],
+      },
+      {
+        userAgent: 'PerplexityBot',
+        allow: ['/blog/', '/faq/', '/about', '/destinations/', '/holidays', '/llms.txt', '/llms-full.txt'],
+      },
+      {
+        userAgent: 'CCBot',
+        allow: ['/blog/', '/faq/', '/about', '/destinations/', '/holidays', '/llms.txt', '/llms-full.txt'],
       },
     ],
     sitemap: 'https://cckr.vercel.app/sitemap.xml',

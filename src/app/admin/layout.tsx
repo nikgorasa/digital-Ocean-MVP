@@ -6,7 +6,7 @@ import { useRouter } from "next/navigation";
 import Navbar from "@/components/Navbar";
 import LoginModal from "@/components/LoginModal";
 import Link from "next/link";
-import { LayoutDashboard, BarChart3, Package, Tag, Star, Building2, Users, Settings, DollarSign, TrendingUp, Bot, Ticket } from "lucide-react";
+import { LayoutDashboard, BarChart3, Package, Tag, Star, Building2, Users, Settings, DollarSign, TrendingUp, Bot, Ticket, FileText } from "lucide-react";
 
 const ADMIN_ICONS: Record<string, React.ReactNode> = {
   LayoutDashboard: <LayoutDashboard size={18} />,
@@ -21,6 +21,7 @@ const ADMIN_ICONS: Record<string, React.ReactNode> = {
   TrendingUp: <TrendingUp size={18} />,
   Bot: <Bot size={18} />,
   Ticket: <Ticket size={18} />,
+  FileText: <FileText size={18} />,
 };
 
 export default function AdminLayout({
@@ -111,6 +112,13 @@ export default function AdminLayout({
                     {item.label}
                   </Link>
                 ))}
+                <Link
+                  href="/admin/blog"
+                  className="flex items-center gap-2 px-3 py-2.5 rounded-xl text-sm font-medium text-slate-600 hover:text-slate-900 hover:bg-slate-100 transition-colors"
+                >
+                  <FileText size={18} />
+                  Blog
+                </Link>
               </nav>
             </aside>
 

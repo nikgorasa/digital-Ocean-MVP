@@ -1,0 +1,111 @@
+# GoRASA — Premium Travel Booking Platform (Full Documentation)
+
+## Overview
+
+GoRASA is India's premium travel booking platform offering curated holiday packages, luxury hotels, and flights to 100+ destinations worldwide. Founded by travel experts with 15+ years of experience in luxury travel.
+
+## Services
+
+### Hotels
+- Search and book luxury hotels worldwide
+- Integration with TBO (Travel Booking Online) for real-time availability
+- 500+ hotel chains including Marriott, Hilton, IHG, Accor
+- Destinations: Dubai, Bangkok, Singapore, Bali, Maldives, Goa, and more
+- Free cancellation options on select properties
+- URL: https://cckr.vercel.app/hotels
+
+### Flights
+- Domestic and international flight booking
+- GDS integration for real-time fares
+- Airlines: IndiGo, Air India, Emirates, Singapore Airlines, Thai Airways, and more
+- One-way and round-trip options
+- URL: https://cckr.vercel.app/flights
+
+### Holiday Packages
+- Curated all-inclusive packages
+- Categories: Honeymoon, Family, Adventure, Luxury, Budget
+- Inclusions: Flights, hotels, transfers, sightseeing, meals
+- Popular destinations: Dubai, Bali, Maldives, Thailand, Kashmir, Goa, Singapore, Manali
+- URL: https://cckr.vercel.app/holidays
+
+## Destinations
+
+### Domestic (India)
+- **Goa** — Beaches, nightlife, Portuguese heritage. Best: Oct–Mar. IATA: GOI
+- **Kashmir** — Dal Lake, Gulmarg, Mughal gardens. Best: Mar–Oct. IATA: SXR
+- **Manali** — Mountains, Solang Valley, adventure. Best: Oct–Jun. IATA: KUU
+
+### International
+- **Dubai, UAE** — Luxury, shopping, desert safari. Best: Nov–Mar. IATA: DXB. Visa: On Arrival 14 days
+- **Bali, Indonesia** — Temples, rice terraces, beaches. Best: Apr–Oct. IATA: DPS. Visa: On Arrival 30 days ($35)
+- **Maldives** — Overwater villas, diving, crystal waters. Best: Nov–Apr. IATA: MLE. Visa: Free On Arrival 30 days
+- **Thailand** — Temples, street food, islands. Best: Nov–Feb. IATA: BKK. Visa: On Arrival 15 days
+- **Singapore** — Gardens, hawker food, Marina Bay. Best: Year-round. IATA: SIN. Visa: Required (e-Visa)
+
+## Booking Process
+
+1. Search for hotels, flights, or packages
+2. Select preferred option
+3. Sign in or create account
+4. Enter traveler details
+5. Apply promo code (optional)
+6. Complete payment via Razorpay or PhonePe
+7. Receive booking confirmation with PNR
+8. Download invoice from profile
+
+## Payment Methods
+
+- Credit/Debit Cards (Visa, Mastercard, Amex)
+- UPI (Google Pay, PhonePe, Paytm)
+- Net Banking
+- Razorpay and PhonePe gateways
+- Currency: INR (primary), USD, AED, EUR, GBP supported
+
+## Cancellation Policy
+
+- Refundable bookings: Cancel with applicable fee
+- Non-refundable bookings: No refund
+- Cancellation requests processed via support tickets
+- Refunds processed within 7-10 business days
+
+## Loyalty Program
+
+- Earn points on every booking
+- Tiers: Silver, Gold, Platinum
+- Redeem for travel perks and discounts
+- Corporate accounts with special rates
+
+## Contact & Support
+
+- Phone: +91 95285 00383
+- Email: rasatravelindia@gmail.com
+- WhatsApp: Available
+- AI Concierge: https://cckr.vercel.app/support
+- Support Tickets: https://cckr.vercel.app/support
+
+## API Endpoints (Public)
+
+### GET /api/public/packages
+Returns all active packages with structured data including price, duration, rating, inclusions, exclusions.
+
+### GET /api/public/destinations
+Returns all destinations with metadata including country, IATA code, best time to visit, highlights.
+
+### GET /api/public/faq
+Returns all FAQs grouped by category with structured question-answer pairs.
+
+## Trust & Security
+
+- 256-bit SSL encryption
+- PCI-DSS compliant payment processing
+- IATA Accredited Partner
+- TBO Authorized Agent
+- GST Compliant (India)
+- 50,000+ satisfied travelers
+
+## Social Media
+
+- Instagram: https://www.instagram.com/gorasatravel
+- Facebook: https://www.facebook.com/gorasatravel
+- Twitter: https://twitter.com/gorasatravel
+- LinkedIn: https://www.linkedin.com/company/gorasa

@@ -54,6 +54,14 @@ const PAGE_META: Record<string, { title: string; description: string }> = {
     title: "Travel FAQ | GoRASA",
     description: "Frequently asked questions about booking flights, hotels, and holiday packages on GoRASA. Find answers about payments, cancellations, and more.",
   },
+  "/blog": {
+    title: "Travel Blog — Tips, Guides & Destination Stories | GoRASA",
+    description: "Expert travel guides, destination tips, and curated holiday stories from GoRASA. Plan your next trip with insider knowledge.",
+  },
+  "/about": {
+    title: "About GoRASA — Premium Travel Experts | GoRASA",
+    description: "GoRASA is India's premium travel booking platform offering curated holiday packages, luxury hotels, and flights to 100+ destinations worldwide.",
+  },
 };
 
 export async function generateMetadata(): Promise<Metadata> {

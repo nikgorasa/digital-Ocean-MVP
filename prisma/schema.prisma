@@ -638,3 +638,28 @@ model CacheConfig {
 
   @@map("cache_config")
 }
+
+model BlogPost {
+  id              String    @id @default(cuid())
+  title           String
+  slug            String    @unique
+  content         String    @db.Text
+  excerpt         String?
+  author          String    @default("GoRASA Team")
+  authorBio       String?   @map("author_bio")
+  authorImage     String?   @map("author_image")
+  publishedAt     DateTime? @db.Timestamptz
+  tags            String    @default("[]")
+  featuredImage   String?   @map("featured_image")
+  seoTitle        String?   @map("seo_title")
+  seoDescription  String?   @map("seo_description")
+  status          String    @default("DRAFT")
+  isActive        Boolean   @default(true)
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  @@index([status])
+  @@index([slug])
+  @@index([publishedAt(sort: Desc)])
+  @@map("blog_posts")
+}

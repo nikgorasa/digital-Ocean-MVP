@@ -1,0 +1,27 @@
+# GoRASA — Premium Travel Booking Platform
+
+> GoRASA is India's premium travel booking platform offering curated holiday packages, luxury hotels, and flights to 100+ destinations worldwide.
+
+## Key Pages
+
+- `/` — Homepage with featured packages and destinations
+- `/hotels` — Hotel search and booking (TBO integration, 500+ chains)
+- `/flights` — Flight search and booking (GDS integration)
+- `/holidays` — Curated holiday packages by category
+- `/destinations/[slug]` — Destination guides (goa, dubai, bali, maldives, thailand, kashmir, singapore, manali)
+- `/blog` — Travel blog with expert guides and tips
+- `/faq` — Frequently asked questions by category
+- `/about` — Company information and trust signals
+- `/support` — Help center with AI concierge
+
+## Structured Data Endpoints
+
+- `/api/public/packages` — All active packages in JSON
+- `/api/public/destinations` — All destinations with metadata
+- `/api/public/faq` — All FAQs in structured format
+
+## Contact
+
+- Phone: +91 95285 00383
+- Email: rasatravelindia@gmail.com
+- Website: https://cckr.vercel.app
