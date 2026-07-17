@@ -844,6 +844,9 @@ export default function HotelBookingModal({
 
         {(step === "blocking" || step === "book-confirming" || step === "saving") && (
           <div className="p-8 text-center">
+            <div className="w-16 h-16 mx-auto mb-6 rounded-full bg-brand-antique-gold/10 flex items-center justify-center">
+              <Loader2 size={28} className="animate-spin text-brand-antique-gold" />
+            </div>
             <StepProgress
               steps={[
                 { label: "Verifying", status: step === "blocking" ? "active" : "complete" },
@@ -852,12 +855,12 @@ export default function HotelBookingModal({
               ]}
               className="justify-center mb-4"
             />
-            <h3 className="font-bold text-slate-900 mb-1">
+            <h3 className="font-bold text-brand-charcoal mb-1">
               {step === "blocking" && "Verifying Price..."}
               {step === "book-confirming" && "Confirming Booking..."}
               {step === "saving" && "Saving to My Trips..."}
             </h3>
-            <p className="text-sm text-slate-500">
+            <p className="text-sm text-brand-sand">
               {step === "blocking" && "Checking latest room rates & availability"}
               {step === "book-confirming" && "Finalizing your reservation with the hotel"}
               {step === "saving" && "Your booking is confirmed! One moment..."}

@@ -24,6 +24,7 @@ import type { City } from "@/components/CitySearchDropdown";
 import type { TBODisplayHotel, TBODisplayRoom } from "@/lib/tbo-hotel-types";
 import Link from "next/link";
 import Image from "next/image";
+import { SearchResultsSkeleton } from "@/components/ui/Skeleton";
 
 function HotelJsonLd({ hotels, cityName }: { hotels: TBODisplayHotel[]; cityName: string }) {
   if (hotels.length === 0) return null;
@@ -486,9 +487,11 @@ export default function HotelsPage() {
                 <p className="text-brand-sand">Enter your destination and dates to find hotels from our global inventory.</p>
               </div>
             ) : loading ? (
-              <div className="text-center py-16">
-                <Loader2 size={40} className="mx-auto mb-4 animate-spin text-brand-antique-gold" />
-                <p className="text-brand-sand">Searching hotels in {selectedCity.name}...</p>
+              <div className="py-6">
+                <div className="text-center mb-6">
+                  <p className="text-brand-sand text-sm">Searching hotels in {selectedCity.name}...</p>
+                </div>
+                <SearchResultsSkeleton count={3} type="hotel" />
               </div>
             ) : error ? (
               <div className="text-center py-16">

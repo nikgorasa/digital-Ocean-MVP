@@ -1215,9 +1215,11 @@ export default function FlightBookingModal({
         {/* SAVING STEP */}
         {step === "saving" && (
           <div className="p-12 text-center">
-            <Loader2 size={40} className="mx-auto text-blue-600 mb-4 animate-spin" />
-            <h3 className="font-bold text-slate-900 mb-1">Creating Booking...</h3>
-            <p className="text-sm text-slate-500">Saving your flight reservation</p>
+            <div className="w-16 h-16 mx-auto mb-6 rounded-full bg-brand-antique-gold/10 flex items-center justify-center">
+              <Loader2 size={28} className="animate-spin text-brand-antique-gold" />
+            </div>
+            <h3 className="font-bold text-brand-charcoal mb-1">Creating Booking...</h3>
+            <p className="text-sm text-brand-sand">Saving your flight reservation</p>
           </div>
         )}
 

@@ -22,6 +22,7 @@ import Breadcrumb, { BreadcrumbJsonLd } from "@/components/Breadcrumb";
 import { useFlightFilters } from "@/hooks/useFilters";
 import { applyFlightFilters, sortFlights, type FlightSortKey, type FlightResult } from "@/lib/ai/filters/applyFilters";
 import Link from "next/link";
+import { SearchResultsSkeleton } from "@/components/ui/Skeleton";
 
 function FlightJsonLd({ flights }: { flights: Flight[] }) {
   if (flights.length === 0) return null;
@@ -812,10 +813,12 @@ export default function FlightsPage() {
         <section className="py-8">
           <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
             {searching ? (
-              <div className="text-center py-16">
-                <Loader2 size={32} className="mx-auto animate-spin text-brand-antique-gold mb-4" />
-                <h2 className="text-xl font-bold text-brand-charcoal mb-2">Searching flights...</h2>
-                <p className="text-brand-sand">Checking available routes between {originCity.name} and {destinationCity.name}.</p>
+              <div className="py-6">
+                <div className="text-center mb-6">
+                  <h2 className="text-xl font-bold text-brand-charcoal mb-2">Searching flights...</h2>
+                  <p className="text-brand-sand text-sm">Checking available routes between {originCity.name} and {destinationCity.name}.</p>
+                </div>
+                <SearchResultsSkeleton count={4} type="flight" />
               </div>
             ) : !searched ? (
               <div className="text-center py-16">

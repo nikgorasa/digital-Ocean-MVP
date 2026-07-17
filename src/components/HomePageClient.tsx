@@ -30,6 +30,7 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import Image from "next/image";
+import { FadeIn, StaggerContainer, StaggerItem } from "@/components/ui/motion";
 
 interface PackageItem {
   id: string;
@@ -119,24 +120,19 @@ export default function HomePageClient({
         {/* Value Propositions */}
         <section className="py-16 bg-brand-ivory">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
-              {valueProps.map((prop, i) => (
-                <motion.div
-                  key={prop.title}
-                  initial={{ opacity: 1, y: 0 }}
-                  whileInView={{ opacity: 1, y: 0 }}
-                  viewport={{ once: true }}
-                  transition={{ delay: i * 0.1 }}
-                  className="text-center p-4"
-                >
-                  <div className="w-12 h-12 mx-auto mb-3 rounded-xl bg-brand-champagne/20 flex items-center justify-center">
-                    {ICON_MAP[prop.icon]}
+            <StaggerContainer className="grid grid-cols-2 md:grid-cols-4 gap-6">
+              {valueProps.map((prop) => (
+                <StaggerItem key={prop.title}>
+                  <div className="text-center p-4">
+                    <div className="w-12 h-12 mx-auto mb-3 rounded-xl bg-brand-champagne/20 flex items-center justify-center">
+                      {ICON_MAP[prop.icon]}
+                    </div>
+                    <h3 className="font-bold text-brand-charcoal text-sm mb-1">{prop.title}</h3>
+                    <p className="text-brand-sand text-xs">{prop.description}</p>
                   </div>
-                  <h3 className="font-bold text-brand-charcoal text-sm mb-1">{prop.title}</h3>
-                  <p className="text-brand-sand text-xs">{prop.description}</p>
-                </motion.div>
+                </StaggerItem>
               ))}
-            </div>
+            </StaggerContainer>
           </div>
         </section>
 
@@ -171,7 +167,7 @@ export default function HomePageClient({
                       onInterested={setInquiryPackage}
                     />
                     {cat === "GORASA_SELECT" && (
-                      <div className="grid grid-cols-2 md:grid-cols-5 gap-3 mb-12">
+                      <StaggerContainer className="grid grid-cols-2 md:grid-cols-5 gap-3 mb-12" delayChildren={0.1}>
                         {[
                            { icon: <MessageCircle size={22} className="text-brand-emerald" />, label: "WhatsApp Support" },
                            { icon: <Star size={22} className="text-brand-antique-gold" />, label: "RASA Rewards" },
@@ -179,17 +175,18 @@ export default function HomePageClient({
                            { icon: <Palmtree size={22} className="text-brand-antique-gold" />, label: "All inclusive vacation" },
                            { icon: <Award size={22} className="text-brand-champagne" />, label: "19+ years of combined industry experience" },
                           ].map((feature) => (
-                           <div
-                              key={feature.label}
-                              className="bg-white rounded-2xl p-4 border border-brand-sand/20 shadow-sm hover:shadow-md transition-shadow flex flex-col items-center text-center gap-2"
-                            >
-                              {feature.icon}
-                              <span className="text-xs font-semibold text-brand-charcoal leading-tight">
-                                {feature.label}
-                              </span>
-                            </div>
+                           <StaggerItem key={feature.label}>
+                             <div
+                               className="bg-white rounded-2xl p-4 card-elevated flex flex-col items-center text-center gap-2"
+                             >
+                               {feature.icon}
+                               <span className="text-xs font-semibold text-brand-charcoal leading-tight">
+                                 {feature.label}
+                               </span>
+                             </div>
+                           </StaggerItem>
                           ))}
-                      </div>
+                      </StaggerContainer>
                     )}
                   </React.Fragment>
                 );
@@ -201,15 +198,15 @@ export default function HomePageClient({
         {/* Popular Destinations */}
         <section className="py-16 bg-brand-ivory">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div className="text-center mb-10">
-              <h2 className="text-3xl font-serif font-bold text-brand-charcoal mb-4">
+            <FadeIn className="text-center mb-10">
+              <h2 className="heading-section text-brand-charcoal mb-4">
                 Popular Destinations
               </h2>
-              <p className="text-brand-sand max-w-2xl mx-auto">
+              <p className="text-body text-brand-sand max-w-2xl mx-auto">
                 Explore our most-loved travel destinations with curated packages, flights, and hotels.
               </p>
-            </div>
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            </FadeIn>
+            <StaggerContainer className="grid grid-cols-2 md:grid-cols-4 gap-4">
               {[
                 { name: "Dubai", slug: "dubai", image: "https://images.unsplash.com/photo-1512453979798-5ea266f8880c?auto=format&fit=crop&w=400&q=80", country: "UAE" },
                 { name: "Bali", slug: "bali", image: "https://images.unsplash.com/photo-1537996194471-e657df975ab4?auto=format&fit=crop&w=400&q=80", country: "Indonesia" },
@@ -219,14 +216,8 @@ export default function HomePageClient({
                 { name: "Kashmir", slug: "kashmir", image: "https://images.unsplash.com/photo-1597074866923-dc0589150458?auto=format&fit=crop&w=400&q=80", country: "India" },
                 { name: "Singapore", slug: "singapore", image: "https://images.unsplash.com/photo-1525625293386-3f8f99389edd?auto=format&fit=crop&w=400&q=80", country: "Singapore" },
                 { name: "Manali", slug: "manali", image: "https://images.unsplash.com/photo-1626621341517-bbf3d9990a23?auto=format&fit=crop&w=400&q=80", country: "India" },
-              ].map((dest, i) => (
-                <motion.div
-                  key={dest.slug}
-                  initial={{ opacity: 1, y: 0 }}
-                  whileInView={{ opacity: 1, y: 0 }}
-                  viewport={{ once: true }}
-                  transition={{ delay: i * 0.05 }}
-                >
+              ].map((dest) => (
+                <StaggerItem key={dest.slug}>
                   <Link
                     href={`/destinations/${dest.slug}`}
                     className="group relative block h-48 rounded-2xl overflow-hidden"
@@ -245,47 +236,42 @@ export default function HomePageClient({
                       <p className="text-white/70 text-xs">{dest.country}</p>
                     </div>
                   </Link>
-                </motion.div>
+                </StaggerItem>
               ))}
-            </div>
+            </StaggerContainer>
           </div>
         </section>
 
         {/* Testimonials */}
         <section className="py-16 bg-brand-ivory">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div className="text-center mb-12">
-              <h2 className="text-3xl font-serif font-bold text-brand-charcoal mb-4">
+            <FadeIn className="text-center mb-12">
+              <h2 className="heading-section text-brand-charcoal mb-4">
                 What Our Travelers Say
               </h2>
-              <p className="text-brand-sand max-w-2xl mx-auto">
+              <p className="text-body text-brand-sand max-w-2xl mx-auto">
                 Trusted by thousands of travelers for premium experiences across India and the world.
               </p>
-            </div>
+            </FadeIn>
 
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              {testimonials.map((testimonial, i) => (
-                <motion.div
-                  key={testimonial.id || testimonial.name}
-                  initial={{ opacity: 1, y: 0 }}
-                  whileInView={{ opacity: 1, y: 0 }}
-                  viewport={{ once: true }}
-                  transition={{ delay: i * 0.1 }}
-                  className="bg-white rounded-2xl p-6 border border-brand-sand/20"
-                >
-                  <div className="flex items-center gap-1 mb-3">
-                    {[...Array(testimonial.rating)].map((_, j) => (
-                      <Star key={j} size={16} className="fill-brand-antique-gold text-brand-antique-gold" />
-                    ))}
+            <StaggerContainer className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              {testimonials.map((testimonial) => (
+                <StaggerItem key={testimonial.id || testimonial.name}>
+                  <div className="bg-white rounded-2xl p-6 border border-brand-sand/20 card-elevated">
+                    <div className="flex items-center gap-1 mb-3">
+                      {[...Array(testimonial.rating)].map((_, j) => (
+                        <Star key={j} size={16} className="fill-brand-antique-gold text-brand-antique-gold" />
+                      ))}
+                    </div>
+                    <p className="text-brand-charcoal/80 text-sm mb-4 italic">&ldquo;{testimonial.text}&rdquo;</p>
+                    <div>
+                      <p className="font-bold text-brand-charcoal text-sm">{testimonial.name}</p>
+                      <p className="text-brand-sand text-xs">{testimonial.role}</p>
+                    </div>
                   </div>
-                  <p className="text-brand-charcoal/80 text-sm mb-4 italic">&ldquo;{testimonial.text}&rdquo;</p>
-                  <div>
-                    <p className="font-bold text-brand-charcoal text-sm">{testimonial.name}</p>
-                    <p className="text-brand-sand text-xs">{testimonial.role}</p>
-                  </div>
-                </motion.div>
+                </StaggerItem>
               ))}
-            </div>
+            </StaggerContainer>
           </div>
         </section>
 
@@ -298,15 +284,16 @@ export default function HomePageClient({
 
           <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 items-center">
-              <div>
-                <span className="inline-block text-brand-antique-gold font-bold uppercase tracking-widest text-[10px] bg-brand-antique-gold/10 border border-brand-antique-gold/20 px-3 py-1 rounded-full mb-4">
+              <FadeIn direction="left">
+                <span className="inline-flex items-center gap-2 text-brand-antique-gold font-bold uppercase tracking-[0.2em] text-[10px] bg-brand-antique-gold/10 border border-brand-antique-gold/20 px-3 py-1 rounded-full mb-5">
+                  <span className="w-4 h-px bg-brand-antique-gold" />
                   Corporate Travel
                 </span>
-                <h2 className="text-4xl md:text-5xl font-serif font-bold text-white mb-5 leading-tight">
+                <h2 className="heading-hero text-white mb-5">
                   Business Travel,<br />
                   <span className="text-brand-antique-gold italic">Elevated</span>
                 </h2>
-                <p className="text-brand-sand text-lg mb-8 leading-relaxed max-w-lg">
+                <p className="text-brand-sand text-body-lg mb-8 leading-relaxed max-w-lg">
                   Streamline your corporate travel with dedicated account management, negotiated rates, and 24/7 concierge support.
                 </p>
 
@@ -327,100 +314,111 @@ export default function HomePageClient({
                 </div>
 
                 <div className="flex items-center gap-4">
-                  <Link
-                    href="/login"
-                    className="inline-flex items-center gap-2 px-8 py-3.5 bg-brand-antique-gold text-white rounded-xl font-bold hover:bg-brand-emerald transition-colors shadow-lg shadow-brand-antique-gold/20"
-                  >
-                    Get Started
-                    <ArrowRight size={18} />
-                  </Link>
-                  <Link
-                    href="/holidays"
-                    className="inline-flex items-center gap-2 px-6 py-3.5 bg-white/10 text-white rounded-xl font-medium hover:bg-white/20 transition-colors border border-white/10"
-                  >
-                    Learn More
-                  </Link>
+                  <motion.div whileHover={{ scale: 1.03 }} whileTap={{ scale: 0.97 }}>
+                    <Link
+                      href="/login"
+                      className="btn btn-primary px-8 py-3.5 shadow-lg shadow-brand-antique-gold/20"
+                    >
+                      Get Started
+                      <ArrowRight size={18} />
+                    </Link>
+                  </motion.div>
+                  <motion.div whileHover={{ scale: 1.03 }} whileTap={{ scale: 0.97 }}>
+                    <Link
+                      href="/holidays"
+                      className="btn btn-ghost text-white border border-white/15 hover:bg-white/10"
+                    >
+                      Learn More
+                    </Link>
+                  </motion.div>
                 </div>
-              </div>
+              </FadeIn>
 
-              <div className="relative">
-                <div className="rounded-3xl overflow-hidden shadow-2xl">
-                  <Image
-                    src="https://images.unsplash.com/photo-1560179707-f14e90ef3623?auto=format&fit=crop&w=800&q=80"
-                    alt="Corporate Travel - Modern office building"
-                    width={800}
-                    height={400}
-                    className="w-full h-[400px] object-cover"
-                    loading="lazy"
-                  />
-                  <div className="absolute inset-0 bg-gradient-to-t from-brand-emerald/80 via-transparent to-transparent rounded-3xl" />
-                </div>
+              <FadeIn direction="right" delay={0.15}>
+                <div className="relative">
+                  <div className="rounded-3xl overflow-hidden shadow-2xl">
+                    <Image
+                      src="https://images.unsplash.com/photo-1560179707-f14e90ef3623?auto=format&fit=crop&w=800&q=80"
+                      alt="Corporate Travel - Modern office building"
+                      width={800}
+                      height={400}
+                      className="w-full h-[400px] object-cover"
+                      loading="lazy"
+                    />
+                    <div className="absolute inset-0 bg-gradient-to-t from-brand-emerald/80 via-transparent to-transparent rounded-3xl" />
+                  </div>
 
-                <div className="absolute -bottom-6 left-6 right-6 flex gap-3">
-                  <div className="flex-1 bg-white rounded-2xl p-4 shadow-xl">
-                    <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 bg-brand-emerald/10 rounded-full flex items-center justify-center">
-                        <Shield size={20} className="text-brand-emerald" />
-                      </div>
-                      <div>
-                        <p className="font-bold text-brand-charcoal text-lg">{stats.companies}</p>
-                        <p className="text-brand-sand text-xs">Corporate Partners</p>
-                      </div>
-                    </div>
-                  </div>
-                  <div className="flex-1 bg-white rounded-2xl p-4 shadow-xl">
-                    <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 bg-brand-antique-gold/10 rounded-full flex items-center justify-center">
-                        <Building2 size={20} className="text-brand-antique-gold" />
-                      </div>
-                      <div>
-                        <p className="font-bold text-brand-charcoal text-lg">{stats.bookings}</p>
-                        <p className="text-brand-sand text-xs">Bookings Made</p>
+                  <div className="absolute -bottom-6 left-6 right-6 flex gap-3">
+                    <div className="flex-1 card-glass rounded-2xl p-4 shadow-xl">
+                      <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 bg-brand-emerald/10 rounded-full flex items-center justify-center">
+                          <Shield size={20} className="text-brand-emerald" />
+                        </div>
+                        <div>
+                          <p className="font-bold text-brand-charcoal text-lg">{stats.companies}</p>
+                          <p className="text-brand-sand text-xs">Corporate Partners</p>
+                        </div>
                       </div>
                     </div>
-                  </div>
-                  <div className="flex-1 bg-white rounded-2xl p-4 shadow-xl">
-                    <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 bg-brand-champagne/30 rounded-full flex items-center justify-center">
-                        <Star size={20} className="text-brand-champagne" />
+                    <div className="flex-1 card-glass rounded-2xl p-4 shadow-xl">
+                      <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 bg-brand-antique-gold/10 rounded-full flex items-center justify-center">
+                          <Building2 size={20} className="text-brand-antique-gold" />
+                        </div>
+                        <div>
+                          <p className="font-bold text-brand-charcoal text-lg">{stats.bookings}</p>
+                          <p className="text-brand-sand text-xs">Bookings Made</p>
+                        </div>
                       </div>
-                      <div>
-                        <p className="font-bold text-brand-charcoal text-lg">{stats.rating}</p>
-                        <p className="text-brand-sand text-xs">Client Rating</p>
+                    </div>
+                    <div className="flex-1 card-glass rounded-2xl p-4 shadow-xl">
+                      <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 bg-brand-champagne/30 rounded-full flex items-center justify-center">
+                          <Star size={20} className="text-brand-champagne" />
+                        </div>
+                        <div>
+                          <p className="font-bold text-brand-charcoal text-lg">{stats.rating}</p>
+                          <p className="text-brand-sand text-xs">Client Rating</p>
+                        </div>
                       </div>
                     </div>
                   </div>
                 </div>
-              </div>
+              </FadeIn>
             </div>
           </div>
         </section>
 
         {/* CTA Section */}
         <section className="py-16 bg-gradient-to-r from-brand-emerald to-brand-charcoal">
-          <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-            <h2 className="text-3xl md:text-4xl font-serif font-bold text-white mb-4">
+          <FadeIn className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+            <h2 className="heading-section text-white mb-4">
               Ready to Experience The Finest?
             </h2>
-            <p className="text-white/80 mb-8 text-lg">
+            <p className="text-white/80 mb-8 text-body-lg">
               Join thousands of travelers who trust GoRASA for their premium travel needs.
             </p>
             {!user ? (
-              <button
+              <motion.button
+                whileHover={{ scale: 1.04, y: -2 }}
+                whileTap={{ scale: 0.96 }}
+                transition={{ type: "spring", stiffness: 400, damping: 17 }}
                 onClick={() => setShowLogin(true)}
-                className="px-8 py-3 bg-brand-antique-gold text-white rounded-xl font-bold hover:bg-brand-emerald transition-colors shadow-lg cursor-pointer"
+                className="btn btn-primary px-8 py-3.5 text-base shadow-lg cursor-pointer"
               >
                 Get Started
-              </button>
+              </motion.button>
             ) : (
-              <Link
-                href="/flights"
-                className="inline-block px-8 py-3 bg-brand-antique-gold text-white rounded-xl font-bold hover:bg-brand-emerald transition-colors shadow-lg"
-              >
-                Search Flights
-              </Link>
+              <motion.div whileHover={{ scale: 1.04, y: -2 }} whileTap={{ scale: 0.96 }}>
+                <Link
+                  href="/flights"
+                  className="btn btn-primary px-8 py-3.5 text-base shadow-lg"
+                >
+                  Search Flights
+                </Link>
+              </motion.div>
             )}
-          </div>
+          </FadeIn>
         </section>
       </main>
 

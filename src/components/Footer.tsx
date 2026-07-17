@@ -4,6 +4,7 @@ import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { Mail, Phone, MapPin } from "lucide-react";
+import { FadeIn, StaggerContainer, StaggerItem } from "@/components/ui/motion";
 
 interface FooterLink {
   id: string;
@@ -29,9 +30,9 @@ export default function Footer() {
   return (
     <footer className="bg-brand-ivory border-t border-brand-champagne/30">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-10">
+        <StaggerContainer className="grid grid-cols-1 md:grid-cols-4 gap-10">
           {/* Brand */}
-          <div className="md:col-span-1">
+          <StaggerItem className="md:col-span-1">
             <div className="mb-4">
               <Image src="/logo.svg" alt="GoRASA" width={120} height={36} className="h-9 w-auto" />
             </div>
@@ -42,7 +43,7 @@ export default function Footer() {
             <p className="text-brand-antique-gold font-serif italic text-sm">
               &ldquo;{siteConfig.footer_motto || "Experience The Finest"}&rdquo;
             </p>
-          </div>
+          </StaggerItem>
 
           {/* Quick Links */}
           {(() => {
@@ -51,7 +52,7 @@ export default function Footer() {
             );
             if (exploreLinks.length === 0) return null;
             return (
-              <div>
+              <StaggerItem>
                 <h4 className="font-display font-bold text-brand-charcoal mb-4 text-sm uppercase tracking-wider">
                   Explore
                 </h4>
@@ -67,7 +68,7 @@ export default function Footer() {
                     </li>
                   ))}
                 </ul>
-              </div>
+              </StaggerItem>
             );
           })()}
 
@@ -78,7 +79,7 @@ export default function Footer() {
             );
             if (companyLinks.length === 0) return null;
             return (
-              <div>
+              <StaggerItem>
                 <h4 className="font-display font-bold text-brand-charcoal mb-4 text-sm uppercase tracking-wider">
                   Company
                 </h4>
@@ -100,12 +101,12 @@ export default function Footer() {
                     </li>
                   ))}
                 </ul>
-              </div>
+              </StaggerItem>
             );
           })()}
 
           {/* Contact */}
-          <div>
+          <StaggerItem>
                 <h4 className="font-display font-bold text-brand-charcoal mb-4 text-sm uppercase tracking-wider">
                   Contact
                 </h4>
@@ -130,16 +131,16 @@ export default function Footer() {
                 </span>
               </li>
             </ul>
-          </div>
-        </div>
+          </StaggerItem>
+        </StaggerContainer>
 
         {/* Bottom bar */}
         <div className="mt-12 pt-6 border-t border-brand-champagne/30 flex flex-col md:flex-row items-center justify-between gap-4">
-          <p className="text-brand-sand text-xs">
+          <p className="text-caption text-brand-sand">
             &copy; {new Date().getFullYear()} RASA Travel Services India Private
             Limited. All rights reserved.
           </p>
-          <p className="text-brand-sand/70 text-xs font-serif italic">
+          <p className="text-caption text-brand-sand/70 font-serif italic">
             Crafted with care for travelers who demand the finest
           </p>
         </div>

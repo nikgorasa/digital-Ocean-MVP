@@ -5,6 +5,7 @@ import { motion } from "motion/react";
 import Image from "next/image";
 import { formatCurrency } from "@/lib";
 import { ChevronLeft, ChevronRight, Check, Star, Tag } from "lucide-react";
+import { FadeIn, StaggerContainer, StaggerItem } from "@/components/ui/motion";
 
 interface CarouselItem {
   id: string;
@@ -56,13 +57,8 @@ export default function PackageCarousel({
 
   return (
     <div className="space-y-6 pt-12 first:pt-4">
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-end gap-3 px-2">
-        <motion.div
-          initial={{ opacity: 1, x: 0 }}
-          whileInView={{ opacity: 1, x: 0 }}
-          viewport={{ once: true, margin: "-50px" }}
-          transition={{ duration: 0.4 }}
-        >
+      <FadeIn className="flex flex-col sm:flex-row justify-between items-start sm:items-end gap-3 px-2">
+        <div>
           <div className="flex items-center space-x-2">
             <span
               className={`inline-flex items-center text-[10px] uppercase font-bold tracking-widest px-3 py-1 rounded-full ${badgeColor}`}
@@ -75,7 +71,7 @@ export default function PackageCarousel({
             {title}
           </h3>
           <p className="text-slate-500 text-sm font-normal">{subtitle}</p>
-        </motion.div>
+        </div>
 
         <div className="hidden sm:flex items-center space-x-2">
           <motion.button
@@ -95,7 +91,7 @@ export default function PackageCarousel({
             <ChevronRight className="w-5 h-5" />
           </motion.button>
         </div>
-      </div>
+      </FadeIn>
 
       <div className="relative">
         <div
@@ -108,11 +104,11 @@ export default function PackageCarousel({
             return (
               <motion.div
                 key={pkg.id}
-                initial={{ opacity: 1, y: 0 }}
+                initial={{ opacity: 0, y: 24 }}
                 whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true, margin: "-50px" }}
-                transition={{ delay: idx * 0.05 }}
-                whileHover={{ y: -6 }}
+                viewport={{ once: true, margin: "-40px" }}
+                transition={{ delay: idx * 0.06, duration: 0.45, ease: [0.22, 1, 0.36, 1] }}
+                whileHover={{ y: -8, transition: { type: "spring", stiffness: 300, damping: 20 } }}
                 className="w-[310px] sm:w-[380px] shrink-0 bg-white rounded-[2.5rem] border border-slate-150 shadow-sm hover:shadow-xl transition-shadow duration-300 snap-start overflow-hidden flex flex-col group cursor-pointer"
                 onClick={() => onInterested?.(pkg)}
               >
