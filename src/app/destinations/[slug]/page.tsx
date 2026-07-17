@@ -529,7 +529,7 @@ export default async function DestinationPage({
 
       <main className="min-h-screen bg-brand-ivory">
         {/* Hero */}
-        <section className="relative h-[60vh] min-h-[400px] overflow-hidden">
+        <section className="relative h-[60vh] min-h-[400px] overflow-hidden bg-brand-emerald">
           <Image
             src={dest.image}
             alt={dest.title}
@@ -819,7 +819,7 @@ export default async function DestinationPage({
 
         {/* CTA */}
         <section className="max-w-6xl mx-auto px-4 py-12">
-          <div className="bg-brand-deep-teal rounded-2xl p-8 md:p-12 text-center">
+          <div className="bg-brand-emerald rounded-2xl p-8 md:p-12 text-center">
             <h2 className="text-2xl md:text-3xl font-bold text-white mb-4 font-display">
               Ready to explore {cityName}?
             </h2>

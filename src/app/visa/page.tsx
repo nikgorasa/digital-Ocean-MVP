@@ -306,7 +306,7 @@ export default function VisaPage() {
 
         {/* CTA */}
         <section className="max-w-6xl mx-auto px-4 py-12">
-          <div className="bg-brand-deep-teal rounded-2xl p-8 md:p-12 text-center">
+          <div className="bg-brand-emerald rounded-2xl p-8 md:p-12 text-center">
             <h2 className="text-2xl md:text-3xl font-bold text-white mb-4 font-display">
               Need help with your visa?
             </h2>

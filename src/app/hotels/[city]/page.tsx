@@ -321,7 +321,7 @@ export default async function CityHotelsPage({
 
       <main className="min-h-screen bg-brand-ivory">
         {/* Hero */}
-        <section className="relative h-[50vh] min-h-[350px] overflow-hidden">
+        <section className="relative h-[50vh] min-h-[350px] overflow-hidden bg-brand-emerald">
           <div
             className="absolute inset-0 bg-cover bg-center"
             style={{ backgroundImage: `url(${meta.image})` }}
