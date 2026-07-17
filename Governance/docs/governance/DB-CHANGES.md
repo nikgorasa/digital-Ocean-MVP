@@ -12,6 +12,26 @@
 |------|------|------|----------|-------------|--------|
 | 2026-06-17 | 10:00 | SCHEMA | api_logs | Created api_logs table for TBO API logging | 20260617_api_logs.sql |
 
+## 2026-07-17 — Corporate Invoice Schema Extensions
+
+**Type:** Migration (DDL)
+**Status:** Applied to DEV + PROD ✓
+
+**Changes:**
+
+| Table | Column | Type | Default | Description |
+|-------|--------|------|---------|-------------|
+| Company | taxRate | FLOAT | 0 | Corporate tax rate percentage for invoice calculation |
+| Company | paymentTermsDays | INT | 30 | Payment terms in days for invoice dueDate calculation |
+
+**SQL:**
+```sql
+ALTER TABLE "Company" ADD COLUMN "taxRate" FLOAT NOT NULL DEFAULT 0;
+ALTER TABLE "Company" ADD COLUMN "paymentTermsDays" INT NOT NULL DEFAULT 30;
+```
+
+**Commit:** b72599d
+
 ## 2026-07-03 — Corporate Booking Flow Schema Changes
 
 **Type:** Migration (DDL)

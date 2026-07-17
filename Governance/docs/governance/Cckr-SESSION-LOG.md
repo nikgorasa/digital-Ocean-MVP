@@ -1,7 +1,7 @@
 # GoRASA CockroachDB Standalone — SESSION-LOG
 
 > **Purpose:** Living document tracking all sessions, changes, deployments, and learnings.
-> **Last updated:** 2026-07-10 (Session 18 — Full CORP audit + B2B top-up fix + InvoiceModal DB connection)
+> **Last updated:** 2026-07-17 (Session 19 — EPIC sweep: HOTEL, CORP, PAY, FLIGHT, UX)
 
 ---
 
@@ -617,3 +617,128 @@ Each environment connects to a **different CockroachDB cluster**. Zero shared da
 - TypeScript (`npx tsc --noEmit`): 0 errors
 - Build (`npm run build`): compiled successfully
 - Post-task: 9/9 passed
+
+---
+
+## Session 19 — EPIC Sweep: HOTEL, CORP, PAY, FLIGHT, UX
+
+**Date:** 2026-07-17
+**Mode:** Build (full read-write)
+**Commits:** b72599d, 342222a
+
+### Summary
+
+Major EPIC sweep across 5 domains — fixed 30+ issues, created 3 new EPICs, enriched all remaining issues.
+
+### HOTEL-EPIC (#90) — All 14 issues resolved
+
+| Issue | Fix |
+|---|---|
+| #65 HOTEL-01 | GenerateVoucher auto-called after Book |
+| #66 HOTEL-02 | Book uses PreBook netAmount, not search pricing |
+| #67 HOTEL-03 | Cancellation calls TBO cancel API |
+| #68 HOTEL-04 | Deferred by design |
+| #69 HOTEL-05 | City code type handling fixed |
+| #70 HOTEL-06 | isPriceChanged compares PreBook vs search |
+| #71 HOTEL-07 | getBookingDetail verification after book |
+| #72 HOTEL-08 | Removed _lastTraceId shared state |
+| #73 HOTEL-09 | Replaced all any types |
+| #74 HOTEL-10 | Book uses PreBook pricing |
+| #75 HOTEL-11 | Voucher/Cancel/Details buttons in done step |
+| #76 HOTEL-12 | ResponseTime aligned to 29s |
+| #77 HOTEL-13 | Age + nationality inputs |
+| #78 HOTEL-14 | PaymentMode parameterized |
+
+### CORP-EPIC (#80) — All 5 issues resolved
+
+| Issue | Fix |
+|---|---|
+| #79 CORP-08 | Already implemented |
+| #83 CORP-11 | Auto-assign users by email domain |
+| #84 CORP-12 | Company.taxRate + invoice tax calc |
+| #85 CORP-13 | Company.paymentTermsDays + configurable dueDate |
+| #86 CORP-15 | Company name badge in HotelBookingModal |
+
+### PAY-EPIC (#109) — Created + 2 bugs fixed
+
+| Issue | Fix |
+|---|---|
+| PAY-01 | Mock checkout URL missing bookingId — FIXED |
+| PAY-02 | Mock webhook race condition — FIXED |
+| #110 PAY-03 | Missing /payment/failed page — OPEN |
+| #111 PAY-08 | Missing Zaakpay credentials — OPEN |
+| #112 PAY-06 | Cancellation bypasses refund API — OPEN |
+
+### FLIGHT-EPIC — All sub-issues resolved
+
+| Issue | Fix |
+|---|---|
+| #55 FLT-01 | Duration type mismatch (already fixed) |
+| #56 FLT-02 | Return segment fix (already fixed) |
+| #60 FLT-05 | Multi-leg selection state |
+| #61 FLT-06 | Multi-city per-leg origin/destination |
+| #62 FLT-07 | Price change confirmation dialog |
+| #63 FLT-08 | SSR endpoint + real traceId |
+
+### UX-EPIC (#123) — 4 issues resolved, 1 enriched
+
+| Issue | Fix |
+|---|---|
+| #46 | Account creation — verified fixed |
+| #47 | Scroll on profile — verified fixed |
+| #48 | Removed markup disclosure text |
+| #100 | Added hotel name search filter |
+| #101 | Enriched with current state vs remaining work |
+
+### Issues Closed This Session
+
+- #39, #40, #46, #47, #48, #51, #52, #53, #54, #55, #56, #57, #58, #59, #60, #61, #62, #63, #64, #65, #66, #67, #68, #69, #70, #71, #72, #73, #74, #75, #76, #77, #78, #79, #80, #83, #84, #85, #86, #88, #90, #91, #98, #99, #100, #102, #103, #104, #113-#137
+
+### Schema Changes Applied
+
+```sql
+ALTER TABLE "Company" ADD COLUMN "taxRate" FLOAT NOT NULL DEFAULT 0;
+ALTER TABLE "Company" ADD COLUMN "paymentTermsDays" INT NOT NULL DEFAULT 30;
+```
+
+Applied to both DEV + PROD.
+
+### Files Changed (17 files, +851/-298 lines)
+
+- `prisma/schema.prisma` — Company.taxRate, paymentTermsDays
+- `src/app/api/cancellations/route.ts` — TBO cancel API call
+- `src/app/api/checkout/route.ts` — Invoice tax + dueDate
+- `src/app/api/companies/[id]/route.ts` — GET endpoint for company name
+- `src/app/api/tbo-hotels/route.ts` — isPriceChanged, traceId, paymentMode
+- `src/app/api/tbo/route.ts` — SSR action handler
+- `src/app/flights/page.tsx` — Multi-city per-leg UI
+- `src/app/hotels/page.tsx` — Hotel name search, removed markup text
+- `src/app/payment/success/page.tsx` — Mock webhook fix
+- `src/components/FlightBookingModal.tsx` — Price change dialog, SSR fix
+- `src/components/HotelBookingModal.tsx` — Voucher/Cancel/Details, age/nationality, company name
+- `src/components/InvoiceModal.tsx` — Tax + dueDate display
+- `src/lib/auth-helpers.ts` — Company domain auto-assignment
+- `src/lib/payment/zaakpay-client.ts` — Mock checkout URL fix
+- `src/lib/tbo-flight-client.ts` — Multi-city segments
+- `src/lib/tbo-hotel-client.ts` — TraceId, types, paymentMode
+- `src/lib/tbo-hotel-types.ts` — City code types
+
+### Remaining Open Issues (14)
+
+| Epic | Issues |
+|---|---|
+| PAY-EPIC | #110, #111, #112 |
+| LAUNCH-EPIC | #28, #29, #30 |
+| INFRA | #19, #20 |
+| QA | #26, #27 |
+| TARIFF-EPIC | #89 |
+| MOCK-EPIC | #92 |
+| UX | #101 (needs design mockups) |
+| Standalone | #24, #25 |
+
+### Verification
+- Pre-flight: 13/13 passed
+- TypeScript: 0 errors
+- Build: compiled successfully
+- Post-task: 9/9 passed
+- Deployed: https://cckr.vercel.app (200 OK)
