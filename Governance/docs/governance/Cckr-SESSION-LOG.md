@@ -1,7 +1,7 @@
 # GoRASA CockroachDB Standalone — SESSION-LOG
 
 > **Purpose:** Living document tracking all sessions, changes, deployments, and learnings.
-> **Last updated:** 2026-07-17 (Session 24 — Premium UI Elevation + UX Improvements)
+> **Last updated:** 2026-07-17 (Session 25 — FLIGHT-UX-EPIC: Flight search grouping + cabin class fix)
 
 ---
 
@@ -1112,3 +1112,77 @@ CREATE TABLE cache_config (id, data_type, ttl_seconds, is_active, last_refresh_a
 - Zero API configuration changes
 - Zero environment variable changes
 - All changes are frontend-only (CSS, components, error handling)
+
+---
+
+### Session 25 — FLIGHT-UX-EPIC: Flight Search Grouping + Cabin Class Fix (2026-07-17)
+
+**Objective:** Fix two critical flight search UX issues — same airline repeated 5-10 times, and only Premium Economy fares visible.
+
+**Commit:** `d5df778`
+
+#### Root Causes Found
+
+**Issue 1 — Mock cabin class bug:**
+`src/lib/tbo-flight-mock.ts` line 213 compared `cfg.cabinClass === "1"` but the value is `"Economy"`. Always evaluated to `2` (Premium Economy). Every mock flight showed Premium Economy.
+
+**Issue 2 — No flight grouping:**
+TBO returns multiple fare options per physical flight (different fare classes, cabin classes, prices). Code at `tbo-flight-client.ts:207-220` flattened ALL results into individual cards. Same airline appeared 5-10 times.
+
+**Issue 3 — No cabin class filtering:**
+TBO's `FlightCabinClass` is a filter hint, not strict filter. Results not filtered by requested cabin class post-response.
+
+#### Fixes Applied
+
+**FLIGHT-UX-01 — Mock cabin class:**
+```typescript
+// Before: CabinClass: cfg.cabinClass === "1" ? 1 : 2  (always 2)
+// After:  CabinClass: cfg.cabinClass === "Economy" ? 1 : "Premium Economy" ? 2 : ...
+```
+
+**FLIGHT-UX-02 — Flight grouping:**
+- Added `groupedResults` useMemo that groups by `airlineCode + flightNumber + departureTime + origin + destination`
+- Cheapest fare shown as representative
+- "View N fare options" button expands to show all fares sorted by price
+- Each fare shows: cabin class, fare type, baggage, refundability, inclusions
+
+**FLIGHT-UX-03 — Cabin class filtering:**
+```typescript
+const filteredList = requestedCabin === 0
+  ? flightList
+  : flightList.filter(r => r.Segments?.[0]?.[0]?.CabinClass === requestedCabin);
+```
+
+**FLIGHT-UX-04 — Expandable fare options:**
+- Added `expandedGroup` state
+- AnimatePresence for smooth expand/collapse
+- Fare rows show cabin class badge, fare type, booking class, baggage, refundability, meal/lounge icons
+
+#### Files Changed (3 files, +238/-103 lines)
+
+- `src/lib/tbo-flight-mock.ts` — Fixed cabin class mapping (line 213)
+- `src/lib/tbo-flight-client.ts` — Added cabin class post-response filtering
+- `src/app/flights/page.tsx` — Grouping logic, expandable fare UI, ChevronUp import
+
+#### GitHub Issues Closed (5)
+- #216 FLIGHT-UX-EPIC — CLOSED
+- #217 FLIGHT-UX-01: Mock cabin class bug — CLOSED
+- #218 FLIGHT-UX-02: Flight grouping — CLOSED
+- #219 FLIGHT-UX-03: Cabin class filtering — CLOSED
+- #220 FLIGHT-UX-04: Expandable fare UI — CLOSED
+
+#### Verification
+- Pre-flight: 13/13 passed
+- TypeScript: 0 errors
+- Build: compiled successfully
+- Post-task: 9/9 passed
+- Deployed: https://cckr.vercel.app/flights (200 OK)
+
+#### Deployment Details
+- **Deployment ID:** `dpl_8XZdpEPz7FWi8ieP5LA8YK16WbcD`
+- **Aliased:** https://cckr.vercel.app
+
+#### No Schema/API Changes
+- Zero database schema changes
+- Zero API configuration changes
+- All changes are frontend-only (mock fix, filtering, grouping UI)
