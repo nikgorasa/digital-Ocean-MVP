@@ -24,7 +24,6 @@ interface CitySearchDropdownProps {
   mode?: "hotel" | "flight";
 }
 
-// All airports in one flat list — no country tabs needed
 const ALL_AIRPORTS: City[] = [
   // India
   { code: "13484", name: "Mumbai", state: "Maharashtra", source: "fallback", iata_code: "BOM", airport_name: "Chhatrapati Shivaji Intl", country_code: "IN", flag: "🇮🇳" },
@@ -146,10 +145,45 @@ const ALL_AIRPORTS: City[] = [
   { code: "13141", name: "Johannesburg", state: "Gauteng", source: "fallback", iata_code: "JNB", airport_name: "O.R. Tambo Intl", country_code: "ZA", flag: "🇿🇦" },
 ];
 
-// Popular airports — shown when no search text (top destinations from India)
 const POPULAR_IATA = ["BOM", "DEL", "DXB", "BKK", "SIN", "LHR"];
 
-// Recent searches — stored in localStorage
+// Group airports by country for structured display
+const COUNTRY_GROUPS = [
+  { label: "India", code: "IN", flag: "🇮🇳" },
+  { label: "UAE", code: "AE", flag: "🇦🇪" },
+  { label: "Thailand", code: "TH", flag: "🇹🇭" },
+  { label: "Singapore", code: "SG", flag: "🇸🇬" },
+  { label: "Malaysia", code: "MY", flag: "🇲🇾" },
+  { label: "Sri Lanka", code: "LK", flag: "🇱🇰" },
+  { label: "Nepal", code: "NP", flag: "🇳🇵" },
+  { label: "Indonesia", code: "ID", flag: "🇮🇩" },
+  { label: "UK", code: "GB", flag: "🇬🇧" },
+  { label: "USA", code: "US", flag: "🇺🇸" },
+  { label: "Europe", code: "EU", flag: "🇪🇺" },
+  { label: "East Asia", code: "EA", flag: "🌏" },
+  { label: "Middle East", code: "ME", flag: "🕌" },
+  { label: "Australia", code: "AU", flag: "🇦🇺" },
+];
+
+// Map countries to groups
+function getCountryGroup(countryCode: string): string {
+  if (countryCode === "IN") return "IN";
+  if (countryCode === "AE") return "AE";
+  if (countryCode === "TH") return "TH";
+  if (countryCode === "SG") return "SG";
+  if (countryCode === "MY") return "MY";
+  if (countryCode === "LK") return "LK";
+  if (countryCode === "NP") return "NP";
+  if (countryCode === "ID") return "ID";
+  if (["GB"].includes(countryCode)) return "GB";
+  if (["US"].includes(countryCode)) return "US";
+  if (["FR", "DE", "TR"].includes(countryCode)) return "EU";
+  if (["JP", "CN", "KR", "VN", "HK"].includes(countryCode)) return "EA";
+  if (["SA", "QA", "OM", "KW", "EG"].includes(countryCode)) return "ME";
+  if (["AU"].includes(countryCode)) return "AU";
+  return "OTHER";
+}
+
 const RECENT_KEY = "gorasa_recent_airports";
 const MAX_RECENT = 5;
 
@@ -190,8 +224,8 @@ export default function CitySearchDropdown({
   const [search, setSearch] = useState("");
   const [recentSearches, setRecentSearches] = useState<City[]>([]);
   const [hotelCities, setHotelCities] = useState<City[]>([]);
+  const [expandedGroup, setExpandedGroup] = useState<string | null>(null);
 
-  // Hotel mode: fetch cities from TBO API
   useEffect(() => {
     if (mode !== "hotel") return;
     fetch("/api/cities/tbo?countryCode=IN")
@@ -200,12 +234,10 @@ export default function CitySearchDropdown({
       .catch(() => setHotelCities([]));
   }, [mode]);
 
-  // Load recent searches on mount
   useEffect(() => {
     setRecentSearches(getRecentSearches());
   }, []);
 
-  // Close on click outside
   useEffect(() => {
     function handleClickOutside(e: MouseEvent) {
       if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
@@ -226,7 +258,6 @@ export default function CitySearchDropdown({
     }
   }, [onChange]);
 
-  // Filter airports by name, IATA code, airport name, or country
   const query = search.toLowerCase().trim();
   const dataSource = mode === "hotel" ? hotelCities : ALL_AIRPORTS;
   const filteredAirports = query
@@ -247,26 +278,40 @@ export default function CitySearchDropdown({
     ? []
     : recentSearches.filter(c => !POPULAR_IATA.includes(c.iata_code || ""));
 
-  const renderAirportItem = (city: City, section: "recent" | "popular" | "all") => (
+  // Group airports by country (excluding popular airports)
+  const groupedAirports = query
+    ? []
+    : COUNTRY_GROUPS
+        .map(group => ({
+          ...group,
+          airports: dataSource.filter(c => {
+            const groupCode = getCountryGroup(c.country_code || "");
+            const isPopular = POPULAR_IATA.includes(c.iata_code || "");
+            return groupCode === group.code && !isPopular;
+          }),
+        }))
+        .filter(g => g.airports.length > 0);
+
+  const renderAirportItem = (city: City) => (
     <Command.Item
       key={`${city.code}-${city.iata_code}`}
       value={`${city.name} ${city.iata_code || ""} ${city.airport_name || ""} ${city.state || ""}`}
       onSelect={() => handleSelect(city)}
-      className="px-3 py-2.5 text-sm cursor-pointer rounded-lg hover:bg-emerald-50 data-[selected=true]:bg-emerald-50 transition-colors"
+      className="px-3 py-2 text-sm cursor-pointer hover:bg-emerald-50 data-[selected=true]:bg-emerald-50 transition-colors rounded-lg"
     >
       <div className="flex items-center justify-between w-full">
-        <div className="flex items-center gap-2.5 min-w-0">
-          {city.flag && <span className="text-base leading-none">{city.flag}</span>}
+        <div className="flex items-center gap-2 min-w-0">
+          {city.flag && <span className="text-sm leading-none">{city.flag}</span>}
           <div className="flex items-center gap-1.5">
             <span className="font-medium text-slate-800">{city.name}</span>
             {city.iata_code && (
-              <span className="text-[11px] font-mono font-bold text-brand-antique-gold bg-brand-antique-gold/10 px-1.5 py-0.5 rounded">
+              <span className="text-[10px] font-mono font-bold text-brand-antique-gold bg-brand-antique-gold/10 px-1.5 py-0.5 rounded">
                 {city.iata_code}
               </span>
             )}
           </div>
         </div>
-        <span className="text-[11px] text-slate-400 truncate ml-2">
+        <span className="text-[10px] text-slate-400 truncate ml-2 hidden sm:inline">
           {city.airport_name}
         </span>
       </div>
@@ -306,17 +351,17 @@ export default function CitySearchDropdown({
 
       {open && (
         <div className="absolute z-50 mt-1 w-full bg-white border border-slate-200 rounded-xl shadow-xl overflow-hidden">
-          <Command shouldFilter={false} className="max-h-80 overflow-auto">
-            <div className="sticky top-0 bg-white border-b border-slate-100 px-3 py-2.5">
+          <Command shouldFilter={false} className="max-h-[320px] overflow-hidden flex flex-col">
+            <div className="sticky top-0 bg-white border-b border-slate-100 px-3 py-2 z-10">
               <Command.Input
                 autoFocus
                 value={search}
                 onValueChange={setSearch}
-                placeholder={mode === "flight" ? "Search by city, airport, or code (e.g. Dubai, DEL, Heathrow)..." : "Search city..."}
+                placeholder={mode === "flight" ? "Search by city, airport, or code..." : "Search city..."}
                 className="w-full text-sm outline-none placeholder:text-slate-400"
               />
             </div>
-            <Command.List className="py-1">
+            <Command.List className="py-1 overflow-y-auto flex-1 overscroll-contain">
               {filteredAirports.length === 0 && query && (
                 <div className="px-3 py-4 text-center">
                   <p className="text-xs text-slate-400">No airports found for &ldquo;{search}&rdquo;</p>
@@ -324,32 +369,65 @@ export default function CitySearchDropdown({
                 </div>
               )}
 
-              {/* Recent searches — only when no query */}
-              {!query && recent.length > 0 && (
-                <Command.Group heading="Recently Searched" className="px-1">
-                  {recent.map((city) => renderAirportItem(city, "recent"))}
-                </Command.Group>
-              )}
-
-              {/* Popular airports — only when no query */}
-              {!query && popular.length > 0 && (
-                <Command.Group heading="Popular Airports" className="px-1">
-                  {popular.map((city) => renderAirportItem(city, "popular"))}
-                </Command.Group>
-              )}
-
-              {/* Search results or all airports */}
+              {/* Search results */}
               {query && filteredAirports.length > 0 && (
-                <Command.Group heading="Airports" className="px-1">
-                  {filteredAirports.slice(0, 30).map((city) => renderAirportItem(city, "all"))}
+                <Command.Group heading="Results" className="px-1">
+                  {filteredAirports.slice(0, 20).map((city) => renderAirportItem(city))}
                 </Command.Group>
               )}
 
-              {/* All airports when no query and no recent */}
-              {!query && recent.length === 0 && (
-                <Command.Group heading={mode === "hotel" ? "All Cities" : "All Airports"} className="px-1">
-                  {dataSource.map((city) => renderAirportItem(city, "all"))}
-                </Command.Group>
+              {/* No query: Recent, Popular, then grouped */}
+              {!query && (
+                <>
+                  {/* Recent searches */}
+                  {recent.length > 0 && (
+                    <Command.Group heading="Recently Searched" className="px-1">
+                      {recent.map((city) => renderAirportItem(city))}
+                    </Command.Group>
+                  )}
+
+                  {/* Popular airports */}
+                  {popular.length > 0 && (
+                    <Command.Group heading="Popular Airports" className="px-1">
+                      {popular.map((city) => renderAirportItem(city))}
+                    </Command.Group>
+                  )}
+
+                  {/* Country groups */}
+                  {groupedAirports.map((group) => {
+                    const isExpanded = expandedGroup === group.code;
+                    const visibleAirports = isExpanded ? group.airports : group.airports.slice(0, 2);
+                    const hasMore = group.airports.length > 2;
+
+                    return (
+                      <Command.Group
+                        key={group.code}
+                        heading={`${group.flag} ${group.label}`}
+                        className="px-1"
+                      >
+                        {visibleAirports.map((city) => renderAirportItem(city))}
+                        {hasMore && !isExpanded && (
+                          <button
+                            type="button"
+                            onClick={() => setExpandedGroup(group.code)}
+                            className="w-full px-3 py-1.5 text-[11px] text-emerald-600 hover:text-emerald-700 hover:bg-emerald-50 rounded-lg transition-colors text-left"
+                          >
+                            +{group.airports.length - 2} more
+                          </button>
+                        )}
+                        {isExpanded && hasMore && (
+                          <button
+                            type="button"
+                            onClick={() => setExpandedGroup(null)}
+                            className="w-full px-3 py-1.5 text-[11px] text-slate-400 hover:text-slate-600 hover:bg-slate-50 rounded-lg transition-colors text-left"
+                          >
+                            Show less
+                          </button>
+                        )}
+                      </Command.Group>
+                    );
+                  })}
+                </>
               )}
             </Command.List>
           </Command>

@@ -93,6 +93,27 @@ async function ensureToken(): Promise<string> {
   return res.TokenId;
 }
 
+// TBO returns inclusions as "Meal:Included&&Seat:Excluded&&Lounge Pass&&Excluded"
+// Split on &&, clean up labels
+function parseTboInclusions(raw?: string[]): string[] {
+  if (!raw || raw.length === 0) return [];
+  const joined = raw.join(" ");
+  const items = joined.split("&&").map(s => s.trim()).filter(Boolean);
+  return items.map(item => {
+    // "Meal:Included" → "Meal: Included"
+    // "Seat:Excluded" → "Seat: Excluded"
+    // "Lounge Pass" → "Lounge Pass"
+    const colonIdx = item.indexOf(":");
+    if (colonIdx > 0) {
+      const key = item.slice(0, colonIdx).trim();
+      const val = item.slice(colonIdx + 1).trim();
+      if (val) return `${key}: ${val}`;
+      return key;
+    }
+    return item;
+  });
+}
+
 function firstSeg(r: TBOFlightResult): TBOFlightSegment | undefined {
   return r.Segments?.[0]?.[0];
 }
@@ -146,7 +167,7 @@ function toDisplay(
     segments: r.Segments,
     fareBreakdown: r.FareBreakdown,
     airlineRemark: r.AirlineRemark,
-    fareInclusions: r.FareInclusions,
+    fareInclusions: parseTboInclusions(r.FareInclusions),
     fareClassification: r.FareClassification,
     isExclusiveFare: r.IsExclusiveFare,
     isFreeMealAvailable: r.IsFreeMealAvailable,
