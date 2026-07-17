@@ -46,6 +46,7 @@ export default function ProfilePage() {
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
+  const [saveError, setSaveError] = useState<string | null>(null);
   const [editName, setEditName] = useState("");
   const [editEmail, setEditEmail] = useState("");
 
@@ -76,6 +77,7 @@ export default function ProfilePage() {
 
   const saveProfile = async (data: Record<string, unknown>) => {
     setSaving(true);
+    setSaveError(null);
     try {
       const res = await fetch("/api/profile", {
         method: "PATCH",
@@ -86,7 +88,8 @@ export default function ProfilePage() {
       setSaved(true);
       setTimeout(() => setSaved(false), 2000);
     } catch (err) {
-      console.error("Save error:", err);
+      setSaveError("Failed to save changes. Please try again.");
+      setTimeout(() => setSaveError(null), 4000);
     } finally {
       setSaving(false);
     }
@@ -253,7 +256,11 @@ export default function ProfilePage() {
                 <div className="space-y-6">
                   <div className="flex items-center justify-between">
                     <h2 className="text-lg font-bold text-slate-900">Personal Information</h2>
-                    {saved && <span className="text-xs text-green-600 font-medium">Saved!</span>}
+                    <div className="flex items-center gap-2">
+                      {saving && <span className="text-xs text-slate-400">Saving...</span>}
+                      {saved && <span className="text-xs text-green-600 font-medium">Saved!</span>}
+                      {saveError && <span className="text-xs text-red-600 font-medium">{saveError}</span>}
+                    </div>
                   </div>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <div>

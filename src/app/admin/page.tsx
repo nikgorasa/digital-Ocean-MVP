@@ -19,21 +19,47 @@ interface DashboardStats {
 export default function AdminDashboard() {
   const [stats, setStats] = useState<DashboardStats | null>(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
+  const fetchDashboard = () => {
+    setLoading(true);
+    setError(null);
     fetch("/api/dashboard")
-      .then((res) => res.json())
+      .then((res) => {
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        return res.json();
+      })
       .then((data) => {
         setStats(data);
         setLoading(false);
       })
-      .catch(() => setLoading(false));
+      .catch(() => {
+        setError("Failed to load dashboard data.");
+        setLoading(false);
+      });
+  };
+
+  useEffect(() => {
+    fetchDashboard();
   }, []);
 
   if (loading) {
     return (
       <div className="flex items-center justify-center py-12">
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-brand-saffron" />
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="text-center py-12">
+        <BarChart3 size={48} className="mx-auto text-red-300 mb-4" />
+        <h2 className="text-xl font-bold text-slate-900 mb-2">Unable to load dashboard</h2>
+        <p className="text-slate-500 mb-4">{error}</p>
+        <button onClick={fetchDashboard} className="btn btn-primary text-sm">
+          Try Again
+        </button>
       </div>
     );
   }

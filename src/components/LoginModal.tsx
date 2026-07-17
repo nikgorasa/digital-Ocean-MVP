@@ -3,7 +3,7 @@
 import React, { useState } from "react";
 import { motion, AnimatePresence } from "motion/react";
 import { useAuth } from "@/hooks/useAuth";
-import { X, Mail, Lock, User } from "lucide-react";
+import { X, Mail, Lock, User, Info } from "lucide-react";
 import FormInput from "./ui/FormInput";
 
 interface LoginModalProps {
@@ -18,6 +18,7 @@ export default function LoginModal({ isOpen, onClose }: LoginModalProps) {
   const [name, setName] = useState("");
   const [isRegistering, setIsRegistering] = useState(false);
   const [error, setError] = useState("");
+  const [info, setInfo] = useState("");
   const [loading, setLoading] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -100,8 +101,14 @@ export default function LoginModal({ isOpen, onClose }: LoginModalProps) {
           </div>
 
           {error && (
-            <div className={`mb-4 p-3 rounded-xl text-sm ${error.includes("successful") ? "bg-green-50 border border-green-200 text-green-600" : "bg-red-50 border border-red-200 text-red-600"}`} role="alert">
+            <div className={`mb-4 p-3 rounded-xl text-sm flex items-start gap-2 ${error.includes("successful") ? "bg-green-50 border border-green-200 text-green-600" : "bg-red-50 border border-red-200 text-red-600"}`} role="alert">
               {error}
+            </div>
+          )}
+          {info && (
+            <div className="mb-4 p-3 rounded-xl text-sm flex items-start gap-2 bg-blue-50 border border-blue-200 text-blue-700" role="status">
+              <Info size={16} className="shrink-0 mt-0.5" />
+              <span>{info}</span>
             </div>
           )}
 
@@ -176,7 +183,7 @@ export default function LoginModal({ isOpen, onClose }: LoginModalProps) {
             {!isRegistering && (
               <button
                 type="button"
-                onClick={() => setError("Password reset is available via the API. Contact support for assistance.")}
+                onClick={() => { setInfo("Password reset is available via the API. Contact support for assistance."); setError(""); }}
                 className="text-xs text-slate-400 hover:text-slate-600 cursor-pointer"
               >
                 Forgot password?

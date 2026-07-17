@@ -63,6 +63,8 @@ export default function TripsPage() {
     itemName: string;
   } | null>(null);
   const [resumingBooking, setResumingBooking] = useState<string | null>(null);
+  const [fetchError, setFetchError] = useState<string | null>(null);
+  const [resumeError, setResumeError] = useState<string | null>(null);
 
   const getTimeRemaining = (expiresAt?: string) => {
     if (!expiresAt) return null;
@@ -110,15 +112,22 @@ export default function TripsPage() {
   useEffect(() => {
     if (user) {
       setLoading(true);
+      setFetchError(null);
       fetch("/api/bookings")
-        .then((res) => res.json())
+        .then((res) => {
+          if (!res.ok) throw new Error(`HTTP ${res.status}`);
+          return res.json();
+        })
         .then((data) => {
           if (Array.isArray(data)) {
             setBookings(data);
           }
           setLoading(false);
         })
-        .catch(() => setLoading(false));
+        .catch((err) => {
+          setFetchError("Failed to load your trips. Please try again.");
+          setLoading(false);
+        });
     }
   }, [user]);
 
@@ -193,6 +202,18 @@ export default function TripsPage() {
             ) : loading ? (
               <div className="flex items-center justify-center py-12">
                 <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-brand-saffron" />
+              </div>
+            ) : fetchError ? (
+              <div className="bg-white rounded-2xl p-12 text-center border border-red-200">
+                <AlertTriangle size={48} className="mx-auto text-red-300 mb-4" />
+                <h2 className="text-xl font-bold text-slate-900 mb-2">Unable to load trips</h2>
+                <p className="text-slate-500 mb-6">{fetchError}</p>
+                <button
+                  onClick={() => window.location.reload()}
+                  className="btn btn-primary text-sm"
+                >
+                  Try Again
+                </button>
               </div>
             ) : bookings.length === 0 ? (
               <div className="bg-white rounded-2xl p-12 text-center border border-slate-200">
@@ -293,6 +314,27 @@ export default function TripsPage() {
                     />
                   </div>
                 </div>
+
+                {/* Resume Error Banner */}
+                {resumeError && (
+                  <motion.div
+                    initial={{ opacity: 0, y: -8 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    className="bg-red-50 border border-red-200 rounded-xl p-4 flex items-center justify-between"
+                  >
+                    <div className="flex items-center gap-3">
+                      <AlertTriangle size={18} className="text-red-500 shrink-0" />
+                      <p className="text-sm text-red-700">{resumeError}</p>
+                    </div>
+                    <button
+                      onClick={() => setResumeError(null)}
+                      className="text-red-400 hover:text-red-600 cursor-pointer p-1"
+                      aria-label="Dismiss error"
+                    >
+                      <X size={16} />
+                    </button>
+                  </motion.div>
+                )}
 
                 {/* Bookings List */}
                 <div className="space-y-3">
@@ -409,7 +451,7 @@ export default function TripsPage() {
                                   } else if (data.success) {
                                     window.location.href = `/payment/success?bookingId=${booking.id}&mock=true&amount=${data.amount || booking.price}`;
                                   } else if (data.error) {
-                                    alert(data.error);
+                                    setResumeError(data.error);
                                   }
                                 } catch (err) {
                                   console.error("Resume payment failed:", err);

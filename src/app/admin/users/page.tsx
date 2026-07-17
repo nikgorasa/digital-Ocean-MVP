@@ -265,7 +265,10 @@ export default function UsersPage() {
                         </span>
                       </td>
                       <td className="px-4 py-3 text-center">
-                        <span className={`inline-block w-2 h-2 rounded-full ${user.isActive ? "bg-green-500" : "bg-slate-300"}`} />
+                        <span className="inline-flex items-center gap-1.5" aria-label={user.isActive ? "Active" : "Inactive"}>
+                          <span className={`w-2 h-2 rounded-full ${user.isActive ? "bg-green-500" : "bg-slate-300"}`} />
+                          <span className="text-[10px] font-medium text-slate-500">{user.isActive ? "Active" : "Inactive"}</span>
+                        </span>
                       </td>
                       <td className="px-4 py-3 text-right font-mono text-slate-700">{formatCurrency(user.walletBalance)}</td>
                       <td className="px-4 py-3 text-right font-mono text-slate-700">{user.loyaltyPoints.toLocaleString()}</td>

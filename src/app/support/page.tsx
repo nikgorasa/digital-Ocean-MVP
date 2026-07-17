@@ -119,13 +119,24 @@ export default function SupportPage() {
   }, [messages]);
 
   useEffect(() => {
+    const fallbackCategories = [
+      { id: "flights", label: "Flights", keywords: "flight" },
+      { id: "hotels", label: "Hotels", keywords: "hotel" },
+      { id: "packages", label: "Packages", keywords: "package" },
+      { id: "refunds", label: "Refunds", keywords: "refund cancel" },
+      { id: "payments", label: "Payments", keywords: "payment" },
+    ];
+
     Promise.all([
       fetch("/api/faq/categories").then(r => r.json()),
       fetch("/api/site-config").then(r => r.json()),
     ]).then(([cats, config]) => {
-      if (Array.isArray(cats)) setFaqCategories(cats);
+      if (Array.isArray(cats) && cats.length > 0) setFaqCategories(cats);
+      else setFaqCategories(fallbackCategories);
       if (config && !config.error) setSiteConfig(config);
-    }).catch(() => {});
+    }).catch(() => {
+      setFaqCategories(fallbackCategories);
+    });
   }, []);
 
   useEffect(() => {

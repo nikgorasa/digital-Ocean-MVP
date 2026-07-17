@@ -497,7 +497,13 @@ export default function HotelsPage() {
               <div className="text-center py-16">
                 <Building2 size={48} className="mx-auto text-red-300 mb-4" />
                 <h2 className="text-xl font-bold text-brand-charcoal mb-2">Search Error</h2>
-                <p className="text-red-500">{error}</p>
+                <p className="text-red-500 mb-4">{error}</p>
+                <button
+                  onClick={handleSearch}
+                  className="btn btn-primary text-sm"
+                >
+                  Try Again
+                </button>
               </div>
             ) : results.length === 0 ? (
               <div className="text-center py-16">
@@ -681,7 +687,7 @@ export default function HotelsPage() {
                     <Building2 size={64} className="text-brand-sand" />
                   </div>
                 )}
-                <button onClick={() => { setSelectedHotel(null); setSelectedRoom(null); }} className="absolute top-4 right-4 p-2 bg-white/90 rounded-full">
+                <button onClick={() => { setSelectedHotel(null); setSelectedRoom(null); }} aria-label="Close hotel details" className="absolute top-4 right-4 p-2 min-w-[44px] min-h-[44px] flex items-center justify-center bg-white/90 rounded-full hover:bg-white transition-colors cursor-pointer">
                   <X size={18} />
                 </button>
                 <div className="absolute bottom-4 left-4 flex gap-2">
