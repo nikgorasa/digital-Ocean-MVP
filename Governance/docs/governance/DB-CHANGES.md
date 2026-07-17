@@ -60,3 +60,54 @@ ALTER TABLE "Company" ADD COLUMN "paymentTermsDays" INT NOT NULL DEFAULT 30;
 - All 7% flat PERCENT markup, category ALL, priority 100
 
 **Applied via:** Direct SQL on both DEV + PROD CockroachDB clusters
+
+---
+
+## 2026-07-17 — TBO Static Data Cache Tables
+
+**Type:** Migration (DDL)
+**Status:** Applied to DEV + PROD ✓
+
+**Changes:**
+
+| Table | Description |
+|-------|-------------|
+| static_cache | Generic key-value cache for TBO static data (CountryList, CityList, HotelCodeList, HotelDetails) |
+| cache_config | Admin-configurable TTL settings per data type |
+
+**SQL:**
+```sql
+CREATE TABLE IF NOT EXISTS static_cache (
+  id TEXT PRIMARY KEY DEFAULT gen_random_uuid(),
+  cache_key TEXT NOT NULL UNIQUE,
+  data_type TEXT NOT NULL,
+  data JSONB NOT NULL,
+  metadata JSONB,
+  expires_at TIMESTAMPTZ NOT NULL,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+CREATE INDEX IF NOT EXISTS idx_static_cache_data_type ON static_cache(data_type);
+CREATE INDEX IF NOT EXISTS idx_static_cache_expires_at ON static_cache(expires_at);
+CREATE INDEX IF NOT EXISTS idx_static_cache_type_expires ON static_cache(data_type, expires_at);
+
+CREATE TABLE IF NOT EXISTS cache_config (
+  id TEXT PRIMARY KEY DEFAULT gen_random_uuid(),
+  data_type TEXT NOT NULL UNIQUE,
+  ttl_seconds INT NOT NULL,
+  is_active BOOLEAN NOT NULL DEFAULT true,
+  last_refresh_at TIMESTAMPTZ,
+  refresh_status TEXT,
+  refresh_error TEXT,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+INSERT INTO cache_config (id, data_type, ttl_seconds) VALUES 
+  (gen_random_uuid(), 'CountryList', 86400),
+  (gen_random_uuid(), 'CityList', 86400),
+  (gen_random_uuid(), 'HotelCodeList', 86400),
+  (gen_random_uuid(), 'HotelDetails', 86400)
+ON CONFLICT (data_type) DO NOTHING;
+```
+
+**Commit:** b36530c

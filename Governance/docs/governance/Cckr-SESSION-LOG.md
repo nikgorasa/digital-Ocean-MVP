@@ -1,7 +1,7 @@
 # GoRASA CockroachDB Standalone — SESSION-LOG
 
 > **Purpose:** Living document tracking all sessions, changes, deployments, and learnings.
-> **Last updated:** 2026-07-17 (Session 19 — EPIC sweep: HOTEL, CORP, PAY, FLIGHT, UX)
+> **Last updated:** 2026-07-17 (Session 20 — INTL, TBO-API, DB caching)
 
 ---
 
@@ -742,3 +742,95 @@ Applied to both DEV + PROD.
 - Build: compiled successfully
 - Post-task: 9/9 passed
 - Deployed: https://cckr.vercel.app (200 OK)
+
+---
+
+### Session 2026-07-17 (Session 20) — INTL-EPIC, TBO-API-EPIC, DB Caching
+
+**Objective:** Comprehensive international travel support, TBO API data utilization, and DB-based static data caching.
+
+**EPICs Completed:**
+
+#### INTL-EPIC (#113) — 30 issues
+- CitySearchDropdown: country selector with 14 countries
+- International airports in fallback (13 countries)
+- FlightBookingModal: removed hardcoded IN/India, multi-passenger form, visa warnings, PAN/GST hide
+- HotelBookingModal: PAN/GST hide for international
+- FormPhone: country code selector (25 countries), 7-15 digit validation
+- FormPassport: 6-month validity check
+- Visa requirements: static data table (50+ countries)
+- formatCurrency: parameterized (INR/USD/AED/EUR/GBP/SGD/THB)
+- Live exchange rates: open.er-api.com with 1h cache
+- Email templates: multi-currency support
+- City tax: detected and displayed for international hotels
+- Airline filter: +13 international carriers
+- Flight timezone display
+
+#### TBO-API-EPIC (#149) — 5 issues
+- PreferredCurrency dynamic based on country (40+ mappings)
+- LastCancellationDeadline displayed in booking
+- CountryName forwarded from TBO CityList
+- Non-India fallback cities (13 countries)
+- Flight IsTimeChanged warning after booking
+
+#### TBO-DRIVEN-EPIC (#138)
+- Fixed international detection: Airport.CountryCode comparison (was TripIndicator===1)
+- Fixed hotel international: CountryCode from TBO (was hotelCode>=10000000)
+- ValidationInfo from PreBook drives document requirements
+
+#### PAY-EPIC (#109) — Mock/simulation audit
+- Fixed mock checkout URL missing bookingId
+- Fixed mock webhook race condition
+- Created PAY-EPIC with production readiness checklist
+
+#### DB-Based Caching System
+- StaticCache + CacheConfig Prisma models
+- L1 memory + L2 DB architecture (5-min memory, 24h DB)
+- Admin API: /api/admin/cache (stats, refresh, flush, TTL management)
+- Applied SQL migration to DEV + PROD
+
+**Critical Bug Fixed:**
+- PassportNo/PassportExpiry NOT sent to TBO Book API for hotels — international bookings would fail silently
+
+**Schema Changes:**
+```sql
+CREATE TABLE static_cache (id, cache_key, data_type, data, metadata, expires_at, created_at, updated_at);
+CREATE TABLE cache_config (id, data_type, ttl_seconds, is_active, last_refresh_at, refresh_status, refresh_error, created_at, updated_at);
+```
+
+**Files Changed (18 files, +1200 lines)**
+- prisma/schema.prisma — StaticCache, CacheConfig models
+- src/lib/static-cache.ts — L1+L2 cache service
+- src/lib/cache-refresh.ts — TBO refresh functions
+- src/app/api/admin/cache/route.ts — Admin cache API
+- src/lib/tbo-hotel-client.ts — Passport mapping, DB cache, dynamic currency
+- src/lib/tbo-flight-client.ts — CountryCode detection, IsTimeChanged
+- src/lib/tbo-hotel-types.ts — CheckInTime, CheckOutTime, LastCancellationDeadline
+- src/lib/tbo-flight-types.ts — originCountry, destCountry
+- src/lib/utils.ts — COUNTRY_CURRENCY_MAP, getCurrencyForCountry
+- src/lib/index.ts — Barrel exports
+- src/lib/visa-requirements.ts — Multi-nationality visa data
+- src/app/hotels/page.tsx — Dynamic currency
+- src/app/api/tbo-hotels/route.ts — Dynamic currency
+- src/app/api/cities/tbo/route.ts — DB cache
+- src/components/FlightBookingModal.tsx — Visa warnings, IsTimeChanged
+- src/components/HotelBookingModal.tsx — LastCancellationDeadline, ValidationInfo
+- src/components/CitySearchDropdown.tsx — International fallback cities
+- src/components/ui/FormPhone.tsx — International format
+
+**Verification:**
+- TypeScript: 0 errors
+- Build: compiled successfully
+- Post-task: 9/9 passed
+- Deployed: https://cckr.vercel.app (200 OK)
+
+**GitHub Issues Closed: 35+**
+- INTL-EPIC: #113, #114-#148 (30 issues)
+- TBO-API-EPIC: #149, #150-#154 (6 issues)
+- TBO-DRIVEN-EPIC: #138
+- PAY-EPIC: #109-#112 (4 issues)
+- HOTEL-EPIC: #90, #65-#78 (14 issues)
+- CORP-EPIC: #80, #79, #83-#86 (6 issues)
+- FLIGHT-EPIC: #57, #55-#63 (9 issues)
+- ZAK-EPIC: #87
+- UX: #96, #97
