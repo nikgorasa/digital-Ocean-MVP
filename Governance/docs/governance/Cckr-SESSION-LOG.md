@@ -1,7 +1,7 @@
 # GoRASA CockroachDB Standalone — SESSION-LOG
 
 > **Purpose:** Living document tracking all sessions, changes, deployments, and learnings.
-> **Last updated:** 2026-07-17 (Session 20 — INTL, TBO-API, DB caching)
+> **Last updated:** 2026-07-17 (Session 21 — INVOICE-EPIC, governance update)
 
 ---
 
@@ -834,3 +834,46 @@ CREATE TABLE cache_config (id, data_type, ttl_seconds, is_active, last_refresh_a
 - FLIGHT-EPIC: #57, #55-#63 (9 issues)
 - ZAK-EPIC: #87
 - UX: #96, #97
+
+---
+
+### Session 21 — INVOICE-EPIC (2026-07-17)
+
+**Summary:** Implemented critical invoice system features — PDF generation, CSV export, email templates, auto-overdue cron.
+
+**Changes:**
+- Created `src/lib/invoice-pdf.ts` — PDF generation with jsPDF
+- Created `src/app/api/invoices/[id]/pdf/route.ts` — PDF download endpoint
+- Created `src/app/api/cron/overdue-invoices/route.ts` — Auto-overdue cron
+- Updated `src/lib/email.ts` — Added invoiceIssued + invoiceOverdue templates
+- Updated `src/app/api/checkout/route.ts` — Sends invoice email on corporate checkout
+- Updated `src/app/admin/invoices/page.tsx` — Added CSV export button
+- Updated `src/components/InvoiceModal.tsx` — Added Download PDF button
+- Updated `vercel.json` — Added overdue-invoices cron (daily at midnight)
+
+**Files Changed (8 files, +500 lines):**
+- src/lib/invoice-pdf.ts — NEW
+- src/app/api/invoices/[id]/pdf/route.ts — NEW
+- src/app/api/cron/overdue-invoices/route.ts — NEW
+- src/lib/email.ts — invoiceIssued + invoiceOverdue templates
+- src/app/api/checkout/route.ts — Invoice email sending
+- src/app/admin/invoices/page.tsx — CSV export
+- src/components/InvoiceModal.tsx — PDF download button
+- vercel.json — Cron schedule
+
+**Verification:**
+- TypeScript: 0 errors
+- Build: compiled successfully
+- Post-task: 9/9 passed
+- Deployed: https://cckr.vercel.app (200 OK)
+
+**GitHub Issues Closed: 4**
+- INVOICE-EPIC: #160, #161-#164
+
+**Remaining Invoice Issues:**
+- #165 INV-05: Invoice detail/edit modal (high)
+- #166 INV-06: Partial payment support (medium)
+- #167 INV-07: Non-corporate invoices (medium)
+- #168 INV-08: Overdue reminder emails (medium)
+- #169 INV-09: Booking type filter (low)
+- #170 INV-10: Column sorting + search (low)

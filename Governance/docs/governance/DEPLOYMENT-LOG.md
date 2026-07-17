@@ -24,6 +24,10 @@
 | 2026-07-10 | DEV | ✅ Pushed | https://cckr.vercel.app | Multi-city flight UI + JourneyType=3 segment building — remove/add leg buttons, date validation, Circle tripType, N-leg alternating segments |
 | 2026-07-17 | DEV | ✅ Live | https://cckr.vercel.app | EPIC sweep — HOTEL (14 issues), CORP (5), PAY (2 fixed), FLIGHT (6), UX (4) — 17 files, +851/-298 (b72599d) |
 | 2026-07-17 | DEV | ✅ Live | https://cckr.vercel.app | UX-EPIC — removed markup disclosure, added hotel name search (342222a) |
+| 2026-07-17 | DEV | ✅ Live | https://cckr.vercel.app | INTL-EPIC — international travel support, country selector, currency, visa warnings (15461f6) |
+| 2026-07-17 | DEV | ✅ Live | https://cckr.vercel.app | TBO-DRIVEN — Airport.CountryCode detection, ValidationInfo, passport mapping (26dcf40) |
+| 2026-07-17 | DEV | ✅ Live | https://cckr.vercel.app | TBO-CACHE — DB-based static data caching, L1 memory + L2 CockroachDB (b36530c) |
+| 2026-07-17 | DEV | ✅ Live | https://cckr.vercel.app | INVOICE-EPIC — PDF generation, CSV export, email templates, auto-overdue cron (3f99c96) |
 | 2026-06-26 | DEV | ✅ Pushed | https://cckr.vercel.app | API config guardrails — dual-endpoint validation, seed defaults fix, governance scripts (d091a52) |
 | 2026-06-19 | DEV | ✅ Live | https://cckr.vercel.app | First deployment — Supabase removed, aqua-pony CockroachDB cluster |
 | 2026-06-17 | DEV | ✅ Live | https://cckr.vercel.app | Initial CockroachDB standalone deployment |
