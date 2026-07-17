@@ -1,11 +1,11 @@
 "use client";
 
-import React, { useRef } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { motion } from "motion/react";
 import Image from "next/image";
 import { formatCurrency } from "@/lib";
 import { ChevronLeft, ChevronRight, Check, Star, Tag } from "lucide-react";
-import { FadeIn, StaggerContainer, StaggerItem } from "@/components/ui/motion";
+import { FadeIn, StaggerContainer, StaggerItem, forceAllFadeIns } from "@/components/ui/motion";
 
 interface CarouselItem {
   id: string;
@@ -40,6 +40,15 @@ export default function PackageCarousel({
   onInterested,
 }: PackageCarouselProps) {
   const scrollRef = useRef<HTMLDivElement>(null);
+  const [cardsForceVisible, setCardsForceVisible] = useState(false);
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      forceAllFadeIns(); // triggers global flag + all FadeIn/Carousel instances
+      setCardsForceVisible(true);
+    }, 2500);
+    return () => clearTimeout(timer);
+  }, []);
 
   const scroll = (direction: "left" | "right") => {
     if (scrollRef.current) {
@@ -105,8 +114,10 @@ export default function PackageCarousel({
               <motion.div
                 key={pkg.id}
                 initial={{ opacity: 0, y: 24 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true, margin: "-40px" }}
+                {...(cardsForceVisible
+                  ? { animate: { opacity: 1, y: 0 } }
+                  : { whileInView: { opacity: 1, y: 0 }, viewport: { once: true, margin: "-40px" } }
+                )}
                 transition={{ delay: idx * 0.06, duration: 0.45, ease: [0.22, 1, 0.36, 1] }}
                 whileHover={{ y: -8, transition: { type: "spring", stiffness: 300, damping: 20 } }}
                 className="w-[310px] sm:w-[380px] shrink-0 bg-white rounded-[2.5rem] border border-slate-150 shadow-sm hover:shadow-xl transition-shadow duration-300 snap-start overflow-hidden flex flex-col group cursor-pointer"

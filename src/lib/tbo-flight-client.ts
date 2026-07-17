@@ -202,7 +202,12 @@ export async function searchFlights(params: {
   };
   const res = await api.searchFlights(tokenId, searchReq);
   if (res.Response?.ResponseStatus !== 1) {
-    throw new Error(`Flight search failed: ${res.Response?.Error?.ErrorMessage || res.Response?.ResponseStatus}`);
+    const errorMsg = res.Response?.Error?.ErrorMessage || "";
+    // "No Result Found" is a valid TBO response — not an error, just no flights for this route/date
+    if (errorMsg.toLowerCase().includes("no result")) {
+      return { flights: [], traceId: res.Response?.TraceId || "" };
+    }
+    throw new Error(`Flight search failed: ${errorMsg || res.Response?.ResponseStatus}`);
   }
   const results = res.Response.Results;
   const flightList: TBOFlightResult[] = Array.isArray(results[0])

@@ -2,6 +2,7 @@
 
 import React, { useEffect, useState } from "react";
 import GoRasaLogo from "./GoRasaLogo";
+import { forceAllFadeIns } from "@/components/ui/motion";
 
 interface SplashScreenProps {
   children: React.ReactNode;
@@ -12,7 +13,11 @@ export default function SplashScreen({ children }: SplashScreenProps) {
 
   useEffect(() => {
     const fadeTimer = setTimeout(() => setPhase("fading-out"), 1000);
-    const removeTimer = setTimeout(() => setPhase("hidden"), 1300);
+    const removeTimer = setTimeout(() => {
+      setPhase("hidden");
+      // Trigger all below-fold FadeIn animations after splash completes
+      forceAllFadeIns();
+    }, 1300);
     return () => {
       clearTimeout(fadeTimer);
       clearTimeout(removeTimer);

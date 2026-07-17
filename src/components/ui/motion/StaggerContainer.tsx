@@ -1,6 +1,6 @@
 "use client";
 
-import React from "react";
+import React, { useEffect, useState } from "react";
 import { motion, type Variants } from "motion/react";
 
 interface StaggerContainerProps {
@@ -8,16 +8,9 @@ interface StaggerContainerProps {
   className?: string;
   staggerDelay?: number;
   delayChildren?: number;
+  /** Force visible after this many ms even if not scrolled into view (default: 2500) */
+  fallbackMs?: number;
 }
-
-const containerVariants: Variants = {
-  hidden: {},
-  visible: (staggerDelay: number) => ({
-    transition: {
-      staggerChildren: staggerDelay,
-    },
-  }),
-};
 
 export const staggerItemVariants: Variants = {
   hidden: { opacity: 0, y: 20 },
@@ -31,12 +24,77 @@ export const staggerItemVariants: Variants = {
   },
 };
 
+// Reuse the global force flag from FadeIn
+let _globalForceVisible = false;
+let _globalForceCallbacks: Array<() => void> = [];
+
+export function forceAllStaggers() {
+  _globalForceVisible = true;
+  _globalForceCallbacks.forEach((cb) => cb());
+  _globalForceCallbacks = [];
+}
+
+export function StaggerItem({
+  children,
+  className,
+}: {
+  children: React.ReactNode;
+  className?: string;
+}) {
+  return (
+    <motion.div variants={staggerItemVariants} className={className}>
+      {children}
+    </motion.div>
+  );
+}
+
 export default function StaggerContainer({
   children,
   className,
   staggerDelay = 0.08,
   delayChildren = 0,
+  fallbackMs = 2500,
 }: StaggerContainerProps) {
+  const [forceVisible, setForceVisible] = useState(_globalForceVisible);
+
+  useEffect(() => {
+    if (_globalForceVisible) return;
+
+    const timer = setTimeout(() => {
+      forceAllStaggers();
+    }, fallbackMs);
+
+    const callback = () => setForceVisible(true);
+    _globalForceCallbacks.push(callback);
+
+    return () => {
+      clearTimeout(timer);
+      _globalForceCallbacks = _globalForceCallbacks.filter((cb) => cb !== callback);
+    };
+  }, [fallbackMs]);
+
+  if (forceVisible) {
+    return (
+      <motion.div
+        initial="hidden"
+        animate="visible"
+        custom={staggerDelay}
+        variants={{
+          hidden: {},
+          visible: {
+            transition: {
+              staggerChildren: staggerDelay,
+              delayChildren,
+            },
+          },
+        }}
+        className={className}
+      >
+        {children}
+      </motion.div>
+    );
+  }
+
   return (
     <motion.div
       initial="hidden"
@@ -54,20 +112,6 @@ export default function StaggerContainer({
       }}
       className={className}
     >
-      {children}
-    </motion.div>
-  );
-}
-
-export function StaggerItem({
-  children,
-  className,
-}: {
-  children: React.ReactNode;
-  className?: string;
-}) {
-  return (
-    <motion.div variants={staggerItemVariants} className={className}>
       {children}
     </motion.div>
   );
