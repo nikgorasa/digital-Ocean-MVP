@@ -97,6 +97,22 @@ export const analytics = {
   // Navigation events
   pageNavigated: (from: string, to: string, trigger: string) =>
     track("page_navigated", { from, to, trigger }),
+
+  // Conversion events (GROWTH-31)
+  searchInitiated: (searchType: "hotel" | "flight" | "package", query: Record<string, unknown>, sessionId?: string) =>
+    track("search_initiated", { searchType, ...query }, { sessionId }),
+
+  hotelViewed: (hotelId: string, hotelName: string, price?: number, sessionId?: string) =>
+    track("hotel_viewed", { hotelId, hotelName, price }, { sessionId }),
+
+  flightViewed: (flightId: string, airline: string, route: string, price: number, sessionId?: string) =>
+    track("flight_viewed", { flightId, airline, route, price }, { sessionId }),
+
+  bookingStarted: (bookingType: "hotel" | "flight" | "package", itemId: string, itemName: string, price: number, sessionId?: string, userId?: string) =>
+    track("booking_started", { bookingType, itemId, itemName, price }, { sessionId, userId }),
+
+  bookingCompleted: (bookingId: string, bookingType: "hotel" | "flight" | "package", itemName: string, price: number, paymentMethod?: string, sessionId?: string, userId?: string) =>
+    track("booking_completed", { bookingId, bookingType, itemName, price, paymentMethod }, { sessionId, userId }),
 };
 
 export function flush(): void {
