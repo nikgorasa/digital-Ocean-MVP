@@ -310,3 +310,56 @@ The staging static data endpoint (`api.tbotechnology.in`) uses **different city 
 - [x] City list exposed via `/api/tbo-hotels` (`action: "static-data/cities"`)
 - [x] Parameterized by country code (not India-only)
 - [x] Proper caching (60-min TTL) in API route
+
+---
+
+## TBO Flight API
+
+### Architecture (Separate from Hotel API)
+
+The Flight API uses **completely different endpoints** than the Hotel API. This is by design — TBO has separate services for flights and hotels.
+
+| Service | Base URL | Auth |
+|---|---|---|
+| **Flight Auth** | `http://Sharedapi.tektravels.com/SharedData.svc/rest/Authenticate` | RasaT / RasaT@123 |
+| **Flight Search/Book** | `http://api.tektravels.com/BookingEngineService_Air/AirService.svc/rest` | Token from Auth |
+
+### Flight Endpoints
+
+| Endpoint | Method | Purpose |
+|---|---|---|
+| `/Authenticate` | POST | Get daily token (cached) |
+| `/Search` | POST | Search flights |
+| `/FareRule` | POST | Get fare rules |
+| `/FareQuote` | POST | Get fare quote (price verification) |
+| `/SSR` | POST | Get ancillary services (meals, baggage, seats) |
+| `/Book` | POST | Book flight |
+| `/Ticket` | POST | Issue ticket |
+| `/GetBookingDetail` | POST | Get booking details |
+
+### Cabin Class Values
+
+| Value | Name |
+|---|---|
+| 0 | All |
+| 1 | Economy |
+| 2 | Premium Economy |
+| 3 | Business |
+| 4 | Premium Business |
+| 5 | First |
+
+### Known Issues (See TBO-ARCH-EPIC #237)
+
+1. **Endpoints hardcoded** — Not configurable via ConfigProvider or env vars
+2. **No mock fallback** — TBO 'No Result Found' shows error to user
+3. **No retry logic** — Single failure = complete failure
+4. **Raw error exposure** — TBO errors shown directly to users
+
+### ConfigProvider (tbo_flight)
+
+| Field | Env Var Fallback | Default |
+|---|---|---|
+| `clientId` | `TBO_CLIENT_ID` | `ApiIntegrationNew` |
+| `username` | `TBO_USERNAME` | (empty) |
+| `password` | `TBO_PASSWORD` | (empty) |
+| `forceMock` | `TBO_FLIGHT_FORCE_MOCK` | `false` |
