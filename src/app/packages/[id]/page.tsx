@@ -2,6 +2,7 @@ import { prisma } from "@/lib/prisma";
 import { notFound } from "next/navigation";
 import type { Metadata } from "next";
 import Link from "next/link";
+import Image from "next/image";
 import Breadcrumb, { BreadcrumbJsonLd } from "@/components/Breadcrumb";
 
 export const revalidate = 600;
@@ -185,10 +186,13 @@ export default async function PackageDetailPage({
         {/* Hero Image Gallery */}
         <section className="relative h-[50vh] min-h-[350px] overflow-hidden">
           {images.length > 0 ? (
-            <img
+            <Image
               src={images[0]}
               alt={pkg.title}
-              className="absolute inset-0 w-full h-full object-cover"
+              fill
+              priority
+              sizes="100vw"
+              className="object-cover"
             />
           ) : (
             <div className="absolute inset-0 bg-brand-deep-teal" />
@@ -331,10 +335,13 @@ export default async function PackageDetailPage({
                   <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
                     {images.slice(1, 7).map((img, i) => (
                       <div key={i} className="relative h-40 rounded-lg overflow-hidden">
-                        <img
+                        <Image
                           src={img}
                           alt={`${pkg.title} — image ${i + 2}`}
-                          className="w-full h-full object-cover hover:scale-105 transition-transform duration-300"
+                          fill
+                          sizes="(max-width: 768px) 50vw, 33vw"
+                          className="object-cover hover:scale-105 transition-transform duration-300"
+                          loading="lazy"
                         />
                       </div>
                     ))}
@@ -426,13 +433,16 @@ export default async function PackageDetailPage({
                       className="bg-white rounded-xl overflow-hidden shadow-sm border border-brand-sand/20 hover:shadow-md transition-shadow group"
                     >
                       <div className="relative h-44 overflow-hidden">
-                        <img
+                        <Image
                           src={
                             rpImages[0] ||
                             "https://images.unsplash.com/photo-1571003123894-1f0594d2b5d9?auto=format&fit=crop&w=800&q=80"
                           }
                           alt={rp.title}
-                          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                          fill
+                          sizes="(max-width: 768px) 100vw, 33vw"
+                          className="object-cover group-hover:scale-105 transition-transform duration-300"
+                          loading="lazy"
                         />
                         <div className="absolute top-3 right-3 px-2 py-1 bg-white/90 rounded text-xs font-semibold">
                           {rp.duration}

@@ -2,6 +2,7 @@
 
 import React, { useRef } from "react";
 import { motion } from "motion/react";
+import Image from "next/image";
 import { formatCurrency } from "@/lib";
 import { ChevronLeft, ChevronRight, Check, Star, Tag } from "lucide-react";
 
@@ -117,11 +118,13 @@ export default function PackageCarousel({
               >
                 {/* Image */}
                 <div className="h-56 relative overflow-hidden shrink-0">
-                  <img
+                  <Image
                     src={pkg.imageUrl}
                     alt={pkg.title}
-                    referrerPolicy="no-referrer"
-                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
+                    fill
+                    sizes="(max-width: 640px) 310px, 380px"
+                    className="object-cover group-hover:scale-105 transition-transform duration-700"
+                    loading="lazy"
                   />
                   <div className="absolute inset-0 bg-gradient-to-t from-slate-950/70 via-transparent to-transparent" />
 

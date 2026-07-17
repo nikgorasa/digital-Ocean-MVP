@@ -22,6 +22,18 @@ const nextConfig: NextConfig = {
         protocol: "https",
         hostname: "api.dicebear.com",
       },
+      {
+        protocol: "https",
+        hostname: "**.tbo.com",
+      },
+      {
+        protocol: "https",
+        hostname: "**.tektravels.com",
+      },
+      {
+        protocol: "https",
+        hostname: "**.tbotechnology.in",
+      },
     ],
   },
   async headers() {

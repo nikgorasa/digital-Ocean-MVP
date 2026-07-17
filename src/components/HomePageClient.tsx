@@ -29,6 +29,7 @@ import {
   Palmtree,
 } from "lucide-react";
 import Link from "next/link";
+import Image from "next/image";
 
 interface PackageItem {
   id: string;
@@ -197,6 +198,59 @@ export default function HomePageClient({
           </div>
         </section>
 
+        {/* Popular Destinations */}
+        <section className="py-16 bg-brand-ivory">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div className="text-center mb-10">
+              <h2 className="text-3xl font-serif font-bold text-brand-charcoal mb-4">
+                Popular Destinations
+              </h2>
+              <p className="text-brand-sand max-w-2xl mx-auto">
+                Explore our most-loved travel destinations with curated packages, flights, and hotels.
+              </p>
+            </div>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              {[
+                { name: "Dubai", slug: "dubai", image: "https://images.unsplash.com/photo-1512453979798-5ea266f8880c?auto=format&fit=crop&w=400&q=80", country: "UAE" },
+                { name: "Bali", slug: "bali", image: "https://images.unsplash.com/photo-1537996194471-e657df975ab4?auto=format&fit=crop&w=400&q=80", country: "Indonesia" },
+                { name: "Maldives", slug: "maldives", image: "https://images.unsplash.com/photo-1514282401047-d79a71a590e8?auto=format&fit=crop&w=400&q=80", country: "Maldives" },
+                { name: "Thailand", slug: "thailand", image: "https://images.unsplash.com/photo-1528181304800-259b08848526?auto=format&fit=crop&w=400&q=80", country: "Thailand" },
+                { name: "Goa", slug: "goa", image: "https://images.unsplash.com/photo-1512343879784-a960bf40e7f2?auto=format&fit=crop&w=400&q=80", country: "India" },
+                { name: "Kashmir", slug: "kashmir", image: "https://images.unsplash.com/photo-1597074866923-dc0589150458?auto=format&fit=crop&w=400&q=80", country: "India" },
+                { name: "Singapore", slug: "singapore", image: "https://images.unsplash.com/photo-1525625293386-3f8f99389edd?auto=format&fit=crop&w=400&q=80", country: "Singapore" },
+                { name: "Manali", slug: "manali", image: "https://images.unsplash.com/photo-1626621341517-bbf3d9990a23?auto=format&fit=crop&w=400&q=80", country: "India" },
+              ].map((dest, i) => (
+                <motion.div
+                  key={dest.slug}
+                  initial={{ opacity: 1, y: 0 }}
+                  whileInView={{ opacity: 1, y: 0 }}
+                  viewport={{ once: true }}
+                  transition={{ delay: i * 0.05 }}
+                >
+                  <Link
+                    href={`/destinations/${dest.slug}`}
+                    className="group relative block h-48 rounded-2xl overflow-hidden"
+                  >
+                    <Image
+                      src={dest.image}
+                      alt={`${dest.name}, ${dest.country}`}
+                      fill
+                      sizes="(max-width: 768px) 50vw, 25vw"
+                      className="object-cover group-hover:scale-110 transition-transform duration-500"
+                      loading="lazy"
+                    />
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent" />
+                    <div className="absolute bottom-4 left-4">
+                      <p className="text-white font-bold text-lg">{dest.name}</p>
+                      <p className="text-white/70 text-xs">{dest.country}</p>
+                    </div>
+                  </Link>
+                </motion.div>
+              ))}
+            </div>
+          </div>
+        </section>
+
         {/* Testimonials */}
         <section className="py-16 bg-brand-ivory">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -291,10 +345,13 @@ export default function HomePageClient({
 
               <div className="relative">
                 <div className="rounded-3xl overflow-hidden shadow-2xl">
-                  <img
+                  <Image
                     src="https://images.unsplash.com/photo-1560179707-f14e90ef3623?auto=format&fit=crop&w=800&q=80"
                     alt="Corporate Travel - Modern office building"
+                    width={800}
+                    height={400}
                     className="w-full h-[400px] object-cover"
+                    loading="lazy"
                   />
                   <div className="absolute inset-0 bg-gradient-to-t from-brand-emerald/80 via-transparent to-transparent rounded-3xl" />
                 </div>

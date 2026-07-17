@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { Mail, Phone, MapPin } from "lucide-react";
 
 interface FooterLink {
@@ -32,7 +33,7 @@ export default function Footer() {
           {/* Brand */}
           <div className="md:col-span-1">
             <div className="mb-4">
-              <img src="/logo.svg" alt="GoRASA" className="h-9 w-auto" />
+              <Image src="/logo.svg" alt="GoRASA" width={120} height={36} className="h-9 w-auto" />
             </div>
             <p className="text-brand-sand text-sm leading-relaxed mb-4">
               Premium travel experiences crafted for the discerning traveler.

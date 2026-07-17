@@ -9,16 +9,22 @@ import { OrganizationJsonLd, WebSiteJsonLd } from "@/components/JsonLd";
 const inter = Inter({
   subsets: ["latin"],
   variable: "--font-inter",
+  display: "swap",
+  preload: true,
 });
 
 const playfair = Playfair_Display({
   subsets: ["latin"],
   variable: "--font-playfair",
+  display: "swap",
+  preload: false,
 });
 
 const outfit = Outfit({
   subsets: ["latin"],
   variable: "--font-outfit",
+  display: "swap",
+  preload: false,
 });
 
 const SITE_URL = "https://cckr.vercel.app";
@@ -115,6 +121,7 @@ export default function RootLayout({
         <meta name="theme-color" content="#123C34" />
         <link rel="icon" href="/logo.svg" type="image/svg+xml" />
         <link rel="alternate icon" href="/favicon.svg" type="image/svg+xml" />
+        <link rel="preload" href="/images/hero.jpg" as="image" type="image/jpeg" />
       </head>
       <body
         className={`${inter.variable} ${playfair.variable} ${outfit.variable} font-sans bg-brand-ivory text-brand-charcoal antialiased`}

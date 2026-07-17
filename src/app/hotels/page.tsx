@@ -23,6 +23,7 @@ import { applyHotelFilters, sortHotels, type HotelSortKey, type HotelResult } fr
 import type { City } from "@/components/CitySearchDropdown";
 import type { TBODisplayHotel, TBODisplayRoom } from "@/lib/tbo-hotel-types";
 import Link from "next/link";
+import Image from "next/image";
 
 function HotelJsonLd({ hotels, cityName }: { hotels: TBODisplayHotel[]; cityName: string }) {
   if (hotels.length === 0) return null;
@@ -238,6 +239,12 @@ export default function HotelsPage() {
       <LoginModal isOpen={showLogin} onClose={() => setShowLogin(false)} />
 
       <main className="min-h-screen pt-16 bg-brand-ivory">
+        <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 pt-4">
+          <Breadcrumb items={[
+            { name: "Home", href: "/" },
+            { name: "Hotels", href: "/hotels" },
+          ]} />
+        </div>
         <BreadcrumbJsonLd items={[
           { name: "Home", href: "/" },
           { name: "Hotels", href: "/hotels" },
@@ -585,6 +592,7 @@ export default function HotelsPage() {
                             src={hotel.picture}
                             alt={hotel.name}
                             loading="lazy"
+                            decoding="async"
                             referrerPolicy="no-referrer"
                             className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
                             onError={(e) => {

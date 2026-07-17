@@ -466,6 +466,12 @@ export default function FlightsPage() {
       <LoginModal isOpen={showLogin} onClose={() => setShowLogin(false)} />
 
       <main className="min-h-screen pt-16 bg-brand-ivory">
+        <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 pt-4">
+          <Breadcrumb items={[
+            { name: "Home", href: "/" },
+            { name: "Flights", href: "/flights" },
+          ]} />
+        </div>
         <BreadcrumbJsonLd items={[
           { name: "Home", href: "/" },
           { name: "Flights", href: "/flights" },

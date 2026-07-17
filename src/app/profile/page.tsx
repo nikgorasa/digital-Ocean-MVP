@@ -11,6 +11,7 @@ import {
   User, Mail, Shield, Star, CreditCard, Heart, Settings,
   Plus, Trash2, Copy, Check, Gift, Plane, Building2, Palmtree, Loader2
 } from "lucide-react";
+import Breadcrumb, { BreadcrumbJsonLd } from "@/components/Breadcrumb";
 
 const TABS = [
   { id: "details", label: "Personal Info", icon: User },
@@ -196,7 +197,15 @@ export default function ProfilePage() {
       <LoginModal isOpen={showLogin} onClose={() => setShowLogin(false)} />
 
       <main className="min-h-screen pt-16 bg-slate-50">
+        <BreadcrumbJsonLd items={[
+          { name: "Home", href: "/" },
+          { name: "Profile", href: "/profile" },
+        ]} />
         <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+          <Breadcrumb items={[
+            { name: "Home", href: "/" },
+            { name: "Profile", href: "/profile" },
+          ]} />
           <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
             {/* Profile Header */}
             <div className="bg-white rounded-2xl p-6 border border-slate-200 mb-6">

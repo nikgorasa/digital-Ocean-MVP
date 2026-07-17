@@ -6,6 +6,7 @@ import Footer from "@/components/Footer";
 import LoginModal from "@/components/LoginModal";
 import { motion } from "motion/react";
 import { HelpCircle, ChevronDown, ChevronUp, Search } from "lucide-react";
+import Breadcrumb, { BreadcrumbJsonLd } from "@/components/Breadcrumb";
 
 interface FaqItem {
   id: string;
@@ -106,6 +107,10 @@ export default function FaqPageClient({ dbFaqs }: FaqPageClientProps) {
       <LoginModal isOpen={showLogin} onClose={() => setShowLogin(false)} />
 
       <main className="min-h-screen pt-16 bg-brand-ivory">
+        <BreadcrumbJsonLd items={[
+          { name: "Home", href: "/" },
+          { name: "FAQ", href: "/faq" },
+        ]} />
         <section className="py-12 bg-brand-emerald">
           <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
             <div className="w-14 h-14 mx-auto mb-3 rounded-2xl bg-white/20 flex items-center justify-center">

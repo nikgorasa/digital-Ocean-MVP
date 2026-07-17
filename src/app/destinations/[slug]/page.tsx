@@ -3,6 +3,7 @@ import { getVisaRequirement } from "@/lib/visa-requirements";
 import { notFound } from "next/navigation";
 import type { Metadata } from "next";
 import Link from "next/link";
+import Image from "next/image";
 import Breadcrumb, { BreadcrumbJsonLd } from "@/components/Breadcrumb";
 
 export const revalidate = 600;
@@ -529,10 +530,13 @@ export default async function DestinationPage({
       <main className="min-h-screen bg-brand-ivory">
         {/* Hero */}
         <section className="relative h-[60vh] min-h-[400px] overflow-hidden">
-          <img
+          <Image
             src={dest.image}
             alt={dest.title}
-            className="absolute inset-0 w-full h-full object-cover"
+            fill
+            priority
+            sizes="100vw"
+            className="object-cover"
           />
           <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/30 to-transparent" />
           <div className="absolute bottom-0 left-0 right-0 p-8 md:p-16">
@@ -669,13 +673,16 @@ export default async function DestinationPage({
                     className="bg-white rounded-xl overflow-hidden shadow-sm border border-brand-sand/20 hover:shadow-md transition-shadow group"
                   >
                     <div className="relative h-48 overflow-hidden">
-                      <img
+                      <Image
                         src={
                           images[0] ||
                           "https://images.unsplash.com/photo-1571003123894-1f0594d2b5d9?auto=format&fit=crop&w=800&q=80"
                         }
                         alt={pkg.title}
-                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                        fill
+                        sizes="(max-width: 768px) 100vw, (max-width: 1024px) 50vw, 33vw"
+                        className="object-cover group-hover:scale-105 transition-transform duration-300"
+                        loading="lazy"
                       />
                       <div className="absolute top-3 right-3 px-2 py-1 bg-white/90 rounded text-xs font-semibold">
                         {pkg.duration}

@@ -25,6 +25,7 @@ import {
   AlertCircle,
 } from "lucide-react";
 import { TICKET_CATEGORIES, TICKET_PRIORITIES, TicketCategory, TicketPriority } from "@/lib/ticket/types";
+import Breadcrumb, { BreadcrumbJsonLd } from "@/components/Breadcrumb";
 
 interface Message {
   id: string;
@@ -239,7 +240,15 @@ export default function SupportPage() {
       <LoginModal isOpen={showLogin} onClose={() => setShowLogin(false)} />
 
       <main className="min-h-screen pt-16 bg-slate-50">
+        <BreadcrumbJsonLd items={[
+          { name: "Home", href: "/" },
+          { name: "Support", href: "/support" },
+        ]} />
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+          <Breadcrumb items={[
+            { name: "Home", href: "/" },
+            { name: "Support", href: "/support" },
+          ]} />
           <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
             <div className="flex items-center gap-3 mb-6">
               <div className="w-10 h-10 rounded-xl bg-brand-saffron flex items-center justify-center">

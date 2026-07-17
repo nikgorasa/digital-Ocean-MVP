@@ -6,7 +6,7 @@ import Footer from "@/components/Footer";
 import LoginModal from "@/components/LoginModal";
 import { useAuth } from "@/hooks/useAuth";
 import HolidayPlanner from "@/components/HolidayPlanner";
-import { BreadcrumbJsonLd } from "@/components/Breadcrumb";
+import Breadcrumb, { BreadcrumbJsonLd } from "@/components/Breadcrumb";
 
 const DESTINATIONS = [
   { name: "Bali", country: "Indonesia", description: "Tropical paradise with stunning temples, rice terraces, and pristine beaches." },
@@ -53,6 +53,12 @@ export default function PlannerPage() {
       <LoginModal isOpen={showLogin} onClose={() => setShowLogin(false)} />
 
       <main className="min-h-screen pt-16">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-4">
+          <Breadcrumb items={[
+            { name: "Home", href: "/" },
+            { name: "Holidays", href: "/holidays" },
+          ]} />
+        </div>
         <HolidayPlanner
           userName={user?.name}
           userEmail={user?.email}
