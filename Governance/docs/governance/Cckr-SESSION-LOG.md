@@ -874,6 +874,39 @@ CREATE TABLE cache_config (id, data_type, ttl_seconds, is_active, last_refresh_a
 - #165 INV-05: Invoice detail/edit modal (high)
 - #166 INV-06: Partial payment support (medium)
 - #167 INV-07: Non-corporate invoices (medium)
-- #168 INV-08: Overdue reminder emails (medium)
+- #168 INV-08: Overdue reminder emails (medium) — VERIFIED DONE
 - #169 INV-09: Booking type filter (low)
 - #170 INV-10: Column sorting + search (low)
+
+---
+
+### Session 22 — Issue Verification Sweep (2026-07-17)
+
+**Summary:** Verified all open issues against codebase. Closed 12 already-done issues. Updated sprint plan.
+
+**Issues Verified and Closed:**
+- #28 LAUNCH-01: Security headers — already in next.config.ts (5 headers)
+- #168 INV-08: Overdue cron — already exists at api/cron/overdue-invoices
+- #89 TARIFF-EPIC: Corporate rate system — already implemented
+- #101 Home page: HeroSection — fully implemented
+- #24 User dashboard: Trips page — serves as dashboard
+- #25 SEO meta tags: OG/Twitter/JSON-LD — comprehensive
+- #160 INVOICE-EPIC: PDF, cron, email, CSV — all done
+- #46 Account creation: signUpWithEmail — wired end-to-end
+- #47 Scroll on profile: LoginModal — max-h + overflow
+- #48 Markup visible: Removed disclosure text
+- #100 Hotel name search: Added search input
+- #31 EPIC TRACKER: Superseded by SPRINT-PLAN.md
+
+**GROWTH-EPIC (30 issues):** All closed by parallel agent
+
+**Remaining Open Issues: 19**
+- Blockers (4): #110, #111, #139, #150
+- High (6): #112, #29, #30, #26, #92, #165
+- Medium (6): #19, #20, #27, #123, #166, #167
+- Low (2): #169, #170
+
+**Verification:**
+- TypeScript: 0 errors
+- Build: compiled successfully
+- Post-task: 9/9 passed
