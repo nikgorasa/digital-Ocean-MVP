@@ -1242,3 +1242,26 @@ The flight API requires IATA airport codes. Using hotel city codes causes flight
 This rule is documented in:
 - `AGENTS.md` — API Config Guard section
 - `Governance/docs/static-data/TBO-STATIC-DATA-REFERENCE.md` — Flight API section
+
+---
+
+### Session 27 — Flight Search Fixes (2026-07-17)
+
+#### Issues Fixed
+1. **Cabin class filter bug** — TBO API returns `CabinClass: 2` (Premium Economy) for ALL results even when Economy is requested. Our code filtered for `CabinClass === 1` and removed all flights, causing "No flights found" for every search. **Fix:** Removed client-side cabin class filter, show all TBO results.
+2. **From/To not showing IATA codes** — Dropdown trigger displayed only city name (e.g., "Mumbai") instead of "Mumbai (BOM)". **Fix:** CitySearchDropdown now looks up IATA code from the cities list and shows it in parentheses.
+3. **"Nights" in flight date picker** — DateRangePicker showed "3 nights" which is hotel terminology. **Fix:** Pass `showNightsCount={false}` to DateRangePicker on flights page.
+4. **No search caching** — Every search hit TBO API fresh, causing slow response times. **Fix:** Added 5-minute in-memory cache keyed by search parameters. Empty results are not cached.
+
+#### Files Changed
+- `src/lib/tbo-flight-client.ts` — Removed cabin class filter, added search cache
+- `src/components/CitySearchDropdown.tsx` — Show IATA code in trigger display
+- `src/app/flights/page.tsx` — `showNightsCount={false}` on DateRangePicker
+
+#### Root Cause Analysis
+The cabin class filter was the primary cause of "No flights found". TBO's CabinClass field in search responses is unreliable — it often returns 2 (Premium Economy) regardless of the requested class. The fix was to trust TBO's results and display them without client-side filtering. Verified by direct API test: BOM→DEL search returns 111 results with `CabinClass: 2`.
+
+#### Verified
+- TypeScript: compiled successfully
+- Build: passed
+- Deployed: https://cckr.vercel.app/flights (200 OK)
