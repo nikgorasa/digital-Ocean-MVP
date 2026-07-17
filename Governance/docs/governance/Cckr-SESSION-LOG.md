@@ -1,7 +1,7 @@
 # GoRASA CockroachDB Standalone — SESSION-LOG
 
 > **Purpose:** Living document tracking all sessions, changes, deployments, and learnings.
-> **Last updated:** 2026-07-17 (Session 21 — INVOICE-EPIC, governance update)
+> **Last updated:** 2026-07-17 (Session 23 — GROWTH-EPIC, navbar, currency fix)
 
 ---
 
@@ -910,3 +910,68 @@ CREATE TABLE cache_config (id, data_type, ttl_seconds, is_active, last_refresh_a
 - TypeScript: 0 errors
 - Build: compiled successfully
 - Post-task: 9/9 passed
+
+---
+
+### Session 23 — GROWTH-EPIC + Navbar + Currency Fix (2026-07-17)
+
+**Objective:** Implement SEO/AEO/GEO growth infrastructure, clean navbar, fix currency handling.
+
+**GROWTH-EPIC (#171) — 30 issues closed:**
+
+**P0 SEO Foundation:**
+- robots.txt with AI crawler permissions (GPTBot, ClaudeBot, PerplexityBot)
+- Dynamic sitemap with 100+ routes (static + DB-driven)
+- Page-level metadata for all public pages
+- Canonical URLs + Twitter Cards
+- Organization + WebSite JSON-LD schemas
+
+**P1 Structured Data:**
+- Breadcrumb, FAQPage, Hotel, Flight, Package, AggregateRating schemas
+- Destination landing pages (8 SSG: goa, dubai, bali, maldives, thailand, kashmir, singapore, manali)
+- Package detail pages (SSG)
+- Conversion tracking (5 events)
+
+**P2 AEO/GEO:**
+- Blog system (Prisma model, API, admin page, server-rendered listing/detail)
+- FAQ category pages with FAQPage JSON-LD
+- AI-readable public endpoints (/api/public/packages, destinations, faq)
+- llms.txt + llms-full.txt for LLM crawlers
+- About page with E-E-A-T signals
+- Visa requirements page (39 countries)
+- 8 hotel city landing pages
+- 10 flight route landing pages
+
+**Technical SEO:**
+- Core Web Vitals (font display swap, preload)
+- Image optimization (next/image everywhere)
+- Internal linking (breadcrumbs, popular destinations, related packages)
+
+**Navbar Update:**
+- Clean structure: Home, Hotels, Flights, Holidays (DB), More dropdown
+- More dropdown: Destinations, Visa Guide, Blog, FAQ, About
+- Mobile: grouped Explore section
+- Not crowded — 4 primary + 1 dropdown
+
+**Currency Fix:**
+- Reverted currency conversion — TBO returns INR only
+- No price manipulation — whatever TBO returns is displayed
+
+**Verification:**
+- TypeScript: 0 errors
+- Build: compiled successfully (123 static pages)
+- Post-task: 9/9 passed
+- Deployed: https://cckr.vercel.app (200 OK)
+
+**GitHub Issues Closed: 38**
+- GROWTH-EPIC: #171, #172-#205 (30 issues)
+- TBO-API-EPIC: #149, #150-#154 (6 issues)
+- TBO-DRIVEN-EPIC: #138
+- Navbar: #96, #97
+
+**Remaining Open Issues: ~15**
+- PAY-EPIC: #110, #111, #112
+- LAUNCH-EPIC: #29, #30
+- QA: #26, #27
+- MOCK-EPIC: #92
+- Other: #19, #20, #123, #165, #166, #167, #169, #170
