@@ -102,10 +102,10 @@ function lastSeg(r: TBOFlightResult): TBOFlightSegment | undefined {
   return legs?.[legs.length - 1];
 }
 
-async function toDisplay(
+function toDisplay(
   r: TBOFlightResult,
   leg: "outbound" | "inbound" | "oneway",
-): Promise<TBOFlightDisplay> {
+): TBOFlightDisplay {
   const f = firstSeg(r);
   const l = lastSeg(r);
   const originCountry = f?.Origin?.Airport?.CountryCode || "";
@@ -175,15 +175,27 @@ export async function searchFlights(params: {
   EndUserIp?: string;
   multiCityLegs?: { origin: string; destination: string; date: string }[];
 }): Promise<TBOFlightSearchOutput> {
+  const t0 = Date.now();
+
   // Check cache first
   cleanSearchCache();
   const cacheKey = getSearchCacheKey(params);
   const cached = searchCache.get(cacheKey);
   if (cached && Date.now() - cached.ts < SEARCH_CACHE_TTL_MS) {
+    console.log(`[TBO] Cache HIT for ${params.Origin}→${params.Destination}`);
     return cached.data;
   }
+  console.log(`[TBO] Cache MISS for ${params.Origin}→${params.Destination} — fetching`);
 
-  await validateCredentials();
+  // Read config ONCE (cached 60s in config-service)
+  const cfg = await readConfig("tbo_flight");
+  const username = cfg.username || process.env.TBO_USERNAME || "";
+  const password = cfg.password || process.env.TBO_PASSWORD || "";
+  if (!username || !password) {
+    throw new Error("TBO flight credentials not configured.");
+  }
+
+  const t1 = Date.now();
   const cabinClassMap: Record<string, number> = {
     "economy": 1,
     "premium economy": 2,
@@ -195,6 +207,7 @@ export async function searchFlights(params: {
   const cabinClassNum = cabinClassMap[(params.CabinClass || "economy").toLowerCase()] ?? 1;
 
   const tokenId = await ensureToken();
+  const t2 = Date.now();
   const segments: TBOFlightSearchSegment[] = [];
   if (params.JourneyType === 3 && params.multiCityLegs?.length) {
     params.multiCityLegs.forEach((leg) => {
@@ -234,6 +247,8 @@ export async function searchFlights(params: {
     Segments: segments,
   };
   const res = await api.searchFlights(tokenId, searchReq);
+  const t3 = Date.now();
+  console.log(`[TBO] Search API call: ${t3 - t2}ms`);
   if (res.Response?.ResponseStatus !== 1) {
     const errorMsg = res.Response?.Error?.ErrorMessage || "";
     // "No Result Found" is a valid TBO response — not an error, just no flights for this route/date
@@ -263,9 +278,12 @@ export async function searchFlights(params: {
     else leg = "inbound";
     return toDisplay(r, leg);
   });
-  const result: TBOFlightSearchOutput = { flights: await Promise.all(flights), traceId: res.Response.TraceId };
+  const result: TBOFlightSearchOutput = { flights, traceId: res.Response.TraceId };
+  const t4 = Date.now();
+  console.log(`[TBO] Result processing: ${t4 - t3}ms (${flightList.length} flights → ${result.flights.length} displayed)`);
   // Cache the result
   searchCache.set(cacheKey, { data: result, ts: Date.now() });
+  console.log(`[TBO] Total search: ${t4 - t0}ms (config: ${t1-t0}ms, token: ${t2-t1}ms, api: ${t3-t2}ms, process: ${t4-t3}ms)`);
   return result;
 }
 

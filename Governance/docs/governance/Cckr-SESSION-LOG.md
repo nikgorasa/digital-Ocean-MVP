@@ -1265,3 +1265,35 @@ The cabin class filter was the primary cause of "No flights found". TBO's CabinC
 - TypeScript: compiled successfully
 - Build: passed
 - Deployed: https://cckr.vercel.app/flights (200 OK)
+
+---
+
+### Session 28 — Brevo Email Migration Planning (2026-07-18)
+
+#### Objective
+Migrate the app's unconfigured Gmail-SMTP email layer to **Brevo** (transactional email + sender auth). Set up Brevo MCP for "check and ready" email settings. Create GitHub Epics + Issues to track the work.
+
+#### Email Audit Findings
+- Only email package: `nodemailer` v9.0.0. Core module: `src/lib/email.ts`.
+- Default SMTP host `smtp.gmail.com:587`; SMTP creds BLANK in `.env.local`, ABSENT in `.env.production` → emails silently fail today.
+- 6 templates in `emailTemplates`; 5 are wired to touchpoints (auth reset/verify, payment confirmation, invoice, payment reminder, cancellation). `invoiceOverdue` is orphaned.
+- All template links hardcode `https://cckr.vercel.app` (DEV) — not env-driven.
+- No marketing/newsletter system exists.
+- `verifyEmailConnection()` (email.ts:26-35) is dead code.
+
+#### Brevo MCP Setup
+- Official remote Brevo MCP configured in `.opencode/opencode.json` → `https://mcp.brevo.com/v1/brevo/mcp`.
+- `BREVO_MCP_TOKEN` stored in `.env.local` via EnvSitter (gitignored, not committed).
+- Token is a standard `xkeysib-` API key generated with the "Create MCP server API key" option (user confirmed). If MCP fails to connect, regenerate.
+
+#### GitHub Issues Created
+| Epic | Issue | Children |
+|---|---|---|
+| A — Brevo SMTP Infrastructure | #251 | #255-#259 |
+| B — Migrate Transactional Emails | #252 | #260-#267 |
+| C — Brevo Sender Domain & List Setup | #253 | #268-#270 |
+| D — Verify via Brevo MCP | #254 | #271-#275 |
+
+#### Governance
+- No code committed; env files gitignored; no schema change. Plan doc: `Governance/docs/governance/BREVO-MCP-INTEGRATION.md`.
+- Next: restart opencode to activate `brevo` MCP (D1), then verify domains/senders (D2/D3).

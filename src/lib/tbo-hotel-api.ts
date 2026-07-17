@@ -83,7 +83,7 @@ async function staticJsonPost<T>(url: string, body: unknown, ctx: ApiContext, lo
   const responseTime = Date.now() - start;
 
   if (!res.ok) {
-    await logApiCall({
+    logApiCall({
       provider: 'tbo_hotel_static',
       endpoint: url.replace(ctx.baseUrl, ''),
       method: 'POST',
@@ -99,7 +99,7 @@ async function staticJsonPost<T>(url: string, body: unknown, ctx: ApiContext, lo
   }
 
   const data = await res.json();
-  await logApiCall({
+  logApiCall({
     provider: 'tbo_hotel_static',
     endpoint: url.replace(ctx.baseUrl, ''),
     method: 'POST',
@@ -123,7 +123,7 @@ async function staticGet<T>(url: string, ctx: ApiContext, logOpts?: LogOptions):
   const responseTime = Date.now() - start;
 
   if (!res.ok) {
-    await logApiCall({
+    logApiCall({
       provider: 'tbo_hotel_static',
       endpoint: url.replace(ctx.baseUrl, ''),
       method: 'GET',
@@ -136,7 +136,7 @@ async function staticGet<T>(url: string, ctx: ApiContext, logOpts?: LogOptions):
   }
 
   const data = await res.json();
-  await logApiCall({
+  logApiCall({
     provider: 'tbo_hotel_static',
     endpoint: url.replace(ctx.baseUrl, ''),
     method: 'GET',
@@ -158,7 +158,7 @@ async function searchPost<T>(url: string, body: unknown, ctx: ApiContext, logOpt
   const responseTime = Date.now() - start;
 
   if (!res.ok) {
-    await logApiCall({
+    logApiCall({
       provider: 'tbo_hotel_search',
       endpoint: url.replace(ctx.baseUrl, ''),
       method: 'POST',
@@ -172,7 +172,7 @@ async function searchPost<T>(url: string, body: unknown, ctx: ApiContext, logOpt
   }
 
   const data = await res.json();
-  await logApiCall({
+  logApiCall({
     provider: 'tbo_hotel_search',
     endpoint: url.replace(ctx.baseUrl, ''),
     method: 'POST',
@@ -195,7 +195,7 @@ async function bookingPost<T>(url: string, body: unknown, ctx: ApiContext, logOp
   const responseTime = Date.now() - start;
 
   if (!res.ok) {
-    await logApiCall({
+    logApiCall({
       provider: 'tbo_hotel_booking',
       endpoint: url.replace(ctx.baseUrl, ''),
       method: 'POST',
@@ -209,7 +209,7 @@ async function bookingPost<T>(url: string, body: unknown, ctx: ApiContext, logOp
   }
 
   const data = await res.json();
-  await logApiCall({
+  logApiCall({
     provider: 'tbo_hotel_booking',
     endpoint: url.replace(ctx.baseUrl, ''),
     method: 'POST',
@@ -231,7 +231,7 @@ export function authenticate(req: TBOHotelAuthRequest): Promise<TBOHotelAuthResp
   }).then(async (res) => {
     const responseTime = Date.now() - start;
     if (!res.ok) {
-      await logApiCall({
+      logApiCall({
         provider: 'tbo_hotel',
         endpoint: '/Authenticate',
         method: 'POST',
@@ -243,7 +243,7 @@ export function authenticate(req: TBOHotelAuthRequest): Promise<TBOHotelAuthResp
       throw new Error(`TBO Hotel Auth HTTP ${res.status}: ${res.statusText}`);
     }
     const data = await res.json();
-    await logApiCall({
+    logApiCall({
       provider: 'tbo_hotel',
       endpoint: '/Authenticate',
       method: 'POST',

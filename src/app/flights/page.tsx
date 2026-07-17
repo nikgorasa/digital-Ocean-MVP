@@ -310,7 +310,7 @@ export default function FlightsPage() {
         duration: typeof f.duration === "number" ? formatDuration(f.duration) : f.duration,
         stops: f.segments?.[0] ? f.segments[0].length - 1 : 0,
         price: f.publishedFare || f.baseFare || 0,
-        tier: CABIN_CLASS_MAP[f.cabinClass as number] || f.cabinClass || "Economy",
+        tier: cabinClass || "Economy",
         baggage: f.baggage || "",
         cabinBaggage: f.cabinBaggage || "7 KG",
         isRefundable: f.isRefundable ?? false,
@@ -484,7 +484,7 @@ export default function FlightsPage() {
             <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${getTierColor(flight.tier)}`}>
               {flight.tier}
             </span>
-            <p className="text-2xl font-black text-brand-charcoal mt-1">{formatCurrency(flight.price)}</p>
+            <p className="text-2xl font-black text-brand-charcoal mt-1">{formatCurrency(flight.price * totalPassengers)}</p>
             <p className="text-[10px] text-brand-sand">total for {totalPassengers} pax</p>
           </div>
         </div>
@@ -562,7 +562,7 @@ export default function FlightsPage() {
                                 <span className="text-[10px] text-purple-600" title="Lounge access"><Armchair size={10} /></span>
                               )}
                             </div>
-                            <p className="text-lg font-black text-brand-charcoal">{formatCurrency(fare.price)}</p>
+                            <p className="text-lg font-black text-brand-charcoal">{formatCurrency(fare.price * totalPassengers)}</p>
                             <button
                               onClick={(e) => {
                                 e.stopPropagation();
@@ -1085,7 +1085,7 @@ export default function FlightsPage() {
                     <span className="text-[10px] font-bold uppercase text-brand-sand">{leg}</span>
                     <span className="font-semibold text-brand-charcoal">{f.airline} {f.flightNumber}</span>
                     <span className="text-brand-sand">{f.origin}→{f.destination}</span>
-                    <span className="font-mono font-bold text-brand-charcoal">{formatCurrency(f.price)}</span>
+                    <span className="font-mono font-bold text-brand-charcoal">{formatCurrency(f.price * totalPassengers)}</span>
                   </div>
                 ))}
               </div>
@@ -1205,7 +1205,7 @@ export default function FlightsPage() {
                 <div className="pt-4 border-t border-brand-sand/30">
                   <div className="flex justify-between items-center mb-4">
                     <div>
-                      <p className="text-3xl font-black font-mono text-brand-charcoal">{formatCurrency(selectedFlight.price)}</p>
+                      <p className="text-3xl font-black font-mono text-brand-charcoal">{formatCurrency(selectedFlight.price * totalPassengers)}</p>
                       <p className="text-xs text-brand-sand">total for {totalPassengers} pax</p>
                     </div>
                   </div>

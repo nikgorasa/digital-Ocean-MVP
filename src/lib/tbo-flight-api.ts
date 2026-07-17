@@ -24,15 +24,17 @@ const API_BASE = "http://api.tektravels.com/BookingEngineService_Air/AirService.
 
 async function post<T>(url: string, body: unknown): Promise<T> {
   const start = Date.now();
+  const endpointShort = url.split('/').pop() || url;
   const res = await fetch(url, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(body),
   });
   const responseTime = Date.now() - start;
+  console.log(`[TBO-API] ${endpointShort}: ${responseTime}ms (HTTP ${res.status})`);
 
   if (!res.ok) {
-    await logApiCall({
+    logApiCall({
       provider: 'tbo_flight',
       endpoint: url.replace(API_BASE, '').replace(AUTH_URL, '/Authenticate'),
       method: 'POST',
@@ -45,7 +47,7 @@ async function post<T>(url: string, body: unknown): Promise<T> {
   }
 
   const data = await res.json();
-  await logApiCall({
+  logApiCall({
     provider: 'tbo_flight',
     endpoint: url.replace(API_BASE, '').replace(AUTH_URL, '/Authenticate'),
     method: 'POST',
