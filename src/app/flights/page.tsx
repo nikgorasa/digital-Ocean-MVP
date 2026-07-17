@@ -18,9 +18,46 @@ import { getAirlineLogo } from "@/lib/airline-logos";
 import SortBar from "@/components/SortBar";
 import FilterChips from "@/components/FilterChips";
 import FilterPanel from "@/components/FilterPanel";
+import Breadcrumb, { BreadcrumbJsonLd } from "@/components/Breadcrumb";
 import { useFlightFilters } from "@/hooks/useFilters";
 import { applyFlightFilters, sortFlights, type FlightSortKey, type FlightResult } from "@/lib/ai/filters/applyFilters";
 import Link from "next/link";
+
+function FlightJsonLd({ flights }: { flights: Flight[] }) {
+  if (flights.length === 0) return null;
+  const schemas = flights.slice(0, 10).map((flight) => ({
+    "@context": "https://schema.org",
+    "@type": "Flight",
+    name: `${flight.airline} ${flight.flightNumber}`,
+    airline: {
+      "@type": "Airline",
+      name: flight.airline,
+      iataCode: flight.airlineCode,
+    },
+    departureAirport: {
+      "@type": "Airport",
+      iataCode: flight.origin,
+    },
+    arrivalAirport: {
+      "@type": "Airport",
+      iataCode: flight.destination,
+    },
+    departureTime: flight.departureTime,
+    arrivalTime: flight.arrivalTime,
+    offers: {
+      "@type": "Offer",
+      price: flight.price,
+      priceCurrency: "INR",
+      availability: "https://schema.org/InStock",
+    },
+  }));
+  return (
+    <script
+      type="application/ld+json"
+      dangerouslySetInnerHTML={{ __html: JSON.stringify(schemas.length === 1 ? schemas[0] : schemas) }}
+    />
+  );
+}
 
 interface Flight {
   id: string;
@@ -429,6 +466,11 @@ export default function FlightsPage() {
       <LoginModal isOpen={showLogin} onClose={() => setShowLogin(false)} />
 
       <main className="min-h-screen pt-16 bg-brand-ivory">
+        <BreadcrumbJsonLd items={[
+          { name: "Home", href: "/" },
+          { name: "Flights", href: "/flights" },
+        ]} />
+        <FlightJsonLd flights={filteredResults} />
         {/* Hero */}
         <section className="py-12 bg-brand-emerald">
           <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">

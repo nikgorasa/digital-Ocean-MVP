@@ -134,21 +134,82 @@ export default async function HomePage() {
     const uniqueCompanies = new Set(
       companyUsers.map((u) => u.companyId).filter(Boolean)
     );
+
+    const totalReviews = testimonials.length;
+    const avgRating = totalReviews > 0
+      ? testimonials.reduce((sum, t) => sum + t.rating, 0) / totalReviews
+      : 4.9;
+
     const stats = {
       companies: `${uniqueCompanies.size || 500}+`,
       bookings: `${packages.length * 2000}+`,
-      rating: "4.9",
+      rating: avgRating.toFixed(1),
     };
 
+    const aggregateRatingSchema = totalReviews > 0 ? {
+      "@context": "https://schema.org",
+      "@type": "Organization",
+      name: "GoRASA",
+      url: "https://cckr.vercel.app",
+      aggregateRating: {
+        "@type": "AggregateRating",
+        ratingValue: avgRating.toFixed(1),
+        reviewCount: totalReviews,
+        bestRating: 5,
+        worstRating: 1,
+      },
+    } : null;
+
+    const tourPackageSchemas = packages.slice(0, 10).map((p) => {
+      let images: string[] = [];
+      try {
+        images = typeof p.images === "string" ? JSON.parse(p.images as string) : (p.images as string[]) || [];
+      } catch {
+        images = [];
+      }
+      return {
+        "@context": "https://schema.org",
+        "@type": "TouristTrip",
+        name: p.title,
+        description: `Holiday package - ${p.duration}`,
+        touristType: "Leisure",
+        provider: {
+          "@type": "Organization",
+          name: (p.provider as string) || "GoRASA",
+        },
+        offers: {
+          "@type": "Offer",
+          price: p.price,
+          priceCurrency: "INR",
+          availability: "https://schema.org/InStock",
+        },
+        image: images[0] || undefined,
+      };
+    });
+
     return (
-      <HomePageClient
-        carouselPackages={carouselPackages}
-        testimonials={testimonialsList}
-        categories={categoriesMap}
-        categoryOrder={categoryOrder}
-        valueProps={valuePropsList}
-        stats={stats}
-      />
+      <>
+        {aggregateRatingSchema && (
+          <script
+            type="application/ld+json"
+            dangerouslySetInnerHTML={{ __html: JSON.stringify(aggregateRatingSchema) }}
+          />
+        )}
+        {tourPackageSchemas.length > 0 && (
+          <script
+            type="application/ld+json"
+            dangerouslySetInnerHTML={{ __html: JSON.stringify(tourPackageSchemas) }}
+          />
+        )}
+        <HomePageClient
+          carouselPackages={carouselPackages}
+          testimonials={testimonialsList}
+          categories={categoriesMap}
+          categoryOrder={categoryOrder}
+          valueProps={valuePropsList}
+          stats={stats}
+        />
+      </>
     );
   } catch (error) {
     console.error("Homepage data fetch failed:", error);

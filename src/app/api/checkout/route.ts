@@ -4,6 +4,7 @@ import { getCurrentUser } from "@/lib/auth-helpers";
 import { prisma } from "@/lib/prisma";
 import { z } from "zod";
 import { getCorporateDiscount } from "@/lib/pricing";
+import { sendEmail, emailTemplates } from "@/lib/email";
 
 const checkoutSchema = z.object({
   bookingId: z.string().min(1, "bookingId is required"),
@@ -212,6 +213,21 @@ export async function POST(request: NextRequest) {
           },
         }),
       ]);
+
+      // Send invoice email (non-blocking)
+      const dueDateStr = dueDate.toISOString().split("T")[0];
+      sendEmail({
+        to: user.email,
+        ...emailTemplates.invoiceIssued({
+          companyName: company.name,
+          invoiceNumber,
+          bookingItem: booking.itemName,
+          amount: finalAmount,
+          taxAmount,
+          totalAmount: totalWithTax,
+          dueDate: dueDateStr,
+        }),
+      }).catch(e => console.error("[Email] Invoice email failed:", e));
 
       return NextResponse.json({
         success: true,

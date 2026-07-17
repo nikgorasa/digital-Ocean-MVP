@@ -267,6 +267,38 @@ export default function InvoicesPage() {
               <option key={c.id} value={c.id}>{c.name}</option>
             ))}
           </select>
+          <button
+            onClick={() => {
+              const headers = ["Invoice #", "Company", "Booking", "Type", "PNR", "Amount", "Tax", "Total", "Status", "Due Date", "Issued", "Paid At", "Payment Ref"];
+              const rows = invoices.map(inv => [
+                inv.number,
+                inv.company.name,
+                inv.booking.itemName,
+                inv.booking.type,
+                inv.booking.pnr || "",
+                inv.amount.toString(),
+                inv.taxAmount.toString(),
+                inv.totalAmount.toString(),
+                inv.status,
+                inv.dueDate.split("T")[0],
+                inv.issuedAt.split("T")[0],
+                inv.paidAt?.split("T")[0] || "",
+                inv.paymentRef || "",
+              ]);
+              const csv = [headers.join(","), ...rows.map(r => r.map(v => `"${v}"`).join(","))].join("\n");
+              const blob = new Blob([csv], { type: "text/csv" });
+              const url = URL.createObjectURL(blob);
+              const a = document.createElement("a");
+              a.href = url;
+              a.download = `invoices-${new Date().toISOString().split("T")[0]}.csv`;
+              a.click();
+              URL.revokeObjectURL(url);
+            }}
+            className="flex items-center gap-1.5 px-3 py-1.5 bg-emerald-600 text-white text-xs font-medium rounded-lg hover:bg-emerald-700 cursor-pointer"
+          >
+            <Download size={12} />
+            Export CSV
+          </button>
         </div>
       </div>
 

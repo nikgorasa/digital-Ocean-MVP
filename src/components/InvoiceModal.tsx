@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "motion/react";
 import { formatCurrency, formatDate, formatTravelDates } from "@/lib";
-import { X, Printer, Tag, Building2, Loader2 } from "lucide-react";
+import { X, Printer, Download, Tag, Building2, Loader2 } from "lucide-react";
 
 interface Booking {
   id: string;
@@ -221,6 +221,18 @@ export default function InvoiceModal({ isOpen, onClose, booking, userName, userE
                 </div>
 
                 <div className="flex gap-3">
+                  {dbInvoice && (
+                    <button
+                      onClick={() => {
+                        const url = `/api/invoices/${dbInvoice.id}/pdf`;
+                        window.open(url, "_blank");
+                      }}
+                      className="flex-1 py-2.5 bg-emerald-600 text-white rounded-xl text-sm font-medium hover:bg-emerald-700 flex items-center justify-center gap-2 cursor-pointer"
+                    >
+                      <Download size={16} />
+                      PDF
+                    </button>
+                  )}
                   <button
                     onClick={() => window.print()}
                     className="flex-1 py-2.5 bg-slate-100 text-slate-700 rounded-xl text-sm font-medium hover:bg-slate-200 flex items-center justify-center gap-2 cursor-pointer"

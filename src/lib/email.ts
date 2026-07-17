@@ -126,4 +126,59 @@ export const emailTemplates = {
       </div>
     `,
   }),
+
+  invoiceIssued: (invoice: {
+    companyName: string;
+    invoiceNumber: string;
+    bookingItem: string;
+    amount: number;
+    taxAmount: number;
+    totalAmount: number;
+    dueDate: string;
+    currency?: string;
+  }) => ({
+    subject: `Invoice ${invoice.invoiceNumber} - GoRASA Travel`,
+    html: `
+      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+        <h2 style="color: #059669;">Invoice Issued</h2>
+        <p>Dear ${invoice.companyName},</p>
+        <p>An invoice has been issued for your recent booking.</p>
+        <div style="background: #f3f4f6; padding: 20px; border-radius: 8px; margin: 20px 0;">
+          <h3 style="margin: 0 0 10px 0;">Invoice #${invoice.invoiceNumber}</h3>
+          <p style="margin: 5px 0;"><strong>Booking:</strong> ${invoice.bookingItem}</p>
+          <p style="margin: 5px 0;"><strong>Amount:</strong> ${formatCurrency(invoice.amount, invoice.currency || 'INR')}</p>
+          ${invoice.taxAmount > 0 ? `<p style="margin: 5px 0;"><strong>Tax:</strong> ${formatCurrency(invoice.taxAmount, invoice.currency || 'INR')}</p>` : ''}
+          <p style="margin: 5px 0;"><strong>Total:</strong> ${formatCurrency(invoice.totalAmount, invoice.currency || 'INR')}</p>
+          <p style="margin: 5px 0;"><strong>Due Date:</strong> ${invoice.dueDate}</p>
+        </div>
+        <p><a href="https://cckr.vercel.app/trips" style="background: #059669; color: white; padding: 12px 24px; text-decoration: none; border-radius: 8px; display: inline-block;">View Invoice</a></p>
+        <p>Best regards,<br/>GoRASA Team</p>
+      </div>
+    `,
+  }),
+
+  invoiceOverdue: (invoice: {
+    companyName: string;
+    invoiceNumber: string;
+    totalAmount: number;
+    dueDate: string;
+    currency?: string;
+  }) => ({
+    subject: `OVERDUE: Invoice ${invoice.invoiceNumber} - GoRASA Travel`,
+    html: `
+      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+        <h2 style="color: #dc2626;">Invoice Overdue</h2>
+        <p>Dear ${invoice.companyName},</p>
+        <p>The following invoice is past its due date and requires immediate attention.</p>
+        <div style="background: #fef2f2; padding: 20px; border-radius: 8px; margin: 20px 0; border-left: 4px solid #dc2626;">
+          <h3 style="margin: 0 0 10px 0;">Invoice #${invoice.invoiceNumber}</h3>
+          <p style="margin: 5px 0;"><strong>Amount Due:</strong> ${formatCurrency(invoice.totalAmount, invoice.currency || 'INR')}</p>
+          <p style="margin: 5px 0;"><strong>Due Date:</strong> ${invoice.dueDate}</p>
+          <p style="margin: 5px 0; color: #92400e;"><strong>Status:</strong> OVERDUE</p>
+        </div>
+        <p>Please settle this invoice at your earliest convenience.</p>
+        <p>Best regards,<br/>GoRASA Team</p>
+      </div>
+    `,
+  }),
 };

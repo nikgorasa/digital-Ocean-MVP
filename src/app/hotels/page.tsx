@@ -17,11 +17,44 @@ import DateRangePicker from "@/components/DateRangePicker";
 import SortBar from "@/components/SortBar";
 import FilterChips from "@/components/FilterChips";
 import FilterPanel from "@/components/FilterPanel";
+import Breadcrumb, { BreadcrumbJsonLd } from "@/components/Breadcrumb";
 import { useHotelFilters } from "@/hooks/useFilters";
 import { applyHotelFilters, sortHotels, type HotelSortKey, type HotelResult } from "@/lib/ai/filters/applyFilters";
 import type { City } from "@/components/CitySearchDropdown";
 import type { TBODisplayHotel, TBODisplayRoom } from "@/lib/tbo-hotel-types";
 import Link from "next/link";
+
+function HotelJsonLd({ hotels, cityName }: { hotels: TBODisplayHotel[]; cityName: string }) {
+  if (hotels.length === 0) return null;
+  const schemas = hotels.slice(0, 10).map((hotel) => ({
+    "@context": "https://schema.org",
+    "@type": "Hotel",
+    name: hotel.name,
+    address: {
+      "@type": "PostalAddress",
+      addressLocality: hotel.address || cityName,
+      addressCountry: "IN",
+    },
+    starRating: {
+      "@type": "Rating",
+      ratingValue: STAR_MAP[hotel.rating] || 3,
+    },
+    priceRange: hotel.price ? `₹${hotel.price}` : undefined,
+    image: hotel.picture || undefined,
+    description: hotel.description || undefined,
+    aggregateRating: hotel.tripAdvisorRating > 0 ? {
+      "@type": "AggregateRating",
+      ratingValue: hotel.tripAdvisorRating,
+      bestRating: 5,
+    } : undefined,
+  }));
+  return (
+    <script
+      type="application/ld+json"
+      dangerouslySetInnerHTML={{ __html: JSON.stringify(schemas.length === 1 ? schemas[0] : schemas) }}
+    />
+  );
+}
 
 function todayStr() {
   return new Date().toISOString().slice(0, 10);
@@ -205,6 +238,11 @@ export default function HotelsPage() {
       <LoginModal isOpen={showLogin} onClose={() => setShowLogin(false)} />
 
       <main className="min-h-screen pt-16 bg-brand-ivory">
+        <BreadcrumbJsonLd items={[
+          { name: "Home", href: "/" },
+          { name: "Hotels", href: "/hotels" },
+        ]} />
+        <HotelJsonLd hotels={filteredResults} cityName={selectedCity.name} />
         {/* Hero */}
         <section className="py-12 bg-brand-emerald">
           <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
