@@ -227,7 +227,7 @@ const DESTINATION_META: Record<
     overview:
       "Kashmir, often called Paradise on Earth, is a breathtaking valley in northern India. With snow-capped Himalayan peaks, pristine lakes, lush meadows, and charming houseboats, Kashmir offers an unforgettable experience in every season.",
     image:
-      "https://images.unsplash.com/photo-1597074866923-dc0589150458?auto=format&fit=crop&w=1200&q=80",
+      "https://images.unsplash.com/photo-1566837945700-30057527ade0?auto=format&fit=crop&w=1200&q=80",
     faqs: [
       {
         question: "What is the best time to visit Kashmir?",

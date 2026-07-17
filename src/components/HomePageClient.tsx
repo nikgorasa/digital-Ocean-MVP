@@ -213,7 +213,7 @@ export default function HomePageClient({
                 { name: "Maldives", slug: "maldives", image: "https://images.unsplash.com/photo-1514282401047-d79a71a590e8?auto=format&fit=crop&w=400&q=80", country: "Maldives" },
                 { name: "Thailand", slug: "thailand", image: "https://images.unsplash.com/photo-1528181304800-259b08848526?auto=format&fit=crop&w=400&q=80", country: "Thailand" },
                 { name: "Goa", slug: "goa", image: "https://images.unsplash.com/photo-1512343879784-a960bf40e7f2?auto=format&fit=crop&w=400&q=80", country: "India" },
-                { name: "Kashmir", slug: "kashmir", image: "https://images.unsplash.com/photo-1597074866923-dc0589150458?auto=format&fit=crop&w=400&q=80", country: "India" },
+                { name: "Kashmir", slug: "kashmir", image: "https://images.unsplash.com/photo-1566837945700-30057527ade0?auto=format&fit=crop&w=400&q=80", country: "India" },
                 { name: "Singapore", slug: "singapore", image: "https://images.unsplash.com/photo-1525625293386-3f8f99389edd?auto=format&fit=crop&w=400&q=80", country: "Singapore" },
                 { name: "Manali", slug: "manali", image: "https://images.unsplash.com/photo-1626621341517-bbf3d9990a23?auto=format&fit=crop&w=400&q=80", country: "India" },
               ].map((dest) => (

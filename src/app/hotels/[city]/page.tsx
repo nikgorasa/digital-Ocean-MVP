@@ -146,7 +146,7 @@ const CITY_META: Record<string, CityMeta> = {
       "Book hotels and houseboats in Kashmir — Dal Lake houseboats, Gulmarg ski resorts, and Pahalgam valley hotels. Best Kashmir deals with GoRASA.",
     overview:
       "Kashmir offers unique accommodation experiences — from traditional houseboats on Dal Lake to ski resorts in Gulmarg and cozy guesthouses in Pahalgam. Each season brings a different charm.",
-    image: "https://images.unsplash.com/photo-1597074866923-dc0589150458?auto=format&fit=crop&w=1200&q=80",
+    image: "https://images.unsplash.com/photo-1566837945700-30057527ade0?auto=format&fit=crop&w=1200&q=80",
     highlights: ["Dal Lake houseboats", "Gulmarg ski resorts", "Pahalgam valley hotels", "Sonmarg guesthouses", "Srinagar boutique hotels", "Mughal Garden nearby stays"],
     bestTime: "March to October (Dec–Feb for snow)",
     avgBudget: "₹2,000–₹15,000 per night",
