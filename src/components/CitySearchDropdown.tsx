@@ -19,6 +19,7 @@ interface CitySearchDropdownProps {
   label?: string;
   className?: string;
   countryCode?: string;
+  mode?: "hotel" | "flight";
 }
 
 const COUNTRY_OPTIONS = [
@@ -118,14 +119,24 @@ export default function CitySearchDropdown({
   label = "Location",
   className = "",
   countryCode: initialCountryCode = "IN",
+  mode = "hotel",
 }: CitySearchDropdownProps) {
   const [cities, setCities] = useState<City[]>([]);
   const [loading, setLoading] = useState(true);
   const [open, setOpen] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
   const [countryCode, setCountryCode] = useState(initialCountryCode);
+  const [search, setSearch] = useState("");
 
   useEffect(() => {
+    // Flight mode: use only fallback cities (which have IATA airport codes)
+    // Hotel mode: fetch from TBO API (hotel city codes)
+    if (mode === "flight") {
+      setCities(FALLBACK_CITIES[countryCode] || FALLBACK_CITIES["IN"] || []);
+      setLoading(false);
+      return;
+    }
+
     setLoading(true);
     fetch(`/api/cities/tbo?countryCode=${countryCode}`)
       .then((r) => r.json())
@@ -136,7 +147,7 @@ export default function CitySearchDropdown({
         setCities(FALLBACK_CITIES[countryCode] || FALLBACK_CITIES["IN"] || []);
       })
       .finally(() => setLoading(false));
-  }, [countryCode]);
+  }, [countryCode, mode]);
 
   // Close on click outside
   useEffect(() => {
@@ -155,12 +166,7 @@ export default function CitySearchDropdown({
     setSearch("");
   };
 
-  // Display format: "Delhi (DEL)" or just "Delhi" if no IATA code
-  const displayValue = value || placeholder;
-
-  const [search, setSearch] = useState("");
-
-  // Filter cities by name OR IATA code
+  // Filter cities by name OR IATA code OR airport name
   const filteredCities = cities.filter(c =>
     c.name.toLowerCase().includes(search.toLowerCase()) ||
     c.iata_code?.toLowerCase().includes(search.toLowerCase()) ||
@@ -249,33 +255,35 @@ export default function CitySearchDropdown({
                 autoFocus
                 value={search}
                 onValueChange={setSearch}
-                placeholder="Search city or airport code (e.g. Delhi, DEL, BOM)..."
+                placeholder={mode === "flight" ? "Search airport (e.g. Delhi, DEL, BOM)..." : "Search city..."}
                 className="w-full text-sm outline-none placeholder:text-slate-400"
               />
             </div>
             <Command.List className="py-1">
               {loading && (
                 <Command.Loading>
-                  <div className="px-3 py-2 text-xs text-slate-400">Loading cities...</div>
+                  <div className="px-3 py-2 text-xs text-slate-400">Loading...</div>
                 </Command.Loading>
               )}
               {filteredCities.length === 0 && !loading && (
                 <div className="px-3 py-3 text-center">
-                  <p className="text-xs text-slate-400">No cities found for "{search}"</p>
-                  <p className="text-[10px] text-slate-300 mt-1">Try a city name or IATA code (DEL, BOM, GOI)</p>
+                  <p className="text-xs text-slate-400">No results for "{search}"</p>
+                  {mode === "flight" && (
+                    <p className="text-[10px] text-slate-300 mt-1">Try a city name or IATA code (DEL, BOM, GOI)</p>
+                  )}
                 </div>
               )}
 
               {/* Popular cities group */}
               {popular.length > 0 && (
-                <Command.Group heading="Popular" className="px-1">
+                <Command.Group heading={mode === "flight" ? "Popular Airports" : "Popular Cities"} className="px-1">
                   {popular.map((city) => renderCityItem(city, true))}
                 </Command.Group>
               )}
 
               {/* All cities group */}
               {rest.length > 0 && (
-                <Command.Group heading="All Cities" className="px-1">
+                <Command.Group heading={mode === "flight" ? "All Airports" : "All Cities"} className="px-1">
                   {rest.map((city) => renderCityItem(city, false))}
                 </Command.Group>
               )}

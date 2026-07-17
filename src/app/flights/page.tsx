@@ -645,14 +645,16 @@ export default function FlightsPage() {
                 <CitySearchDropdown
                   value={originCity.name}
                   onChange={setOriginCity}
-                  placeholder="Search cities..."
+                  placeholder="Search airport..."
                   label="From"
+                  mode="flight"
                 />
                 <CitySearchDropdown
                   value={destinationCity.name}
                   onChange={setDestinationCity}
-                  placeholder="Search cities..."
+                  placeholder="Search airport..."
                   label="To"
+                  mode="flight"
                 />
                 {tripType === "one-way" ? (
                   <DateRangePicker
@@ -691,8 +693,9 @@ export default function FlightsPage() {
                                 next[i] = { ...next[i], origin: city };
                                 setMultiCityLegs(next);
                               }}
-                              placeholder="Origin city"
+                              placeholder="Origin airport"
                               className="w-full"
+                              mode="flight"
                             />
                           </div>
                           <div>
@@ -706,8 +709,9 @@ export default function FlightsPage() {
                                 next[i] = { ...next[i], destination: city };
                                 setMultiCityLegs(next);
                               }}
-                              placeholder="Destination city"
+                              placeholder="Destination airport"
                               className="w-full"
+                              mode="flight"
                             />
                           </div>
                           <div>
