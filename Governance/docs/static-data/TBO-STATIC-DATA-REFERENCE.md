@@ -363,3 +363,39 @@ The Flight API uses **completely different endpoints** than the Hotel API. This 
 | `username` | `TBO_USERNAME` | (empty) |
 | `password` | `TBO_PASSWORD` | (empty) |
 | `forceMock` | `TBO_FLIGHT_FORCE_MOCK` | `false` |
+
+### CRITICAL: Hotel Cities vs Flight Airports
+
+**NEVER MIX THESE TWO DATA SOURCES:**
+
+| Use Case | Data Source | Component Mode | Example |
+|---|---|---|---|
+| **Hotel Search** | TBO Hotel API (`/api/cities/tbo`) | `mode="hotel"` (default) | Goa → code: "15648" |
+| **Flight Search** | Curated airport list (FALLBACK_CITIES) | `mode="flight"` | Goa → iata_code: "GOI" |
+
+**Why:** TBO's Hotel CityList returns hotel destination codes (e.g., "15648" for Goa). The Flight API requires IATA airport codes (e.g., "GOI" for Goa). Using hotel city codes for flights causes "No Result Found" errors.
+
+**Implementation:**
+- `CitySearchDropdown` has a `mode` prop: `"hotel"` | `"flight"`
+- Flight pages (`/flights`) MUST use `mode="flight"`
+- Hotel pages (`/hotels`) use `mode="hotel"` (default)
+- Flight mode uses `FALLBACK_CITIES` which has IATA codes + airport names
+- Hotel mode fetches from TBO API
+
+**Airport Data (FALLBACK_CITIES):**
+
+| Country | Airports |
+|---|---|
+| India (IN) | GOI (Dabolim), BOM (Chhatrapati Shivaji), DEL (Indira Gandhi), BLR (Kempegowda), HYD (Rajiv Gandhi), MAA (Chennai), JAI (Jaipur), CCU (Netaji Subhas), PNQ (Pune), AMD (Sardar Patel), COK (Cochin), TRV (Trivandrum), LKO (Chaudhary Charan Singh), GAU (Lokpriya Gopinath), VNS (Lal Bahadur Shastri) |
+| UAE (AE) | DXB (Dubai), AUH (Zayed), SHJ (Sharjah) |
+| Thailand (TH) | BKK (Suvarnabhumi), HKT (Phuket), CNX (Chiang Mai) |
+| Singapore (SG) | SIN (Changi) |
+| Malaysia (MY) | KUL (Kuala Lumpur), LGK (Langkawi), PEN (Penang) |
+| USA (US) | JFK (John F Kennedy), LAX (Los Angeles), SFO (San Francisco), MIA (Miami), ORD (O'Hare) |
+| UK (GB) | LHR (Heathrow), MAN (Manchester), EDI (Edinburgh) |
+| France (FR) | CDG (Charles de Gaulle), NCE (Cote d'Azur) |
+| Germany (DE) | BER (Berlin Brandenburg), MUC (Franz Josef Strauss), FRA (Frankfurt) |
+| Australia (AU) | SYD (Kingsford Smith), MEL (Tullamarine) |
+| Japan (JP) | NRT (Narita), KIX (Kansai) |
+| Sri Lanka (LK) | CMB (Bandaranaike) |
+| Maldives (MV) | MLE (Velana) |

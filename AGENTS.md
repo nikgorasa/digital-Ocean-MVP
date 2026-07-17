@@ -139,6 +139,18 @@ The TBO Hotel API has **dual endpoint architecture**. Every change to API config
 **ALWAYS** run `Governance/scripts/Cckr-api-config-check.sh` after any API config change.
 **ALWAYS** update BOTH `ConfigProvider` DB table AND the 3 code defaults (seed-config.ts, config-service.ts envFallback, page.tsx PROVIDER_META) in sync.
 
+### Rule 8: Flight vs Hotel City Data (CRITICAL)
+The `CitySearchDropdown` component has a `mode` prop that controls data source:
+
+| Mode | Data Source | Use For |
+|---|---|---|
+| `mode="hotel"` (default) | TBO Hotel API (`/api/cities/tbo`) | Hotel search pages |
+| `mode="flight"` | Curated airport list (FALLBACK_CITIES) | Flight search pages |
+
+**NEVER** use hotel city data for flight searches — hotel codes (e.g., "15648") don't work with the Flight API which requires IATA airport codes (e.g., "GOI").
+**ALWAYS** use `mode="flight"` on flight pages (`/flights`).
+**ALWAYS** use `mode="hotel"` or default on hotel pages (`/hotels`).
+
 ---
 
 ## Key Files

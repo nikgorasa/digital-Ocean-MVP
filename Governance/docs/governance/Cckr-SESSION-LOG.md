@@ -1,7 +1,7 @@
 # GoRASA CockroachDB Standalone — SESSION-LOG
 
 > **Purpose:** Living document tracking all sessions, changes, deployments, and learnings.
-> **Last updated:** 2026-07-17 (Session 25 — FLIGHT-UX-EPIC: Flight search grouping + cabin class fix)
+> **Last updated:** 2026-07-17 (Session 26 — FLIGHT-CITY-EPIC: Airport data separation + city search fixes)
 
 ---
 
@@ -1186,3 +1186,59 @@ const filteredList = requestedCabin === 0
 - Zero database schema changes
 - Zero API configuration changes
 - All changes are frontend-only (mock fix, filtering, grouping UI)
+
+---
+
+### Session 26 — FLIGHT-CITY-EPIC: Airport Data Separation + City Search Fixes (2026-07-17)
+
+**Objective:** Fix flight city search — was showing hotel city data instead of airports. Separate hotel cities from flight airports.
+
+**Commits:** `b3222fe`, `7969ff7`
+
+#### Critical Architecture Decision: Hotel vs Flight City Data
+
+**PROBLEM DISCOVERED:** The `CitySearchDropdown` component was fetching from `/api/cities/tbo` which returns TBO HOTEL city data (1000+ hotel destinations like "Ziro", "Zirakpur"). These are hotel city codes (e.g., "15648" for Goa), NOT IATA airport codes (e.g., "GOI" for Goa).
+
+The flight API requires IATA airport codes. Using hotel city codes causes flight searches to fail with "No Result Found".
+
+**SOLUTION:** Added `mode` prop to `CitySearchDropdown`:
+- `mode="hotel"` — Fetches from TBO Hotel API (hotel city codes for hotel search)
+- `mode="flight"` — Uses curated airport list with IATA codes (for flight search)
+
+**THIS SEPARATION MUST BE PRESERVED.** Never use hotel city data for flight searches.
+
+#### Files Changed
+
+| File | Change |
+|---|---|
+| `src/components/CitySearchDropdown.tsx` | Added `mode` prop, `airport_name` field, IATA code display, search by code |
+| `src/app/flights/page.tsx` | All 4 dropdowns use `mode="flight"` |
+
+#### Key Implementation Details
+
+1. **City interface** — Added `airport_name?: string` field
+2. **FALLBACK_CITIES** — All entries now have `airport_name` (e.g., "Dabolim Airport", "Indira Gandhi Intl")
+3. **Search** — Matches by city name, IATA code, OR airport name
+4. **Display** — Shows `CityName [IATA] AirportName` format
+5. **Flight mode** — Skips TBO API fetch, uses only curated airport list
+
+#### GitHub Issues Closed (5)
+- #245 FLIGHT-CITY-EPIC — CLOSED
+- #246 Display IATA code + airport name — CLOSED
+- #247 Search by IATA code — CLOSED
+- #248 Expand airport database — CLOSED
+- #249 Show airport name in results — CLOSED
+
+#### Verification
+- Pre-flight: 13/13 passed
+- TypeScript: 0 errors
+- Build: compiled successfully
+- Post-task: 9/9 passed
+- Deployed: https://cckr.vercel.app/flights (200 OK)
+
+#### Governance Rule Added
+**CRITICAL:** The `CitySearchDropdown` component has a `mode` prop. Flight pages MUST use `mode="flight"`. Hotel pages use `mode="hotel"` (default). Never mix hotel city data with flight airport data.
+
+This rule is documented in:
+- `AGENTS.md` — API Config Guard section
+- `Governance/docs/static-data/TBO-STATIC-DATA-REFERENCE.md` — Flight API section

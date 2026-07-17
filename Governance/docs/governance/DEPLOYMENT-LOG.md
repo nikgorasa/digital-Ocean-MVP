@@ -31,6 +31,7 @@
 | 2026-07-17 | DEV | ✅ Live | https://cckr.vercel.app | Premium UI elevation — design tokens, fluid typography, scroll animations, skeleton loaders, hero parallax (69f5672) |
 | 2026-07-17 | DEV | ✅ Live | https://cckr.vercel.app | UX improvements — error states, accessibility, ConfirmDialog, fallback quick replies (829fe0d) |
 | 2026-07-17 | DEV | ✅ Live | https://cckr.vercel.app | FLIGHT-UX — flight grouping, cabin class filter, mock bug fix, expandable fares (d5df778) |
+| 2026-07-17 | DEV | ✅ Live | https://cckr.vercel.app | FLIGHT-CITY — airport data separation, IATA codes, search by code (7969ff7) |
 | 2026-06-26 | DEV | ✅ Pushed | https://cckr.vercel.app | API config guardrails — dual-endpoint validation, seed defaults fix, governance scripts (d091a52) |
 | 2026-06-19 | DEV | ✅ Live | https://cckr.vercel.app | First deployment — Supabase removed, aqua-pony CockroachDB cluster |
 | 2026-06-17 | DEV | ✅ Live | https://cckr.vercel.app | Initial CockroachDB standalone deployment |
