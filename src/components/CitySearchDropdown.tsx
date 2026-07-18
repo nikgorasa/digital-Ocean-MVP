@@ -1,17 +1,18 @@
 "use client";
 
-import { useState, useEffect, useRef, useCallback } from "react";
+import { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import { Command } from "cmdk";
 
 export interface City {
   code: string;
   name: string;
   state: string;
-  source: "tbo" | "fallback";
+  source: "tbo" | "fallback" | "db";
   iata_code?: string;
   airport_name?: string;
   country_code?: string;
   flag?: string;
+  group?: string;
 }
 
 interface CitySearchDropdownProps {
@@ -177,9 +178,9 @@ function getCountryGroup(countryCode: string): string {
   if (countryCode === "ID") return "ID";
   if (["GB"].includes(countryCode)) return "GB";
   if (["US"].includes(countryCode)) return "US";
-  if (["FR", "DE", "TR"].includes(countryCode)) return "EU";
-  if (["JP", "CN", "KR", "VN", "HK"].includes(countryCode)) return "EA";
-  if (["SA", "QA", "OM", "KW", "EG"].includes(countryCode)) return "ME";
+  if (["FR", "DE", "IT", "ES", "NL", "PT", "GR", "CH"].includes(countryCode)) return "EU";
+  if (["JP", "CN", "KR", "VN", "HK", "TW"].includes(countryCode)) return "EA";
+  if (["SA", "QA", "OM", "KW", "EG", "BH", "JO", "LB"].includes(countryCode)) return "ME";
   if (["AU"].includes(countryCode)) return "AU";
   return "OTHER";
 }
@@ -187,14 +188,14 @@ function getCountryGroup(countryCode: string): string {
 const RECENT_KEY = "gorasa_recent_airports";
 const MAX_RECENT = 5;
 
-function getRecentSearches(): City[] {
+function getRecentSearches(airports: City[]): City[] {
   if (typeof window === "undefined") return [];
   try {
     const raw = localStorage.getItem(RECENT_KEY);
     if (!raw) return [];
     const codes: string[] = JSON.parse(raw);
     return codes
-      .map(code => ALL_AIRPORTS.find(a => a.iata_code === code))
+      .map(code => airports.find(a => a.iata_code === code))
       .filter(Boolean) as City[];
   } catch {
     return [];
@@ -211,6 +212,15 @@ function saveRecentSearch(iataCode: string) {
   } catch {}
 }
 
+function useDebounce<T>(value: T, delay: number): T {
+  const [debounced, setDebounced] = useState(value);
+  useEffect(() => {
+    const timer = setTimeout(() => setDebounced(value), delay);
+    return () => clearTimeout(timer);
+  }, [value, delay]);
+  return debounced;
+}
+
 export default function CitySearchDropdown({
   value,
   onChange,
@@ -224,8 +234,55 @@ export default function CitySearchDropdown({
   const [search, setSearch] = useState("");
   const [recentSearches, setRecentSearches] = useState<City[]>([]);
   const [hotelCities, setHotelCities] = useState<City[]>([]);
+  const [dbAirports, setDbAirports] = useState<City[]>([]);
   const [expandedGroup, setExpandedGroup] = useState<string | null>(null);
+  const [dbLoading, setDbLoading] = useState(false);
 
+  const debouncedSearch = useDebounce(search, 250);
+
+  // Fetch from DB API for flight mode
+  useEffect(() => {
+    if (mode !== "flight") return;
+
+    const controller = new AbortController();
+
+    async function fetchAirports(q: string) {
+      setDbLoading(true);
+      try {
+        const url = q
+          ? `/api/cities/airports?q=${encodeURIComponent(q)}&limit=60`
+          : `/api/cities/airports?limit=60`;
+        const res = await fetch(url, { signal: controller.signal });
+        if (!res.ok) throw new Error("Failed to fetch");
+        const data = await res.json();
+        const mapped: City[] = (data.airports || []).map((a: any) => ({
+          code: a.code || a.iata_code,
+          name: a.name,
+          state: a.airport_name || "",
+          source: "db" as const,
+          iata_code: a.iata_code,
+          airport_name: a.airport_name,
+          country_code: a.country_code,
+          flag: a.flag,
+          group: a.group,
+        }));
+        setDbAirports(mapped);
+      } catch (err: any) {
+        if (err.name !== "AbortError") {
+          // Fall back to hardcoded list
+          setDbAirports(ALL_AIRPORTS);
+        }
+      } finally {
+        setDbLoading(false);
+      }
+    }
+
+    fetchAirports(debouncedSearch);
+
+    return () => controller.abort();
+  }, [mode, debouncedSearch]);
+
+  // Hotel mode: fetch TBO cities
   useEffect(() => {
     if (mode !== "hotel") return;
     fetch("/api/cities/tbo?countryCode=IN")
@@ -234,9 +291,11 @@ export default function CitySearchDropdown({
       .catch(() => setHotelCities([]));
   }, [mode]);
 
+  // Recent searches
   useEffect(() => {
-    setRecentSearches(getRecentSearches());
-  }, []);
+    const airports = mode === "flight" ? (dbAirports.length ? dbAirports : ALL_AIRPORTS) : hotelCities;
+    setRecentSearches(getRecentSearches(airports));
+  }, [mode, dbAirports, hotelCities]);
 
   useEffect(() => {
     function handleClickOutside(e: MouseEvent) {
@@ -254,12 +313,14 @@ export default function CitySearchDropdown({
     setSearch("");
     if (city.iata_code) {
       saveRecentSearch(city.iata_code);
-      setRecentSearches(getRecentSearches());
+      const airports = mode === "flight" ? (dbAirports.length ? dbAirports : ALL_AIRPORTS) : hotelCities;
+      setRecentSearches(getRecentSearches(airports));
     }
-  }, [onChange]);
+  }, [onChange, mode, dbAirports, hotelCities]);
 
   const query = search.toLowerCase().trim();
-  const dataSource = mode === "hotel" ? hotelCities : ALL_AIRPORTS;
+  const dataSource = mode === "hotel" ? hotelCities : (dbAirports.length ? dbAirports : ALL_AIRPORTS);
+
   const filteredAirports = query
     ? dataSource.filter(c =>
         c.name.toLowerCase().includes(query) ||
@@ -272,25 +333,26 @@ export default function CitySearchDropdown({
 
   const popular = query
     ? []
-    : (mode === "hotel" ? dataSource : ALL_AIRPORTS).filter(c => POPULAR_IATA.includes(c.iata_code || ""));
+    : dataSource.filter(c => POPULAR_IATA.includes(c.iata_code || ""));
 
   const recent = query
     ? []
     : recentSearches.filter(c => !POPULAR_IATA.includes(c.iata_code || ""));
 
   // Group airports by country (excluding popular airports)
-  const groupedAirports = query
-    ? []
-    : COUNTRY_GROUPS
-        .map(group => ({
-          ...group,
-          airports: dataSource.filter(c => {
-            const groupCode = getCountryGroup(c.country_code || "");
-            const isPopular = POPULAR_IATA.includes(c.iata_code || "");
-            return groupCode === group.code && !isPopular;
-          }),
-        }))
-        .filter(g => g.airports.length > 0);
+  const groupedAirports = useMemo(() => {
+    if (query) return [];
+    return COUNTRY_GROUPS
+      .map(group => ({
+        ...group,
+        airports: dataSource.filter(c => {
+          const groupCode = getCountryGroup(c.country_code || "");
+          const isPopular = POPULAR_IATA.includes(c.iata_code || "");
+          return groupCode === group.code && !isPopular;
+        }),
+      }))
+      .filter(g => g.airports.length > 0);
+  }, [query, dataSource]);
 
   const renderAirportItem = (city: City) => (
     <Command.Item
@@ -333,7 +395,8 @@ export default function CitySearchDropdown({
           {(() => {
             if (!value) return placeholder;
             if (mode === "flight") {
-              const matchedCity = ALL_AIRPORTS.find(c => c.name === value);
+              const allSources = dbAirports.length ? dbAirports : ALL_AIRPORTS;
+              const matchedCity = allSources.find(c => c.name === value);
               if (matchedCity?.iata_code) return `${matchedCity.flag || ""} ${value} (${matchedCity.iata_code})`;
             }
             return value;
@@ -360,9 +423,14 @@ export default function CitySearchDropdown({
                 placeholder={mode === "flight" ? "Search by city, airport, or code..." : "Search city..."}
                 className="w-full text-sm outline-none placeholder:text-slate-400"
               />
+              {mode === "flight" && dbLoading && (
+                <div className="absolute right-3 top-1/2 -translate-y-1/2">
+                  <div className="w-3.5 h-3.5 border-2 border-emerald-200 border-t-emerald-500 rounded-full animate-spin" />
+                </div>
+              )}
             </div>
             <Command.List className="py-1 overflow-y-auto flex-1 overscroll-contain">
-              {filteredAirports.length === 0 && query && (
+              {filteredAirports.length === 0 && query && !dbLoading && (
                 <div className="px-3 py-4 text-center">
                   <p className="text-xs text-slate-400">No airports found for &ldquo;{search}&rdquo;</p>
                   <p className="text-[10px] text-slate-300 mt-1">Try a city name, airport name, or IATA code</p>

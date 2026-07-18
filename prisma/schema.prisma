@@ -299,14 +299,22 @@ model CancellationRequest {
 /// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
 /// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
 model City {
-  id          String    @id @default(uuid())
-  name        String
-  country     String    @default("India")
-  type        String    @default("domestic")
-  searchcount Int       @default(0)
-  isactive    Boolean   @default(true)
-  createdAt   DateTime? @default(now()) @db.Timestamptz
-  iata_code   String?
+  id            String    @id @default(uuid())
+  name          String
+  country       String    @default("India")
+  type          String    @default("domestic")
+  searchcount   Int       @default(0)
+  isactive      Boolean   @default(true)
+  createdAt     DateTime? @default(now()) @db.Timestamptz
+  iata_code     String?
+
+  // Airport metadata (from OurAirports dataset)
+  airport_name  String?
+  country_code  String?
+  flag          String?
+  latitude      Float?
+  longitude     Float?
+  airport_type  String?
 }
 
 /// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.

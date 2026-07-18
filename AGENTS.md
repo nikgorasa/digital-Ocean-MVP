@@ -167,6 +167,8 @@ The `CitySearchDropdown` component has a `mode` prop that controls data source:
 | `Governance/docs/governance/LEARNING-FROM-MISTAKES.md` | Issue deep-dives |
 | `Governance/scripts/Cckr-api-config-check.sh` | API config validation (6 checks) |
 | `Governance/docs/static-data/TBO-STATIC-DATA-REFERENCE.md` | TBO API endpoint reference |
+| `scripts/seed-airports.ts` | Airport data download + DB upsert (OurAirports → City table) |
+| `src/app/api/cities/airports/route.ts` | Airport search API endpoint (DB-backed) |
 
 ---
 

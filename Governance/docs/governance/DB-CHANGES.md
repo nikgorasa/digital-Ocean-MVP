@@ -111,3 +111,36 @@ ON CONFLICT (data_type) DO NOTHING;
 ```
 
 **Commit:** b36530c
+
+---
+
+## DONE — City Table: Airport Columns (EPIC #276)
+
+**Type:** Schema (DDL) + Data Seed
+**Status:** Applied to DEV + PROD ✓
+**GitHub Issue:** #277, #278
+
+**Changes:**
+
+| Table | Column | Type | Default | Description |
+|-------|--------|------|---------|-------------|
+| City | airport_name | STRING | NULL | Full airport name (e.g., "Chhatrapati Shivaji International Airport") |
+| City | country_code | STRING | NULL | ISO 3166-1 Alpha-2 code (e.g., "IN") |
+| City | flag | STRING | NULL | Emoji flag (e.g., "🇮🇳") |
+| City | latitude | FLOAT8 | NULL | Airport latitude in decimal degrees |
+| City | longitude | FLOAT8 | NULL | Airport longitude in decimal degrees |
+| City | airport_type | STRING | NULL | OurAirports type ("large_airport" or "medium_airport") |
+
+**SQL applied:**
+```sql
+ALTER TABLE "City" ADD COLUMN "airport_name" STRING;
+ALTER TABLE "City" ADD COLUMN "country_code" STRING;
+ALTER TABLE "City" ADD COLUMN "flag" STRING;
+ALTER TABLE "City" ADD COLUMN "latitude" FLOAT8;
+ALTER TABLE "City" ADD COLUMN "longitude" FLOAT8;
+ALTER TABLE "City" ADD COLUMN "airport_type" STRING;
+```
+
+**Applied via:** Direct SQL on both DEV + PROD CockroachDB clusters (2026-07-18)
+
+**Seed data:** 2,161 airports from OurAirports (CC0 public domain, filtered: large/medium, scheduled service, IATA code present). Source: `ourairports.com/data/airports.csv`

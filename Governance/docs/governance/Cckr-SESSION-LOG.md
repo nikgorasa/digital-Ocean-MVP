@@ -1,7 +1,7 @@
 # GoRASA CockroachDB Standalone — SESSION-LOG
 
 > **Purpose:** Living document tracking all sessions, changes, deployments, and learnings.
-> **Last updated:** 2026-07-17 (Session 26 — FLIGHT-CITY-EPIC: Airport data separation + city search fixes)
+> **Last updated:** 2026-07-18 (Session 30 — EPIC #276: Airport Data implementation complete)
 
 ---
 
@@ -1297,3 +1297,79 @@ Migrate the app's unconfigured Gmail-SMTP email layer to **Brevo** (transactiona
 #### Governance
 - No code committed; env files gitignored; no schema change. Plan doc: `Governance/docs/governance/BREVO-MCP-INTEGRATION.md`.
 - Next: restart opencode to activate `brevo` MCP (D1), then verify domains/senders (D2/D3).
+
+---
+
+### Session 29 — EPIC #276: Airport Data — DB-Backed Airport Registry (2026-07-18)
+
+**Objective:** Replace hardcoded airport list in `CitySearchDropdown` with a DB-backed airport registry. Start with planning + governance documentation.
+
+**What was done (planning + documentation):**
+- Created EPIC #276 with 5 sub-issues (#277–#281)
+- Updated `Governance/docs/governance/EPIC-AIRPORT-DATA.md` — status → IN PROGRESS, added GitHub issue numbers
+- Updated `Governance/docs/governance/DB-CHANGES.md` — added PENDING section for City table schema change (6 new columns)
+- Updated `AGENTS.md` — added `scripts/seed-airports.ts` and `src/app/api/cities/airports/route.ts` to Key Files table
+- Data source confirmed: OurAirports (free, CC0, ~1000 airports after filtering)
+- Architecture decision: Extend existing City model (Option A) over new Airport model
+
+**Sub-issues:**
+
+| Issue | Title | Status |
+|-------|-------|--------|
+| #277 | Schema: Add airport columns to City model | OPEN |
+| #278 | Seed: Airport data download + DB upsert script | OPEN |
+| #279 | API: New /api/cities/airports endpoint | OPEN |
+| #280 | Component: CitySearchDropdown fetches from API | OPEN |
+| #281 | Preflight: Airport count validation check | OPEN |
+
+**What's next:**
+1. #277 — Apply 6-column schema migration to DEV + PROD via direct SQL
+2. #278 — Build `scripts/seed-airports.ts` (OurAirports CSV → City table upsert)
+3. #279 — Create `/api/cities/airports` endpoint
+4. #280 — Update `CitySearchDropdown` to fetch from API (keep hardcoded fallback)
+5. #281 — Add airport count check to preflight script
+
+**Governance docs updated:** Cckr-SESSION-LOG.md, DB-CHANGES.md, AGENTS.md, EPIC-AIRPORT-DATA.md
+
+**No code changes. No commits. No deployments.**
+
+---
+
+### Session 30 — EPIC #276: Airport Data Implementation Complete
+
+**Date:** 2026-07-18
+**Issues:** #277 (Schema ✅), #278 (Seed ✅), #279 (API ✅), #280 (Component ✅), #281 (Preflight ✅)
+**Summary:** Implemented the full airport data pipeline — seeded 2,161 airports from OurAirports into both DEV and PROD CockroachDB clusters, created the `/api/cities/airports` endpoint, updated CitySearchDropdown to fetch from DB with hardcoded fallback, and added airport count validation to preflight.
+
+**What was done:**
+- Fixed duplicate keys in `scripts/seed-airports.ts` COUNTRY_FLAGS (HK, OM, QA, BH, KW, SA appeared twice)
+- Fixed `Switzerland` → `CH` and duplicate `EG`, `LK` in TARGET_COUNTRIES
+- Seeded DEV database: 2,161 airports (2,136 new, 25 existing updated)
+- Seeded PROD database: 2,161 airports (identical)
+- Created `src/lib/db/cities.ts` — added `searchAirports()` function with OR-based search across name, iata_code, airport_name, country_code; promotes popular airports to top
+- Created `src/app/api/cities/airports/route.ts` — GET endpoint with `?q=` search, `?limit=` pagination (max 100), country group metadata in response
+- Updated `src/components/CitySearchDropdown.tsx` — flight mode fetches from `/api/cities/airports` with 250ms debounce, shows loading spinner, falls back to hardcoded `ALL_AIRPORTS` if API fails; added `useDebounce` hook; `useMemo` for grouped airports
+- Fixed TypeScript errors in `cities.ts` (removed non-existent `tbo_code` field from interface and select)
+- Updated `Governance/scripts/Cckr-preflight-check.sh` — added Check 14/14 for airport count validation using Node.js + Prisma (minimum 2,000 airports)
+- Updated all check numbers from 13 to 14
+
+**Sub-issues resolved:**
+
+| Issue | Title | Status |
+|-------|-------|--------|
+| #277 | Schema: Add airport columns to City model | ✅ DONE |
+| #278 | Seed: Airport data download + DB upsert script | ✅ DONE |
+| #279 | API: New /api/cities/airports endpoint | ✅ DONE |
+| #280 | Component: CitySearchDropdown fetches from API | ✅ DONE |
+| #281 | Preflight: Airport count validation check | ✅ DONE |
+
+**Key files changed:**
+- `scripts/seed-airports.ts` — Fixed duplicate keys, duplicate country codes
+- `src/lib/db/cities.ts` — Added `AirportRow` interface, `searchAirports()` function
+- `src/app/api/cities/airports/route.ts` — New airport search API endpoint
+- `src/components/CitySearchDropdown.tsx` — DB-backed flight mode with debounce + fallback
+- `Governance/scripts/Cckr-preflight-check.sh` — Added airport count check (14/14)
+
+**Governance docs updated:** Cckr-SESSION-LOG.md, DB-CHANGES.md (moved from PENDING to DONE)
+
+**Awaiting:** Commit, push, deploy
