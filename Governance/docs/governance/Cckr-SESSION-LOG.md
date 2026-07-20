@@ -1,7 +1,7 @@
 # GoRASA CockroachDB Standalone — SESSION-LOG
 
 > **Purpose:** Living document tracking all sessions, changes, deployments, and learnings.
-> **Last updated:** 2026-07-18 (Session 31 — Hotel search cache + 15-day TBO cache TTLs + dark color scheme fix)
+> **Last updated:** 2026-07-20 (Session 32 — Indian airport official name corrections batch)
 
 ---
 
@@ -1419,3 +1419,31 @@ Migrate the app's unconfigured Gmail-SMTP email layer to **Brevo** (transactiona
 - Deployed: https://cckr.vercel.app (READY)
 
 **Commit:** `7032094`
+
+---
+
+## Session 32 — Indian Airport Official Name Corrections
+
+**Date:** 2026-07-20
+**Goal:** Fix Indian airports where OurAirports municipality name doesn't match official city name
+
+**Changes:**
+
+**DB Data Updates (5 airports on DEV + PROD):**
+- AYJ: Faizabad → Ayodhya
+- IXD: Allahabad → Prayagraj
+- CCJ: Calicut → Kozhikode
+- GOI: Vasco da Gama → Goa
+- IXG: Belgaum → Belagavi
+
+**Code:**
+- Added 3 missing airports to `ALL_AIRPORTS` fallback list (Prayagraj, Kozhikode, Belagavi)
+- Added `CITY_NAME_OVERRIDES` map in `seed-airports.ts` to preserve official names on future re-seeds
+
+**Files changed:** 4
+- `src/components/CitySearchDropdown.tsx` — Added Prayagraj/IXD, Kozhikode/CCJ, Belagavi/IXG to fallback
+- `scripts/seed-airports.ts` — Added CITY_NAME_OVERRIDES map
+- `Governance/docs/governance/DB-CHANGES.md` — Documented all 5 name corrections
+- `Governance/docs/governance/Cckr-SESSION-LOG.md` — Session 32 entry
+
+**Commit:** (uncommitted)

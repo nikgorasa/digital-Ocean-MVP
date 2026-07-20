@@ -20,6 +20,15 @@ const prisma = new PrismaClient();
 const AIRPORTS_CSV_URL =
   "https://raw.githubusercontent.com/davidmegginson/ourairports-data/main/airports.csv";
 
+// Official city name overrides — OurAirports municipality field may be outdated
+const CITY_NAME_OVERRIDES: Record<string, string> = {
+  AYJ: "Ayodhya",       // OurAirports: Faizabad
+  IXD: "Prayagraj",     // OurAirports: Allahabad
+  CCJ: "Kozhikode",     // OurAirports: Calicut
+  GOI: "Goa",           // OurAirports: Vasco da Gama
+  IXG: "Belagavi",      // OurAirports: Belgaum
+};
+
 // Target countries for GoRASA (India + key source markets)
 const TARGET_COUNTRIES = new Set([
   "IN", "AE", "TH", "SG", "MY", "LK", "MV", "NP", "ID", "TR",
@@ -165,11 +174,12 @@ function filterAirports(airports: AirportRow[], countryCode?: string): AirportRo
 }
 
 function airportToCity(a: AirportRow) {
+  const iata = a.iata_code.toUpperCase();
   return {
-    name: a.municipality || a.name.split(" ").slice(0, 2).join(" "),
+    name: CITY_NAME_OVERRIDES[iata] || a.municipality || a.name.split(" ").slice(0, 2).join(" "),
     country: a.iso_country,
     type: "domestic",
-    iata_code: a.iata_code.toUpperCase(),
+    iata_code: iata,
     airport_name: a.name,
     country_code: a.iso_country,
     flag: COUNTRY_FLAGS[a.iso_country] || "",

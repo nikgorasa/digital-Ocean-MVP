@@ -144,3 +144,51 @@ ALTER TABLE "City" ADD COLUMN "airport_type" STRING;
 **Applied via:** Direct SQL on both DEV + PROD CockroachDB clusters (2026-07-18)
 
 **Seed data:** 2,161 airports from OurAirports (CC0 public domain, filtered: large/medium, scheduled service, IATA code present). Source: `ourairports.com/data/airports.csv`
+
+## 2026-07-20 — AYJ Airport Rename: Faizabad → Ayodhya
+
+**Type:** Data Update (DML)
+**Status:** Applied to DEV + PROD ✓
+
+**Changes:**
+
+| Table | Column | Before | After |
+|-------|--------|--------|-------|
+| City | name | "Faizabad" | "Ayodhya" |
+
+**SQL:**
+```sql
+UPDATE "City" SET name = 'Ayodhya' WHERE iata_code = 'AYJ';
+```
+
+**Applied via:** Direct SQL on both DEV + PROD CockroachDB clusters (2026-07-20)
+
+**Reason:** AYJ airport has been officially renamed to reflect Ayodhya (Faizabad name retired). Airport name remains "Maharshi Valmiki International Airport".
+
+## 2026-07-20 — Indian Airport Official Name Corrections (Batch)
+
+**Type:** Data Update (DML)
+**Status:** Applied to DEV + PROD ✓
+
+**Changes:**
+
+| IATA | Before (OurAirports municipality) | After (Official Name) |
+|------|------------------------------------|----------------------|
+| AYJ | Faizabad | Ayodhya |
+| IXD | Allahabad | Prayagraj |
+| CCJ | Calicut | Kozhikode |
+| GOI | Vasco da Gama | Goa |
+| IXG | Belgaum | Belagavi |
+
+**SQL:**
+```sql
+UPDATE "City" SET name = 'Ayodhya' WHERE iata_code = 'AYJ';
+UPDATE "City" SET name = 'Prayagraj' WHERE iata_code = 'IXD';
+UPDATE "City" SET name = 'Kozhikode' WHERE iata_code = 'CCJ';
+UPDATE "City" SET name = 'Goa' WHERE iata_code = 'GOI';
+UPDATE "City" SET name = 'Belagavi' WHERE iata_code = 'IXG';
+```
+
+**Applied via:** Direct SQL on both DEV + PROD CockroachDB clusters (2026-07-20)
+
+**Seed script:** Added `CITY_NAME_OVERRIDES` map in `seed-airports.ts` to preserve official names on future re-seeds.
