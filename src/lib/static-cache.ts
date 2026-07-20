@@ -6,11 +6,11 @@ const l1Cache = new Map<string, { data: unknown; expiresAt: number }>();
 
 // TBO-recommended TTLs per data type
 const DEFAULT_TTL_SECONDS: Record<string, number> = {
-  CountryList: 0,        // Cache forever (249 countries, rarely changes)
-  CityList: 604800,      // 7 days (~1K cities per country)
-  HotelCodeList: 86400,  // 24 hours (~4K hotels per city)
-  HotelDetails: 604800,  // 7 days (per hotel)
-  airports: 0,           // Cache forever
+  CountryList: 0,          // Cache forever (249 countries, rarely changes)
+  CityList: 1296000,       // 15 days (TBO recommended refresh cycle)
+  HotelCodeList: 1296000,  // 15 days (TBO recommended refresh cycle)
+  HotelDetails: 1296000,   // 15 days (TBO recommended refresh cycle)
+  airports: 0,             // Cache forever
 };
 
 function l1Key(dataType: string, qualifier?: string): string {

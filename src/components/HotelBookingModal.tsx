@@ -860,7 +860,7 @@ export default function HotelBookingModal({
               {step === "book-confirming" && "Confirming Booking..."}
               {step === "saving" && "Saving to My Trips..."}
             </h3>
-            <p className="text-sm text-brand-sand">
+            <p className="text-sm text-slate-600">
               {step === "blocking" && "Checking latest room rates & availability"}
               {step === "book-confirming" && "Finalizing your reservation with the hotel"}
               {step === "saving" && "Your booking is confirmed! One moment..."}

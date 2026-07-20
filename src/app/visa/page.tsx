@@ -214,25 +214,25 @@ export default function VisaPage() {
         {/* Quick Stats */}
         <section className="max-w-6xl mx-auto px-4 -mt-8">
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            <div className="bg-white rounded-xl p-4 shadow-sm border border-brand-sand/20 text-center">
+            <div className="bg-white rounded-xl p-4 shadow-sm border border-slate-100 text-center">
               <p className="text-2xl font-bold text-green-600">
                 {visaData.filter((c) => c.visaOnArrival || !c.visaRequired).length}
               </p>
               <p className="text-xs text-brand-charcoal/60">Visa-Free / VOA</p>
             </div>
-            <div className="bg-white rounded-xl p-4 shadow-sm border border-brand-sand/20 text-center">
+            <div className="bg-white rounded-xl p-4 shadow-sm border border-slate-100 text-center">
               <p className="text-2xl font-bold text-blue-600">
                 {visaData.filter((c) => c.eVisa).length}
               </p>
               <p className="text-xs text-brand-charcoal/60">e-Visa Available</p>
             </div>
-            <div className="bg-white rounded-xl p-4 shadow-sm border border-brand-sand/20 text-center">
+            <div className="bg-white rounded-xl p-4 shadow-sm border border-slate-100 text-center">
               <p className="text-2xl font-bold text-amber-600">
                 {visaData.filter((c) => c.visaRequired && !c.visaOnArrival && !c.eVisa).length}
               </p>
               <p className="text-xs text-brand-charcoal/60">Visa Required</p>
             </div>
-            <div className="bg-white rounded-xl p-4 shadow-sm border border-brand-sand/20 text-center">
+            <div className="bg-white rounded-xl p-4 shadow-sm border border-slate-100 text-center">
               <p className="text-2xl font-bold text-brand-charcoal">{visaData.length}</p>
               <p className="text-xs text-brand-charcoal/60">Countries Covered</p>
             </div>
@@ -244,11 +244,11 @@ export default function VisaPage() {
           {Object.entries(byRegion).map(([region, countries]) => (
             <div key={region} className="mb-10">
               <h2 className="text-xl font-bold text-brand-charcoal mb-4 font-display">{region}</h2>
-              <div className="bg-white rounded-xl overflow-hidden shadow-sm border border-brand-sand/20">
+              <div className="bg-white rounded-xl overflow-hidden shadow-sm border border-slate-100">
                 <div className="overflow-x-auto">
                   <table className="w-full text-sm">
                     <thead>
-                      <tr className="bg-brand-ivory border-b border-brand-sand/20">
+                      <tr className="bg-brand-ivory border-b border-slate-100">
                         <th className="text-left p-3 font-semibold text-brand-charcoal">Country</th>
                         <th className="text-left p-3 font-semibold text-brand-charcoal">Status</th>
                         <th className="text-left p-3 font-semibold text-brand-charcoal hidden md:table-cell">Details</th>
@@ -258,7 +258,7 @@ export default function VisaPage() {
                       {countries.map((c) => {
                         const badge = getVisaStatusBadge(c);
                         return (
-                          <tr key={c.code} className="border-b border-brand-sand/10 hover:bg-brand-ivory/50">
+                          <tr key={c.code} className="border-b border-slate-100 hover:bg-brand-ivory/50">
                             <td className="p-3 font-medium text-brand-charcoal">{c.name}</td>
                             <td className="p-3">
                               <span className={`px-2 py-1 text-xs rounded-full font-medium ${badge.color}`}>
@@ -288,7 +288,7 @@ export default function VisaPage() {
             {faqs.map((faq, i) => (
               <details
                 key={i}
-                className="bg-white rounded-xl shadow-sm border border-brand-sand/20 group"
+                className="bg-white rounded-xl shadow-sm border border-slate-100 group"
               >
                 <summary className="p-4 cursor-pointer font-semibold text-brand-charcoal hover:text-brand-antique-gold transition-colors list-none flex justify-between items-center">
                   {faq.question}

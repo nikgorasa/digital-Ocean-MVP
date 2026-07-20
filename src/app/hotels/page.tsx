@@ -295,30 +295,30 @@ export default function HotelsPage() {
 
                 {/* Rooms Configuration */}
                 <div ref={roomRef} className="relative">
-                  <label className="text-[11px] font-bold uppercase tracking-widest text-brand-sand mb-1.5 block">
+                  <label className="text-[11px] font-bold uppercase tracking-widest text-slate-600 mb-1.5 block">
                     Rooms & Guests
                   </label>
                   <button
                     onClick={() => setShowRoomPopover(!showRoomPopover)}
-                    className="w-full px-3 py-3 bg-white border border-brand-sand/30 rounded-xl text-sm flex items-center justify-between gap-2 cursor-pointer hover:border-brand-antique-gold/30 transition-colors focus:ring-2 focus:ring-brand-antique-gold focus:ring-offset-2 outline-none"
+                    className="w-full px-3 py-3 bg-white border border-slate-200 rounded-xl text-sm flex items-center justify-between gap-2 cursor-pointer hover:border-brand-antique-gold/30 transition-colors focus:ring-2 focus:ring-brand-antique-gold focus:ring-offset-2 outline-none"
                   >
                       <span className="flex items-center gap-2">
-                      <Users size={14} className="text-brand-sand" />
+                      <Users size={14} className="text-slate-600" />
                       <span className="text-brand-charcoal font-medium">{roomCount}</span>
-                      <span className="text-brand-sand">{roomCount === 1 ? "Room" : "Rooms"}</span>
-                      <span className="text-brand-sand/50 mx-1">·</span>
-                      <span className="text-brand-sand">{totalGuests} {totalGuests === 1 ? "Guest" : "Guests"}</span>
+                      <span className="text-slate-600">{roomCount === 1 ? "Room" : "Rooms"}</span>
+                      <span className="text-slate-600/50 mx-1">·</span>
+                      <span className="text-slate-600">{totalGuests} {totalGuests === 1 ? "Guest" : "Guests"}</span>
                     </span>
-                    <ChevronDown size={14} className={`text-brand-sand transition-transform ${showRoomPopover ? "rotate-180" : ""}`} />
+                    <ChevronDown size={14} className={`text-slate-600 transition-transform ${showRoomPopover ? "rotate-180" : ""}`} />
                   </button>
 
                   {showRoomPopover && (
-                    <div className="absolute left-0 right-0 sm:left-auto sm:right-0 top-full mt-1 z-50 w-full sm:w-80 bg-white rounded-2xl shadow-xl border border-brand-sand/30 p-4">
+                    <div className="absolute left-0 right-0 sm:left-auto sm:right-0 top-full mt-1 z-50 w-full sm:w-80 bg-white rounded-2xl shadow-xl border border-slate-200 p-4">
                       {showConcierge ? (
                         <div className="text-center py-6">
                           <User size={32} className="mx-auto text-brand-antique-gold mb-3" />
                           <p className="font-bold text-brand-charcoal mb-1">Large Group Booking</p>
-                          <p className="text-xs text-brand-sand mb-3">
+                          <p className="text-xs text-slate-600 mb-3">
                             For more than 9 rooms, please contact our concierge.
                           </p>
                           <Link
@@ -331,12 +331,12 @@ export default function HotelsPage() {
                       ) : (
                         <div className="space-y-4">
                           {/* Room Count */}
-                          <div className="flex items-center justify-between pb-3 border-b border-brand-sand/20">
+                          <div className="flex items-center justify-between pb-3 border-b border-slate-100">
                             <p className="text-sm font-semibold text-brand-charcoal">Rooms</p>
                             <div className="flex items-center gap-3">
                               <button
                                 onClick={() => setRoomCount(Math.max(1, roomCount - 1))}
-                                className="w-8 h-8 rounded-full border border-brand-sand/30 flex items-center justify-center text-brand-sand hover:bg-brand-ivory cursor-pointer disabled:opacity-30"
+                                className="w-8 h-8 rounded-full border border-slate-200 flex items-center justify-center text-slate-600 hover:bg-brand-ivory cursor-pointer disabled:opacity-30"
                                 disabled={roomCount <= 1}
                               >
                                 <Minus size={14} />
@@ -344,7 +344,7 @@ export default function HotelsPage() {
                               <span className="w-6 text-center font-bold text-brand-charcoal">{roomCount}</span>
                               <button
                                 onClick={() => setRoomCount(Math.min(10, roomCount + 1))}
-                                className="w-8 h-8 rounded-full border border-brand-sand/30 flex items-center justify-center text-brand-sand hover:bg-brand-ivory cursor-pointer disabled:opacity-30"
+                                className="w-8 h-8 rounded-full border border-slate-200 flex items-center justify-center text-slate-600 hover:bg-brand-ivory cursor-pointer disabled:opacity-30"
                                 disabled={roomCount >= 10}
                               >
                                 <Plus size={14} />
@@ -354,13 +354,13 @@ export default function HotelsPage() {
 
                           {/* Per Room Configuration */}
                           {roomConfigs.map((r, i) => (
-                            <div key={i} className="pb-3 border-b border-brand-sand/20 last:border-0">
-                              <p className="text-[10px] font-bold uppercase tracking-widest text-brand-sand mb-2">
+                            <div key={i} className="pb-3 border-b border-slate-100 last:border-0">
+                              <p className="text-[10px] font-bold uppercase tracking-widest text-slate-600 mb-2">
                                 Room {i + 1}
                               </p>
 
                               <div className="flex items-center justify-between mb-2">
-                                <span className="text-xs text-brand-sand">Adults</span>
+                                <span className="text-xs text-slate-600">Adults</span>
                                 <div className="flex items-center gap-3">
                                   <button
                                     onClick={() => {
@@ -368,7 +368,7 @@ export default function HotelsPage() {
                                       next[i] = { ...next[i], adults: Math.max(1, next[i].adults - 1) };
                                       setRoomConfigs(next);
                                     }}
-                                    className="w-7 h-7 rounded-full border border-brand-sand/30 flex items-center justify-center text-brand-sand hover:bg-brand-ivory cursor-pointer disabled:opacity-30"
+                                    className="w-7 h-7 rounded-full border border-slate-200 flex items-center justify-center text-slate-600 hover:bg-brand-ivory cursor-pointer disabled:opacity-30"
                                     disabled={r.adults <= 1}
                                   >
                                     <Minus size={12} />
@@ -380,7 +380,7 @@ export default function HotelsPage() {
                                       next[i] = { ...next[i], adults: Math.min(9, next[i].adults + 1) };
                                       setRoomConfigs(next);
                                     }}
-                                    className="w-7 h-7 rounded-full border border-brand-sand/30 flex items-center justify-center text-brand-sand hover:bg-brand-ivory cursor-pointer disabled:opacity-30"
+                                    className="w-7 h-7 rounded-full border border-slate-200 flex items-center justify-center text-slate-600 hover:bg-brand-ivory cursor-pointer disabled:opacity-30"
                                     disabled={r.adults >= 9}
                                   >
                                     <Plus size={12} />
@@ -389,7 +389,7 @@ export default function HotelsPage() {
                               </div>
 
                               <div className="flex items-center justify-between">
-                                <span className="text-xs text-brand-sand">Children (0-17)</span>
+                                <span className="text-xs text-slate-600">Children (0-17)</span>
                                 <div className="flex items-center gap-3">
                                   <button
                                     onClick={() => {
@@ -402,7 +402,7 @@ export default function HotelsPage() {
                                       };
                                       setRoomConfigs(next);
                                     }}
-                                    className="w-7 h-7 rounded-full border border-brand-sand/30 flex items-center justify-center text-brand-sand hover:bg-brand-ivory cursor-pointer disabled:opacity-30"
+                                    className="w-7 h-7 rounded-full border border-slate-200 flex items-center justify-center text-slate-600 hover:bg-brand-ivory cursor-pointer disabled:opacity-30"
                                     disabled={r.children <= 0}
                                   >
                                     <Minus size={12} />
@@ -418,7 +418,7 @@ export default function HotelsPage() {
                                       };
                                       setRoomConfigs(next);
                                     }}
-                                    className="w-7 h-7 rounded-full border border-brand-sand/30 flex items-center justify-center text-brand-sand hover:bg-brand-ivory cursor-pointer disabled:opacity-30"
+                                    className="w-7 h-7 rounded-full border border-slate-200 flex items-center justify-center text-slate-600 hover:bg-brand-ivory cursor-pointer disabled:opacity-30"
                                     disabled={r.children >= 9}
                                   >
                                     <Plus size={12} />
@@ -429,7 +429,7 @@ export default function HotelsPage() {
                               {/* Child Age Selectors */}
                               {r.childAges.map((age, ci) => (
                                 <div key={ci} className="flex items-center gap-2 mt-1.5 pl-4">
-                                  <span className="text-[10px] text-brand-sand">Child {ci + 1} age</span>
+                                  <span className="text-[10px] text-slate-600">Child {ci + 1} age</span>
                                   <select
                                     value={age}
                                     onChange={(e) => {
@@ -439,7 +439,7 @@ export default function HotelsPage() {
                                       next[i] = { ...next[i], childAges: ages };
                                       setRoomConfigs(next);
                                     }}
-                                    className="flex-1 px-2 py-1 bg-white border border-brand-sand/30 rounded-lg text-xs outline-none"
+                                    className="flex-1 px-2 py-1 bg-white border border-slate-200 rounded-lg text-xs outline-none"
                                   >
                                     {Array.from({ length: 18 }, (_, i) => i).map((a) => (
                                       <option key={a} value={a}>{a} {a === 0 || a === 1 ? "year" : "years"}</option>
@@ -482,14 +482,14 @@ export default function HotelsPage() {
           <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
             {!searched ? (
               <div className="text-center py-16">
-                <Building2 size={48} className="mx-auto text-brand-sand/50 mb-4" />
+                <Building2 size={48} className="mx-auto text-slate-600/50 mb-4" />
                 <h2 className="text-xl font-bold text-brand-charcoal mb-2">Search Hotels</h2>
-                <p className="text-brand-sand">Enter your destination and dates to find hotels from our global inventory.</p>
+                <p className="text-slate-600">Enter your destination and dates to find hotels from our global inventory.</p>
               </div>
             ) : loading ? (
               <div className="py-6">
                 <div className="text-center mb-6">
-                  <p className="text-brand-sand text-sm">Searching hotels in {selectedCity.name}...</p>
+                  <p className="text-slate-600 text-sm">Searching hotels in {selectedCity.name}...</p>
                 </div>
                 <SearchResultsSkeleton count={3} type="hotel" />
               </div>
@@ -507,9 +507,9 @@ export default function HotelsPage() {
               </div>
             ) : results.length === 0 ? (
               <div className="text-center py-16">
-                <Building2 size={48} className="mx-auto text-brand-sand/50 mb-4" />
+                <Building2 size={48} className="mx-auto text-slate-600/50 mb-4" />
                 <h2 className="text-xl font-bold text-brand-charcoal mb-2">No hotels found</h2>
-                <p className="text-brand-sand">Try a different location or dates.</p>
+                <p className="text-slate-600">Try a different location or dates.</p>
               </div>
             ) : (
               <div>
@@ -582,7 +582,7 @@ export default function HotelsPage() {
                 )}
 
                 <div className="flex items-center justify-between mb-4">
-                  <p className="text-sm text-brand-sand">{filteredResults.length} hotels found in {selectedCity.name}</p>
+                  <p className="text-sm text-slate-600">{filteredResults.length} hotels found in {selectedCity.name}</p>
                   <span className="text-[10px] bg-blue-100 text-blue-700 px-2 py-0.5 rounded-full font-medium">Live Inventory</span>
                 </div>
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -592,7 +592,7 @@ export default function HotelsPage() {
                       initial={{ opacity: 0, y: 10 }}
                       animate={{ opacity: 1, y: 0 }}
                       transition={{ delay: i * 0.05 }}
-                      className="bg-white rounded-2xl overflow-hidden border border-brand-sand/30 hover:shadow-lg transition-shadow cursor-pointer group"
+                      className="bg-white rounded-2xl overflow-hidden border border-slate-200 hover:shadow-lg transition-shadow cursor-pointer group"
                       onClick={() => handleHotelClick(hotel)}
                     >
                       <div className="h-48 relative overflow-hidden">
@@ -611,7 +611,7 @@ export default function HotelsPage() {
                           />
                         ) : (
                           <div className="w-full h-full bg-brand-ivory flex items-center justify-center">
-                            <Building2 size={48} className="text-brand-sand" />
+                            <Building2 size={48} className="text-slate-600" />
                           </div>
                         )}
                         <div className="absolute top-3 left-3">
@@ -629,21 +629,21 @@ export default function HotelsPage() {
                         <h3 className="font-bold text-brand-charcoal line-clamp-1">
                           {hotel.name}
                         </h3>
-                        <p className="text-xs text-brand-sand flex items-center gap-1 mt-1">
+                        <p className="text-xs text-slate-600 flex items-center gap-1 mt-1">
                           <MapPin size={12} />
                           {hotel.address || selectedCity.name}
                         </p>
                         {hotel.tripAdvisorRating > 0 && (
                           <div className="flex items-center gap-1 mt-1">
                             <Star size={10} className="fill-brand-antique-gold text-brand-antique-gold" />
-                            <span className="text-[11px] text-brand-sand">{hotel.tripAdvisorRating}</span>
+                            <span className="text-[11px] text-slate-600">{hotel.tripAdvisorRating}</span>
                           </div>
                         )}
-                        <p className="text-xs text-brand-sand/70 mt-2 line-clamp-2">{hotel.description}</p>
-                        <div className="mt-3 pt-3 border-t border-brand-sand/20 flex items-center justify-between">
+                        <p className="text-xs text-slate-600/70 mt-2 line-clamp-2">{hotel.description}</p>
+                        <div className="mt-3 pt-3 border-t border-slate-100 flex items-center justify-between">
                           <div>
                             <p className="text-xl font-black font-mono text-brand-charcoal">{formatCurrency(Math.round(hotel.price / nights))}</p>
-                            <p className="text-[10px] text-brand-sand/70">per night</p>
+                            <p className="text-[10px] text-slate-600/70">per night</p>
                           </div>
                           <button className="px-4 py-2 bg-brand-antique-gold text-white rounded-xl text-xs font-bold hover:bg-brand-emerald transition-colors cursor-pointer">
                             View Rooms
@@ -684,7 +684,7 @@ export default function HotelsPage() {
                   />
                 ) : (
                   <div className="w-full h-full bg-brand-ivory flex items-center justify-center">
-                    <Building2 size={64} className="text-brand-sand" />
+                    <Building2 size={64} className="text-slate-600" />
                   </div>
                 )}
                 <button onClick={() => { setSelectedHotel(null); setSelectedRoom(null); }} aria-label="Close hotel details" className="absolute top-4 right-4 p-2 min-w-[44px] min-h-[44px] flex items-center justify-center bg-white/90 rounded-full hover:bg-white transition-colors cursor-pointer">
@@ -704,7 +704,7 @@ export default function HotelsPage() {
 
               <div className="p-6">
                 <h2 className="text-2xl font-serif font-bold text-brand-charcoal mb-1">{selectedHotel.name}</h2>
-                <p className="text-sm text-brand-sand flex items-center gap-1 mb-3">
+                <p className="text-sm text-slate-600 flex items-center gap-1 mb-3">
                   <MapPin size={14} />
                   {selectedHotel.address || selectedCity.name}
                 </p>
@@ -714,7 +714,7 @@ export default function HotelsPage() {
                     <div className="flex items-center gap-1 bg-brand-champagne/20 px-2 py-1 rounded-lg">
                       <Star size={14} className="fill-brand-antique-gold text-brand-antique-gold" />
                       <span className="font-bold text-sm text-brand-charcoal">{selectedHotel.tripAdvisorRating}</span>
-                      <span className="text-[10px] text-brand-sand">TripAdvisor</span>
+                      <span className="text-[10px] text-slate-600">TripAdvisor</span>
                     </div>
                   )}
                   {hotelRooms.some(r => r.isRefundable) && (
@@ -728,7 +728,7 @@ export default function HotelsPage() {
                 {hotelRooms.length > 0 && hotelRooms.some(r => r.amenities && r.amenities.length > 0) && (
                   <div className="flex items-center gap-2 mb-4 flex-wrap">
                     {Array.from(new Set(hotelRooms.flatMap(r => r.amenities || []).slice(0, 6))).map((a) => (
-                      <span key={a} className="text-xs bg-brand-ivory text-brand-sand px-2 py-1 rounded-lg flex items-center gap-1">
+                      <span key={a} className="text-xs bg-brand-ivory text-slate-600 px-2 py-1 rounded-lg flex items-center gap-1">
                         {a === "Free WiFi" && <Wifi size={12} />}
                         {a === "Parking" && <Car size={12} />}
                         {a === "Restaurant" && <Coffee size={12} />}
@@ -741,15 +741,15 @@ export default function HotelsPage() {
                 <p className="text-brand-charcoal/80 text-sm mb-4">{selectedHotel.description}</p>
 
                 {/* Check-in/out Info */}
-                <div className="bg-brand-ivory rounded-xl p-3 mb-4 flex items-center gap-4 text-xs text-brand-sand">
+                <div className="bg-brand-ivory rounded-xl p-3 mb-4 flex items-center gap-4 text-xs text-slate-600">
                   <span>Check-in: <strong>{checkIn || "TBD"}</strong></span>
                   <span>Check-out: <strong>{checkOut || "TBD"}</strong></span>
                   <span className="text-brand-antique-gold font-bold">{nights} night{nights > 1 ? "s" : ""}</span>
-                  <span className="text-[10px] text-brand-sand/70">Times per hotel policy</span>
+                  <span className="text-[10px] text-slate-600/70">Times per hotel policy</span>
                 </div>
 
                 {/* Rooms Section */}
-                <div className="border-t border-brand-sand/30 pt-4">
+                <div className="border-t border-slate-200 pt-4">
                   <h3 className="font-bold text-brand-charcoal mb-3 flex items-center gap-2">
                     <Bed size={16} />
                     Available Rooms
@@ -758,11 +758,11 @@ export default function HotelsPage() {
                   {hotelRoomsLoading ? (
                     <div className="flex items-center justify-center py-6">
                     <Loader2 size={20} className="animate-spin text-brand-antique-gold" />
-                    <span className="ml-2 text-sm text-brand-sand">Loading rooms...</span>
+                    <span className="ml-2 text-sm text-slate-600">Loading rooms...</span>
                     </div>
                   ) : hotelRooms.length === 0 ? (
                     <div className="text-center py-4">
-                      <p className="text-sm text-brand-sand">No room data available for this hotel.</p>
+                      <p className="text-sm text-slate-600">No room data available for this hotel.</p>
                     </div>
                   ) : (
                     <div className="space-y-2">
@@ -773,7 +773,7 @@ export default function HotelsPage() {
                           className={`p-3 rounded-xl border cursor-pointer transition-all ${
                             selectedRoom?.roomIndex === room.roomIndex
                               ? "border-brand-antique-gold bg-brand-ivory"
-                              : "border-brand-sand/30"
+                              : "border-slate-200"
                           }`}
                         >
                           <div className="flex justify-between items-start">
@@ -795,25 +795,25 @@ export default function HotelsPage() {
                                 );
                               })()}
                                 {room.inclusion && (
-                                <p className="text-[10px] text-brand-sand mt-1">{room.inclusion}</p>
+                                <p className="text-[10px] text-slate-600 mt-1">{room.inclusion}</p>
                               )}
                               <div className="flex flex-wrap gap-1 mt-1">
                                 {(room.amenities || []).slice(0, 4).map((a) => (
-                                  <span key={a} className="text-[10px] bg-brand-ivory text-brand-sand px-1.5 py-0.5 rounded">{a}</span>
+                                  <span key={a} className="text-[10px] bg-brand-ivory text-slate-600 px-1.5 py-0.5 rounded">{a}</span>
                                 ))}
                                 {(room.amenities || []).length > 4 && (
-                                  <span className="text-[10px] text-brand-sand/70">+{room.amenities.length - 4}</span>
+                                  <span className="text-[10px] text-slate-600/70">+{room.amenities.length - 4}</span>
                                 )}
                               </div>
                               {room.cancelPolicy && (
-                                <p className="text-[10px] text-brand-sand/70 mt-1">
+                                <p className="text-[10px] text-slate-600/70 mt-1">
                                   {room.cancelPolicy === "Non Refundable" ? "Non-refundable" : `Cancellation: ${room.cancelPolicy}`}
                                 </p>
                               )}
                             </div>
                             <div className="text-right">
                               <p className="text-lg font-black font-mono text-brand-charcoal">{formatCurrency(room.roomFare + room.roomTax)}</p>
-                              <p className="text-[10px] text-brand-sand/70">per night</p>
+                              <p className="text-[10px] text-slate-600/70">per night</p>
                             </div>
                           </div>
                         </div>
@@ -824,17 +824,17 @@ export default function HotelsPage() {
 
                 {/* Booking Section */}
                 {selectedRoom && (
-                  <div className="mt-4 pt-4 border-t border-brand-sand/30">
+                  <div className="mt-4 pt-4 border-t border-slate-200">
                     <div className="rounded-xl p-4 mb-4 bg-brand-ivory">
                       <div className="flex justify-between items-center mb-2">
-                        <span className="text-sm text-brand-sand">Room Fare ({nights} night{nights > 1 ? "s" : ""})</span>
+                        <span className="text-sm text-slate-600">Room Fare ({nights} night{nights > 1 ? "s" : ""})</span>
                         <span className="font-mono font-bold">{formatCurrency(selectedRoom.roomFare * nights)}</span>
                       </div>
                       <div className="flex justify-between items-center mb-2">
-                        <span className="text-sm text-brand-sand">Taxes & Fees</span>
+                        <span className="text-sm text-slate-600">Taxes & Fees</span>
                         <span className="font-mono font-bold">{formatCurrency(selectedRoom.totalTax)}</span>
                       </div>
-                      <div className="flex justify-between items-center pt-2 border-t border-brand-sand/30">
+                      <div className="flex justify-between items-center pt-2 border-t border-slate-200">
                         <span className="font-bold text-brand-charcoal">Total for {nights} night{nights > 1 ? "s" : ""}</span>
                         <span className="font-mono font-black text-xl text-brand-antique-gold">{formatCurrency(selectedRoom.totalFare + selectedRoom.totalTax)}</span>
                       </div>

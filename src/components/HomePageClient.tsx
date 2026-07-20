@@ -128,7 +128,7 @@ export default function HomePageClient({
                       {ICON_MAP[prop.icon]}
                     </div>
                     <h3 className="font-bold text-brand-charcoal text-sm mb-1">{prop.title}</h3>
-                    <p className="text-brand-sand text-xs">{prop.description}</p>
+                    <p className="text-slate-600 text-xs">{prop.description}</p>
                   </div>
                 </StaggerItem>
               ))}
@@ -141,7 +141,7 @@ export default function HomePageClient({
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             {error ? (
               <div className="text-center py-12">
-                <p className="text-brand-sand mb-4">{error}</p>
+                <p className="text-slate-600 mb-4">{error}</p>
                 <button
                   onClick={() => window.location.reload()}
                   className="px-6 py-2 bg-brand-antique-gold text-white rounded-xl font-bold hover:bg-brand-emerald transition-colors cursor-pointer"
@@ -202,7 +202,7 @@ export default function HomePageClient({
               <h2 className="heading-section text-brand-charcoal mb-4">
                 Popular Destinations
               </h2>
-              <p className="text-body text-brand-sand max-w-2xl mx-auto">
+              <p className="text-body text-slate-600 max-w-2xl mx-auto">
                 Explore our most-loved travel destinations with curated packages, flights, and hotels.
               </p>
             </FadeIn>
@@ -254,7 +254,7 @@ export default function HomePageClient({
               <h2 className="heading-section text-brand-charcoal mb-4">
                 What Our Travelers Say
               </h2>
-              <p className="text-body text-brand-sand max-w-2xl mx-auto">
+              <p className="text-body text-slate-600 max-w-2xl mx-auto">
                 Trusted by thousands of travelers for premium experiences across India and the world.
               </p>
             </FadeIn>
@@ -262,7 +262,7 @@ export default function HomePageClient({
             <StaggerContainer className="grid grid-cols-1 md:grid-cols-3 gap-6">
               {testimonials.map((testimonial) => (
                 <StaggerItem key={testimonial.id || testimonial.name}>
-                  <div className="bg-white rounded-2xl p-6 border border-brand-sand/20 card-elevated relative">
+                  <div className="bg-white rounded-2xl p-6 border border-slate-100 card-elevated relative">
                     <div className="text-5xl text-brand-antique-gold/20 font-serif absolute top-3 right-5 leading-none select-none">&ldquo;</div>
                     <div className="flex items-center gap-1 mb-3">
                       {[...Array(testimonial.rating)].map((_, j) => (
@@ -299,7 +299,7 @@ export default function HomePageClient({
                   Business Travel,<br />
                   <span className="text-brand-antique-gold italic">Elevated</span>
                 </h2>
-                <p className="text-brand-sand text-body-lg mb-8 leading-relaxed max-w-lg">
+                <p className="text-slate-600 text-body-lg mb-8 leading-relaxed max-w-lg">
                   Streamline your corporate travel with dedicated account management, negotiated rates, and 24/7 concierge support.
                 </p>
 

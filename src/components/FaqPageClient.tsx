@@ -124,13 +124,13 @@ export default function FaqPageClient({ dbFaqs }: FaqPageClientProps) {
         <section className="py-8">
           <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="relative mb-6">
-              <Search size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-brand-sand" />
+              <Search size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-600" />
               <input
                 type="text"
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
                 placeholder="Search questions..."
-                className="w-full pl-10 pr-4 py-3 bg-white border border-brand-sand/30 rounded-xl text-sm focus:ring-2 focus:ring-brand-antique-gold outline-none"
+                className="w-full pl-10 pr-4 py-3 bg-white border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-brand-antique-gold outline-none"
               />
             </div>
 
@@ -140,7 +140,7 @@ export default function FaqPageClient({ dbFaqs }: FaqPageClientProps) {
                   key={faq.id}
                   initial={{ opacity: 0, y: 5 }}
                   animate={{ opacity: 1, y: 0 }}
-                  className="bg-white rounded-2xl border border-brand-sand/30 overflow-hidden"
+                  className="bg-white rounded-2xl border border-slate-200 overflow-hidden"
                 >
                   <button
                     onClick={() => setOpenId(openId === faq.id ? null : faq.id)}
@@ -151,9 +151,9 @@ export default function FaqPageClient({ dbFaqs }: FaqPageClientProps) {
                       <p className="font-semibold text-brand-charcoal mt-0.5">{faq.question}</p>
                     </div>
                     {openId === faq.id ? (
-                      <ChevronUp size={18} className="text-brand-sand shrink-0 ml-4" />
+                      <ChevronUp size={18} className="text-slate-600 shrink-0 ml-4" />
                     ) : (
-                      <ChevronDown size={18} className="text-brand-sand shrink-0 ml-4" />
+                      <ChevronDown size={18} className="text-slate-600 shrink-0 ml-4" />
                     )}
                   </button>
                   {openId === faq.id && (
@@ -170,8 +170,8 @@ export default function FaqPageClient({ dbFaqs }: FaqPageClientProps) {
 
               {filtered.length === 0 && (
                 <div className="text-center py-12">
-                  <HelpCircle size={48} className="mx-auto text-brand-sand/50 mb-3" />
-                  <p className="text-brand-sand">No matching questions found.</p>
+                  <HelpCircle size={48} className="mx-auto text-slate-600/50 mb-3" />
+                  <p className="text-slate-600">No matching questions found.</p>
                 </div>
               )}
             </div>

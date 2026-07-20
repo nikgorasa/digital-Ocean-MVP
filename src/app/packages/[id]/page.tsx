@@ -229,7 +229,7 @@ export default async function PackageDetailPage({
             <div className="lg:col-span-2 space-y-8">
               {/* Overview */}
               {Object.keys(overview).length > 0 && (
-                <section className="bg-white rounded-xl p-6 shadow-sm border border-brand-sand/20">
+                <section className="bg-white rounded-xl p-6 shadow-sm border border-slate-100">
                   <h2 className="text-xl font-bold text-brand-charcoal mb-4 font-display">Overview</h2>
                   <div className="space-y-3">
                     {Object.entries(overview).map(([key, value]) => (
@@ -246,7 +246,7 @@ export default async function PackageDetailPage({
 
               {/* Itinerary */}
               {Object.keys(itinerary).length > 0 && (
-                <section className="bg-white rounded-xl p-6 shadow-sm border border-brand-sand/20">
+                <section className="bg-white rounded-xl p-6 shadow-sm border border-slate-100">
                   <h2 className="text-xl font-bold text-brand-charcoal mb-4 font-display">Itinerary</h2>
                   <div className="space-y-4">
                     {Object.entries(itinerary).map(([day, activities]) => (
@@ -262,7 +262,7 @@ export default async function PackageDetailPage({
                             {Array.isArray(activities) &&
                               activities.map((act, i) => (
                                 <li key={i} className="text-sm text-brand-charcoal/70 flex items-start gap-2">
-                                  <span className="w-1.5 h-1.5 rounded-full bg-brand-sand mt-1.5 flex-shrink-0" />
+                                  <span className="w-1.5 h-1.5 rounded-full bg-slate-200 mt-1.5 flex-shrink-0" />
                                   {act}
                                 </li>
                               ))}
@@ -277,7 +277,7 @@ export default async function PackageDetailPage({
               {/* Inclusions & Exclusions */}
               <div className="grid md:grid-cols-2 gap-6">
                 {inclusions.length > 0 && (
-                  <section className="bg-white rounded-xl p-6 shadow-sm border border-brand-sand/20">
+                  <section className="bg-white rounded-xl p-6 shadow-sm border border-slate-100">
                     <h2 className="text-lg font-bold text-brand-charcoal mb-4 font-display flex items-center gap-2">
                       <span className="w-6 h-6 rounded-full bg-green-100 flex items-center justify-center text-green-600 text-sm">✓</span>
                       Inclusions
@@ -294,7 +294,7 @@ export default async function PackageDetailPage({
                 )}
 
                 {exclusions.length > 0 && (
-                  <section className="bg-white rounded-xl p-6 shadow-sm border border-brand-sand/20">
+                  <section className="bg-white rounded-xl p-6 shadow-sm border border-slate-100">
                     <h2 className="text-lg font-bold text-brand-charcoal mb-4 font-display flex items-center gap-2">
                       <span className="w-6 h-6 rounded-full bg-red-100 flex items-center justify-center text-red-600 text-sm">✕</span>
                       Exclusions
@@ -352,7 +352,7 @@ export default async function PackageDetailPage({
 
             {/* Sidebar — Pricing Card */}
             <aside className="lg:col-span-1">
-              <div className="sticky top-24 bg-white rounded-xl p-6 shadow-sm border border-brand-sand/20">
+              <div className="sticky top-24 bg-white rounded-xl p-6 shadow-sm border border-slate-100">
                 <div className="mb-4">
                   {pkg.originalPrice && pkg.originalPrice > pkg.price && (
                     <div className="flex items-center gap-2 mb-1">
@@ -376,15 +376,15 @@ export default async function PackageDetailPage({
                 </div>
 
                 <div className="space-y-3 mb-6 text-sm">
-                  <div className="flex justify-between py-2 border-b border-brand-sand/10">
+                  <div className="flex justify-between py-2 border-b border-slate-100">
                     <span className="text-brand-charcoal/60">Duration</span>
                     <span className="font-medium">{pkg.duration}</span>
                   </div>
-                  <div className="flex justify-between py-2 border-b border-brand-sand/10">
+                  <div className="flex justify-between py-2 border-b border-slate-100">
                     <span className="text-brand-charcoal/60">Rating</span>
                     <span className="font-medium">★ {pkg.rating}</span>
                   </div>
-                  <div className="flex justify-between py-2 border-b border-brand-sand/10">
+                  <div className="flex justify-between py-2 border-b border-slate-100">
                     <span className="text-brand-charcoal/60">Provider</span>
                     <span className="font-medium">{pkg.provider || "GoRASA Direct"}</span>
                   </div>
@@ -430,7 +430,7 @@ export default async function PackageDetailPage({
                     <Link
                       key={rp.id}
                       href={`/packages/${rp.id}`}
-                      className="bg-white rounded-xl overflow-hidden shadow-sm border border-brand-sand/20 hover:shadow-md transition-shadow group"
+                      className="bg-white rounded-xl overflow-hidden shadow-sm border border-slate-100 hover:shadow-md transition-shadow group"
                     >
                       <div className="relative h-44 overflow-hidden">
                         <Image

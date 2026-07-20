@@ -89,7 +89,7 @@ export default async function BlogListPage({
                     <Link
                       key={post.id}
                       href={`/blog/${post.slug}`}
-                      className="bg-white rounded-xl overflow-hidden shadow-sm border border-brand-sand/20 hover:shadow-md transition-shadow group"
+                      className="bg-white rounded-xl overflow-hidden shadow-sm border border-slate-100 hover:shadow-md transition-shadow group"
                     >
                       <div className="relative h-48 overflow-hidden bg-brand-ivory">
                         {post.featuredImage ? (
@@ -102,7 +102,7 @@ export default async function BlogListPage({
                             loading="lazy"
                           />
                         ) : (
-                          <div className="flex items-center justify-center h-full text-brand-sand/50 text-4xl font-serif">G</div>
+                          <div className="flex items-center justify-center h-full text-slate-600/50 text-4xl font-serif">G</div>
                         )}
                       </div>
                       <div className="p-4">
@@ -141,7 +141,7 @@ export default async function BlogListPage({
               {totalPages > 1 && (
                 <div className="flex justify-center gap-2 mt-10">
                   {page > 1 && (
-                    <Link href={`/blog?page=${page - 1}`} className="px-4 py-2 bg-white border border-brand-sand/30 rounded-lg text-sm hover:bg-brand-ivory transition-colors">
+                    <Link href={`/blog?page=${page - 1}`} className="px-4 py-2 bg-white border border-slate-200 rounded-lg text-sm hover:bg-brand-ivory transition-colors">
                       Previous
                     </Link>
                   )}
@@ -149,13 +149,13 @@ export default async function BlogListPage({
                     <Link
                       key={p}
                       href={`/blog?page=${p}`}
-                      className={`px-4 py-2 rounded-lg text-sm transition-colors ${p === page ? "bg-brand-antique-gold text-white" : "bg-white border border-brand-sand/30 hover:bg-brand-ivory"}`}
+                      className={`px-4 py-2 rounded-lg text-sm transition-colors ${p === page ? "bg-brand-antique-gold text-white" : "bg-white border border-slate-200 hover:bg-brand-ivory"}`}
                     >
                       {p}
                     </Link>
                   ))}
                   {page < totalPages && (
-                    <Link href={`/blog?page=${page + 1}`} className="px-4 py-2 bg-white border border-brand-sand/30 rounded-lg text-sm hover:bg-brand-ivory transition-colors">
+                    <Link href={`/blog?page=${page + 1}`} className="px-4 py-2 bg-white border border-slate-200 rounded-lg text-sm hover:bg-brand-ivory transition-colors">
                       Next
                     </Link>
                   )}

@@ -1219,7 +1219,7 @@ export default function FlightBookingModal({
               <Loader2 size={28} className="animate-spin text-brand-antique-gold" />
             </div>
             <h3 className="font-bold text-brand-charcoal mb-1">Creating Booking...</h3>
-            <p className="text-sm text-brand-sand">Saving your flight reservation</p>
+            <p className="text-sm text-slate-600">Saving your flight reservation</p>
           </div>
         )}
 

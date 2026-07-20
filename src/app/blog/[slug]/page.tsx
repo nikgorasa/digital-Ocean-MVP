@@ -147,7 +147,7 @@ export default async function BlogDetailPage({
 
           <h1 className="text-3xl md:text-4xl font-serif font-bold text-brand-charcoal mb-4">{post.title}</h1>
 
-          <div className="flex items-center gap-4 mb-8 pb-6 border-b border-brand-sand/20">
+          <div className="flex items-center gap-4 mb-8 pb-6 border-b border-slate-100">
             <div className="flex items-center gap-2">
               {post.authorImage ? (
                 <Image src={post.authorImage} alt={post.author} width={40} height={40} className="rounded-full" />
@@ -181,7 +181,7 @@ export default async function BlogDetailPage({
           />
 
           {post.authorBio && (
-            <div className="mt-12 p-6 bg-white rounded-xl border border-brand-sand/20">
+            <div className="mt-12 p-6 bg-white rounded-xl border border-slate-100">
               <div className="flex items-start gap-4">
                 {post.authorImage ? (
                   <Image src={post.authorImage} alt={post.author} width={64} height={64} className="rounded-full" />

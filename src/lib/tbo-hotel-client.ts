@@ -30,6 +30,29 @@ import { cacheGet, cacheSet } from "./static-cache";
 
 let cachedToken: { tokenId: string; date: string } | null = null;
 
+// Hotel search result cache (5-minute TTL, same as flight client)
+const searchCache = new Map<string, { data: TBOHotelSearchOutput; ts: number }>();
+const SEARCH_CACHE_TTL_MS = 5 * 60 * 1000;
+
+function getSearchCacheKey(params: {
+  checkIn: string; checkOut: string; hotelCodes?: string; city?: string;
+  cityCode?: string; countryCode?: string;
+  rooms: { adults: number; children: number; childrenAges: number[] }[];
+}): string {
+  return JSON.stringify({
+    ci: params.checkIn, co: params.checkOut, hc: params.hotelCodes,
+    c: params.city, cc: params.cityCode, cn: params.countryCode,
+    r: params.rooms,
+  });
+}
+
+function cleanSearchCache() {
+  const now = Date.now();
+  for (const [key, val] of searchCache) {
+    if (now - val.ts > SEARCH_CACHE_TTL_MS) searchCache.delete(key);
+  }
+}
+
 let _defaultEndUserIp = "192.168.1.1";
 
 function getEndUserIp(): string {
@@ -259,8 +282,7 @@ async function lookupTboCityCode(cityName: string, requestId?: string, countryCo
   try {
     const res = await api.getCities(countryCode);
     if (res.CityList) {
-      const ttl = 86400;
-      try { await cacheSet("CityList", res.CityList, countryCode, { ttlSeconds: ttl }); } catch {}
+      try { await cacheSet("CityList", res.CityList, countryCode); } catch {}
       let bestMatch: { code: string; name: string } | null = null;
       for (const c of res.CityList) {
         const fullName = c.CityName || c.Name || "";
@@ -332,7 +354,7 @@ async function fetchHotelImages(hotelCodes: string[], requestId?: string): Promi
               checkInTime: detail.CheckInTime || existing.checkInTime,
               checkOutTime: detail.CheckOutTime || existing.checkOutTime,
             };
-            try { await cacheSet("HotelDetails", detail, detail.HotelCode, { ttlSeconds: 86400 }); } catch {}
+            try { await cacheSet("HotelDetails", detail, detail.HotelCode); } catch {}
           }
         }
       } catch (error) {
@@ -381,7 +403,7 @@ async function resolveHotelCodes(city?: string, hotelCodes?: string, cityCode?: 
         countryCode: h.CountryCode || countryCode,
       };
     }
-    try { await cacheSet("HotelCodeList", res.Hotels, resolvedCode, { ttlSeconds: 86400 }); } catch {}
+    try { await cacheSet("HotelCodeList", res.Hotels, resolvedCode); } catch {}
     console.log(`Resolved ${res.Hotels.length} hotel codes for city code ${resolvedCode} (showing first 50)`);
     return codeStr;
   }
@@ -405,7 +427,7 @@ async function resolveHotelCodes(city?: string, hotelCodes?: string, cityCode?: 
             countryCode: h.CountryCode || countryCode,
           };
         }
-        try { await cacheSet("HotelCodeList", retryRes.Hotels, lookedUp, { ttlSeconds: 86400 }); } catch {}
+        try { await cacheSet("HotelCodeList", retryRes.Hotels, lookedUp); } catch {}
         console.log(`Resolved ${retryRes.Hotels.length} hotel codes with looked-up code ${lookedUp}`);
         return codeStr;
       }
@@ -426,12 +448,21 @@ export async function searchHotels(params: {
   guestNationality?: string;
   preferredCurrency?: string;
 }): Promise<TBOHotelSearchOutput> {
+  // Check search result cache first
+  cleanSearchCache();
+  const cacheKey = getSearchCacheKey(params);
+  const cached = searchCache.get(cacheKey);
+  if (cached && Date.now() - cached.ts < SEARCH_CACHE_TTL_MS) {
+    console.log(`[TBO Hotel] Cache HIT for ${params.city || params.cityCode}`);
+    return cached.data;
+  }
+  console.log(`[TBO Hotel] Cache MISS for ${params.city || params.cityCode} — fetching`);
+
   await validateCredentials();
   const requestId = `search_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
   const countryCode = params.countryCode || params.guestNationality || "IN";
 
   const resolvedCodes = await resolveHotelCodes(params.city, params.hotelCodes, params.cityCode, requestId, countryCode);
-  await fetchHotelImages(resolvedCodes.split(","), requestId);
 
   const tokenId = await ensureToken();
   const searchReq: TBOHotelSearchRequest = {
@@ -455,7 +486,15 @@ export async function searchHotels(params: {
   const hotels = await Promise.all(
     res.HotelResult.map(h => toDisplay(h, { destination: params.city, countryCode }))
   );
-  return { hotels, traceId };
+
+  // Cache the result
+  const output = { hotels, traceId };
+  searchCache.set(cacheKey, { data: output, ts: Date.now() });
+
+  // Lazy-load images (fire-and-forget, don't block search response)
+  fetchHotelImages(resolvedCodes.split(","), requestId).catch(() => {});
+
+  return output;
 }
 
 export async function preBook(params: {

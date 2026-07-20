@@ -130,7 +130,7 @@ export default async function FaqCategoryPage({
                   <Link
                     key={c.id}
                     href={`/faq/${slug}`}
-                    className={`px-3 py-1.5 rounded-full text-sm font-medium transition-colors ${slug === category ? "bg-brand-antique-gold text-white" : "bg-white border border-brand-sand/30 text-brand-charcoal hover:bg-brand-ivory"}`}
+                    className={`px-3 py-1.5 rounded-full text-sm font-medium transition-colors ${slug === category ? "bg-brand-antique-gold text-white" : "bg-white border border-slate-200 text-brand-charcoal hover:bg-brand-ivory"}`}
                   >
                     {c.label}
                   </Link>
@@ -143,7 +143,7 @@ export default async function FaqCategoryPage({
                 {categoryFaqs.map((faq) => (
                   <details
                     key={faq.id}
-                    className="bg-white rounded-2xl border border-brand-sand/30 overflow-hidden group"
+                    className="bg-white rounded-2xl border border-slate-200 overflow-hidden group"
                   >
                     <summary className="p-4 cursor-pointer font-semibold text-brand-charcoal hover:text-brand-antique-gold transition-colors list-none flex justify-between items-center">
                       {faq.question}
@@ -159,7 +159,7 @@ export default async function FaqCategoryPage({
               </div>
             ) : (
               <div className="text-center py-12">
-                <HelpCircle size={48} className="mx-auto text-brand-sand/50 mb-3" />
+                <HelpCircle size={48} className="mx-auto text-slate-600/50 mb-3" />
                 <p className="text-brand-charcoal/50">No FAQs in this category yet.</p>
               </div>
             )}

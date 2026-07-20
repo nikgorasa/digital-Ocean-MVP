@@ -584,7 +584,7 @@ export default async function DestinationPage({
                 </div>
               </div>
             </div>
-            <div className="bg-white rounded-xl p-6 shadow-sm border border-brand-sand/20 h-fit">
+            <div className="bg-white rounded-xl p-6 shadow-sm border border-slate-100 h-fit">
               <h3 className="text-lg font-semibold text-brand-charcoal mb-4">Quick Facts</h3>
               <div className="space-y-3 text-sm">
                 <div className="flex justify-between">
@@ -623,7 +623,7 @@ export default async function DestinationPage({
         {/* Visa Info */}
         {visaInfo && (
           <section className="max-w-6xl mx-auto px-4 py-8">
-            <div className="bg-white rounded-xl p-6 shadow-sm border border-brand-sand/20">
+            <div className="bg-white rounded-xl p-6 shadow-sm border border-slate-100">
               <h2 className="text-xl font-bold text-brand-charcoal mb-3 font-display">
                 Visa Information for Indian Passport Holders
               </h2>
@@ -670,7 +670,7 @@ export default async function DestinationPage({
                   <Link
                     key={pkg.id}
                     href={`/packages/${pkg.id}`}
-                    className="bg-white rounded-xl overflow-hidden shadow-sm border border-brand-sand/20 hover:shadow-md transition-shadow group"
+                    className="bg-white rounded-xl overflow-hidden shadow-sm border border-slate-100 hover:shadow-md transition-shadow group"
                   >
                     <div className="relative h-48 overflow-hidden">
                       <Image
@@ -742,11 +742,11 @@ export default async function DestinationPage({
               Flights to {cityName}
             </h2>
             {flightsTo.length > 0 ? (
-              <div className="bg-white rounded-xl overflow-hidden shadow-sm border border-brand-sand/20">
+              <div className="bg-white rounded-xl overflow-hidden shadow-sm border border-slate-100">
                 <div className="overflow-x-auto">
                   <table className="w-full text-sm">
                     <thead>
-                      <tr className="bg-brand-ivory border-b border-brand-sand/20">
+                      <tr className="bg-brand-ivory border-b border-slate-100">
                         <th className="text-left p-3 font-semibold text-brand-charcoal">Airline</th>
                         <th className="text-left p-3 font-semibold text-brand-charcoal">Flight</th>
                         <th className="text-left p-3 font-semibold text-brand-charcoal">Route</th>
@@ -757,7 +757,7 @@ export default async function DestinationPage({
                     </thead>
                     <tbody>
                       {flightsTo.map((f) => (
-                        <tr key={f.id} className="border-b border-brand-sand/10 hover:bg-brand-ivory/50">
+                        <tr key={f.id} className="border-b border-slate-100 hover:bg-brand-ivory/50">
                           <td className="p-3 font-medium">{f.airline}</td>
                           <td className="p-3 text-brand-charcoal/70">{f.flightNumber}</td>
                           <td className="p-3 text-brand-charcoal/70">
@@ -800,7 +800,7 @@ export default async function DestinationPage({
               {dest.faqs.map((faq, i) => (
                 <details
                   key={i}
-                  className="bg-white rounded-xl shadow-sm border border-brand-sand/20 group"
+                  className="bg-white rounded-xl shadow-sm border border-slate-100 group"
                 >
                   <summary className="p-4 cursor-pointer font-semibold text-brand-charcoal hover:text-brand-antique-gold transition-colors list-none flex justify-between items-center">
                     {faq.question}

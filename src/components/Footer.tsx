@@ -94,7 +94,7 @@ export default function Footer() {
                           {link.label}
                         </Link>
                       ) : (
-                        <span className="text-brand-sand hover:text-brand-antique-gold text-sm transition-colors cursor-pointer">
+                        <span className="text-slate-600 hover:text-brand-antique-gold text-sm transition-colors cursor-pointer">
                           {link.label}
                         </span>
                       )}

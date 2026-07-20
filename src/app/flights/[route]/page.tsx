@@ -483,7 +483,7 @@ export default async function FlightRoutePage({
                 ))}
               </ul>
             </div>
-            <div className="bg-white rounded-xl p-6 shadow-sm border border-brand-sand/20 h-fit">
+            <div className="bg-white rounded-xl p-6 shadow-sm border border-slate-100 h-fit">
               <h3 className="text-lg font-semibold text-brand-charcoal mb-4">Route Details</h3>
               <div className="space-y-3 text-sm">
                 <div className="flex justify-between">
@@ -530,7 +530,7 @@ export default async function FlightRoutePage({
             {meta.airlines.map((airline) => (
               <span
                 key={airline}
-                className="px-4 py-2 bg-white rounded-lg text-sm font-medium text-brand-charcoal border border-brand-sand/20"
+                className="px-4 py-2 bg-white rounded-lg text-sm font-medium text-brand-charcoal border border-slate-100"
               >
                 {airline}
               </span>
@@ -544,11 +544,11 @@ export default async function FlightRoutePage({
             {meta.origin} to {meta.destination} Flight Fares
           </h2>
           {flights.length > 0 ? (
-            <div className="bg-white rounded-xl overflow-hidden shadow-sm border border-brand-sand/20">
+            <div className="bg-white rounded-xl overflow-hidden shadow-sm border border-slate-100">
               <div className="overflow-x-auto">
                 <table className="w-full text-sm">
                   <thead>
-                    <tr className="bg-brand-ivory border-b border-brand-sand/20">
+                    <tr className="bg-brand-ivory border-b border-slate-100">
                       <th className="text-left p-3 font-semibold text-brand-charcoal">Airline</th>
                       <th className="text-left p-3 font-semibold text-brand-charcoal">Flight</th>
                       <th className="text-left p-3 font-semibold text-brand-charcoal">Departure</th>
@@ -560,7 +560,7 @@ export default async function FlightRoutePage({
                   </thead>
                   <tbody>
                     {flights.map((f) => (
-                      <tr key={f.id} className="border-b border-brand-sand/10 hover:bg-brand-ivory/50">
+                      <tr key={f.id} className="border-b border-slate-100 hover:bg-brand-ivory/50">
                         <td className="p-3 font-medium">{f.airline}</td>
                         <td className="p-3 text-brand-charcoal/70">{f.flightNumber}</td>
                         <td className="p-3 text-brand-charcoal/70">{f.departureTime}</td>
@@ -579,7 +579,7 @@ export default async function FlightRoutePage({
               </div>
             </div>
           ) : (
-            <div className="bg-white rounded-xl p-8 shadow-sm border border-brand-sand/20 text-center">
+            <div className="bg-white rounded-xl p-8 shadow-sm border border-slate-100 text-center">
               <p className="text-brand-charcoal/60 mb-4">
                 No cached fares available. Search for live prices.
               </p>
@@ -606,7 +606,7 @@ export default async function FlightRoutePage({
         {/* Visa Info */}
         {visaInfo && (
           <section className="max-w-6xl mx-auto px-4 py-8">
-            <div className="bg-white rounded-xl p-6 shadow-sm border border-brand-sand/20">
+            <div className="bg-white rounded-xl p-6 shadow-sm border border-slate-100">
               <h2 className="text-xl font-bold text-brand-charcoal mb-3 font-display">
                 Visa Information for {meta.destinationCountry}
               </h2>
@@ -648,7 +648,7 @@ export default async function FlightRoutePage({
             {meta.faqs.map((faq, i) => (
               <details
                 key={i}
-                className="bg-white rounded-xl shadow-sm border border-brand-sand/20 group"
+                className="bg-white rounded-xl shadow-sm border border-slate-100 group"
               >
                 <summary className="p-4 cursor-pointer font-semibold text-brand-charcoal hover:text-brand-antique-gold transition-colors list-none flex justify-between items-center">
                   {faq.question}

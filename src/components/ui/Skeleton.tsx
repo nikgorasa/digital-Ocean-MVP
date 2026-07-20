@@ -17,7 +17,7 @@ export default function Skeleton({
   height,
   count = 1,
 }: SkeletonProps) {
-  const baseClasses = "skeleton-pulse bg-brand-sand/20";
+  const baseClasses = "skeleton-pulse bg-slate-100";
   const variantClasses = {
     rectangular: "rounded-lg",
     circular: "rounded-full",
@@ -52,7 +52,7 @@ export default function Skeleton({
 
 export function CardSkeleton({ className = "" }: { className?: string }) {
   return (
-    <div className={`bg-white rounded-2xl border border-brand-sand/15 overflow-hidden ${className}`}>
+    <div className={`bg-white rounded-2xl border border-slate-200/15 overflow-hidden ${className}`}>
       <Skeleton className="h-56 w-full rounded-none" />
       <div className="p-6 space-y-4">
         <Skeleton className="h-5 w-3/4" variant="text" />
@@ -71,7 +71,7 @@ export function CardSkeleton({ className = "" }: { className?: string }) {
 
 export function HotelCardSkeleton({ className = "" }: { className?: string }) {
   return (
-    <div className={`bg-white rounded-2xl border border-brand-sand/15 overflow-hidden ${className}`}>
+    <div className={`bg-white rounded-2xl border border-slate-200/15 overflow-hidden ${className}`}>
       <div className="flex flex-col md:flex-row">
         <Skeleton className="h-48 md:h-auto md:w-72 shrink-0 rounded-none" />
         <div className="flex-1 p-5 space-y-3">
@@ -93,7 +93,7 @@ export function HotelCardSkeleton({ className = "" }: { className?: string }) {
 
 export function FlightCardSkeleton({ className = "" }: { className?: string }) {
   return (
-    <div className={`bg-white rounded-2xl border border-brand-sand/15 p-5 ${className}`}>
+    <div className={`bg-white rounded-2xl border border-slate-200/15 p-5 ${className}`}>
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-4">
           <Skeleton variant="circular" width={40} height={40} />

@@ -113,7 +113,7 @@ export default function AboutPage() {
             <h2 className="text-2xl font-serif font-bold text-brand-charcoal mb-8 text-center">Why Trust GoRASA</h2>
             <div className="grid md:grid-cols-2 gap-6">
               {TRUST_SIGNALS.map((signal) => (
-                <div key={signal.title} className="flex gap-4 p-4 rounded-xl border border-brand-sand/20">
+                <div key={signal.title} className="flex gap-4 p-4 rounded-xl border border-slate-100">
                   <div className="w-12 h-12 rounded-xl bg-brand-antique-gold/10 flex items-center justify-center shrink-0">
                     <signal.icon size={24} className="text-brand-antique-gold" />
                   </div>
@@ -132,7 +132,7 @@ export default function AboutPage() {
           <h2 className="text-2xl font-serif font-bold text-brand-charcoal mb-8 text-center">Our Team</h2>
           <div className="grid md:grid-cols-3 gap-6">
             {TEAM_MEMBERS.map((member) => (
-              <div key={member.name} className="bg-white rounded-xl p-6 border border-brand-sand/20 text-center">
+              <div key={member.name} className="bg-white rounded-xl p-6 border border-slate-100 text-center">
                 <div className="w-16 h-16 rounded-full bg-brand-emerald flex items-center justify-center mx-auto mb-4">
                   <span className="text-white text-xl font-bold">{member.name.charAt(0)}</span>
                 </div>
@@ -150,7 +150,7 @@ export default function AboutPage() {
             <h2 className="text-2xl font-serif font-bold text-brand-charcoal mb-8 text-center">Certifications & Compliance</h2>
             <div className="flex flex-wrap justify-center gap-3">
               {CERTIFICATIONS.map((cert) => (
-                <div key={cert} className="flex items-center gap-2 px-4 py-2 bg-brand-ivory rounded-full border border-brand-sand/20">
+                <div key={cert} className="flex items-center gap-2 px-4 py-2 bg-brand-ivory rounded-full border border-slate-100">
                   <CheckCircle size={16} className="text-green-600" />
                   <span className="text-sm font-medium text-brand-charcoal">{cert}</span>
                 </div>
@@ -163,17 +163,17 @@ export default function AboutPage() {
         <section className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
           <h2 className="text-2xl font-serif font-bold text-brand-charcoal mb-8 text-center">Contact Us</h2>
           <div className="grid md:grid-cols-3 gap-6">
-            <div className="bg-white rounded-xl p-6 border border-brand-sand/20 text-center">
+            <div className="bg-white rounded-xl p-6 border border-slate-100 text-center">
               <Phone size={24} className="mx-auto text-brand-antique-gold mb-3" />
               <h3 className="font-semibold text-brand-charcoal mb-1">Phone</h3>
               <a href="tel:+919528500383" className="text-sm text-brand-antique-gold hover:underline">+91 95285 00383</a>
             </div>
-            <div className="bg-white rounded-xl p-6 border border-brand-sand/20 text-center">
+            <div className="bg-white rounded-xl p-6 border border-slate-100 text-center">
               <Mail size={24} className="mx-auto text-brand-antique-gold mb-3" />
               <h3 className="font-semibold text-brand-charcoal mb-1">Email</h3>
               <a href="mailto:rasatravelindia@gmail.com" className="text-sm text-brand-antique-gold hover:underline">rasatravelindia@gmail.com</a>
             </div>
-            <div className="bg-white rounded-xl p-6 border border-brand-sand/20 text-center">
+            <div className="bg-white rounded-xl p-6 border border-slate-100 text-center">
               <MapPin size={24} className="mx-auto text-brand-antique-gold mb-3" />
               <h3 className="font-semibold text-brand-charcoal mb-1">Location</h3>
               <p className="text-sm text-brand-charcoal/60">India</p>

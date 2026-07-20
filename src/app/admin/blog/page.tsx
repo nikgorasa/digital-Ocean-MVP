@@ -177,13 +177,13 @@ export default function AdminBlogPage() {
       </div>
 
       <div className="relative">
-        <Search size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-brand-sand" />
+        <Search size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-600" />
         <input
           type="text"
           value={search}
           onChange={(e) => setSearch(e.target.value)}
           placeholder="Search posts..."
-          className="w-full pl-10 pr-4 py-3 bg-white border border-brand-sand/30 rounded-xl text-sm focus:ring-2 focus:ring-brand-antique-gold outline-none"
+          className="w-full pl-10 pr-4 py-3 bg-white border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-brand-antique-gold outline-none"
         />
       </div>
 
@@ -193,7 +193,7 @@ export default function AdminBlogPage() {
             key={post.id}
             initial={{ opacity: 0, y: 5 }}
             animate={{ opacity: 1, y: 0 }}
-            className="bg-white rounded-xl border border-brand-sand/20 p-4 flex items-center gap-4"
+            className="bg-white rounded-xl border border-slate-100 p-4 flex items-center gap-4"
           >
             <div className="flex-1 min-w-0">
               <div className="flex items-center gap-2 mb-1">
@@ -219,7 +219,7 @@ export default function AdminBlogPage() {
                 className="p-2 rounded-lg hover:bg-brand-ivory transition-colors"
                 title={post.status === "PUBLISHED" ? "Unpublish" : "Publish"}
               >
-                {post.status === "PUBLISHED" ? <ToggleRight size={20} className="text-green-600" /> : <ToggleLeft size={20} className="text-brand-sand" />}
+                {post.status === "PUBLISHED" ? <ToggleRight size={20} className="text-green-600" /> : <ToggleLeft size={20} className="text-slate-600" />}
               </button>
               <button onClick={() => openEdit(post)} className="p-2 rounded-lg hover:bg-brand-ivory transition-colors" title="Edit">
                 <Pencil size={16} className="text-brand-charcoal/60" />
@@ -261,7 +261,7 @@ export default function AdminBlogPage() {
                     onChange={(e) => {
                       setForm({ ...form, title: e.target.value, slug: editingId ? form.slug : generateSlug(e.target.value) });
                     }}
-                    className="w-full px-3 py-2 border border-brand-sand/30 rounded-lg text-sm focus:ring-2 focus:ring-brand-antique-gold outline-none"
+                    className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-brand-antique-gold outline-none"
                   />
                 </div>
                 <div>
@@ -270,7 +270,7 @@ export default function AdminBlogPage() {
                     type="text"
                     value={form.slug}
                     onChange={(e) => setForm({ ...form, slug: e.target.value })}
-                    className="w-full px-3 py-2 border border-brand-sand/30 rounded-lg text-sm focus:ring-2 focus:ring-brand-antique-gold outline-none"
+                    className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-brand-antique-gold outline-none"
                   />
                 </div>
               </div>
@@ -281,7 +281,7 @@ export default function AdminBlogPage() {
                   value={form.excerpt}
                   onChange={(e) => setForm({ ...form, excerpt: e.target.value })}
                   rows={2}
-                  className="w-full px-3 py-2 border border-brand-sand/30 rounded-lg text-sm focus:ring-2 focus:ring-brand-antique-gold outline-none"
+                  className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-brand-antique-gold outline-none"
                 />
               </div>
 
@@ -291,48 +291,48 @@ export default function AdminBlogPage() {
                   value={form.content}
                   onChange={(e) => setForm({ ...form, content: e.target.value })}
                   rows={10}
-                  className="w-full px-3 py-2 border border-brand-sand/30 rounded-lg text-sm font-mono focus:ring-2 focus:ring-brand-antique-gold outline-none"
+                  className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm font-mono focus:ring-2 focus:ring-brand-antique-gold outline-none"
                 />
               </div>
 
               <div className="grid md:grid-cols-3 gap-4">
                 <div>
                   <label className="block text-sm font-medium text-brand-charcoal mb-1">Author</label>
-                  <input type="text" value={form.author} onChange={(e) => setForm({ ...form, author: e.target.value })} className="w-full px-3 py-2 border border-brand-sand/30 rounded-lg text-sm" />
+                  <input type="text" value={form.author} onChange={(e) => setForm({ ...form, author: e.target.value })} className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm" />
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-brand-charcoal mb-1">Author Bio</label>
-                  <input type="text" value={form.authorBio} onChange={(e) => setForm({ ...form, authorBio: e.target.value })} className="w-full px-3 py-2 border border-brand-sand/30 rounded-lg text-sm" />
+                  <input type="text" value={form.authorBio} onChange={(e) => setForm({ ...form, authorBio: e.target.value })} className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm" />
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-brand-charcoal mb-1">Author Image URL</label>
-                  <input type="text" value={form.authorImage} onChange={(e) => setForm({ ...form, authorImage: e.target.value })} className="w-full px-3 py-2 border border-brand-sand/30 rounded-lg text-sm" />
+                  <input type="text" value={form.authorImage} onChange={(e) => setForm({ ...form, authorImage: e.target.value })} className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm" />
                 </div>
               </div>
 
               <div className="grid md:grid-cols-2 gap-4">
                 <div>
                   <label className="block text-sm font-medium text-brand-charcoal mb-1">Featured Image URL</label>
-                  <input type="text" value={form.featuredImage} onChange={(e) => setForm({ ...form, featuredImage: e.target.value })} className="w-full px-3 py-2 border border-brand-sand/30 rounded-lg text-sm" />
+                  <input type="text" value={form.featuredImage} onChange={(e) => setForm({ ...form, featuredImage: e.target.value })} className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm" />
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-brand-charcoal mb-1">Tags (JSON array)</label>
-                  <input type="text" value={form.tags} onChange={(e) => setForm({ ...form, tags: e.target.value })} className="w-full px-3 py-2 border border-brand-sand/30 rounded-lg text-sm font-mono" />
+                  <input type="text" value={form.tags} onChange={(e) => setForm({ ...form, tags: e.target.value })} className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm font-mono" />
                 </div>
               </div>
 
               <div className="grid md:grid-cols-3 gap-4">
                 <div>
                   <label className="block text-sm font-medium text-brand-charcoal mb-1">SEO Title</label>
-                  <input type="text" value={form.seoTitle} onChange={(e) => setForm({ ...form, seoTitle: e.target.value })} className="w-full px-3 py-2 border border-brand-sand/30 rounded-lg text-sm" />
+                  <input type="text" value={form.seoTitle} onChange={(e) => setForm({ ...form, seoTitle: e.target.value })} className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm" />
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-brand-charcoal mb-1">SEO Description</label>
-                  <input type="text" value={form.seoDescription} onChange={(e) => setForm({ ...form, seoDescription: e.target.value })} className="w-full px-3 py-2 border border-brand-sand/30 rounded-lg text-sm" />
+                  <input type="text" value={form.seoDescription} onChange={(e) => setForm({ ...form, seoDescription: e.target.value })} className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm" />
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-brand-charcoal mb-1">Status</label>
-                  <select value={form.status} onChange={(e) => setForm({ ...form, status: e.target.value })} className="w-full px-3 py-2 border border-brand-sand/30 rounded-lg text-sm">
+                  <select value={form.status} onChange={(e) => setForm({ ...form, status: e.target.value })} className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm">
                     <option value="DRAFT">Draft</option>
                     <option value="PUBLISHED">Published</option>
                   </select>
@@ -340,8 +340,8 @@ export default function AdminBlogPage() {
               </div>
             </div>
 
-            <div className="flex justify-end gap-3 mt-6 pt-4 border-t border-brand-sand/20">
-              <button onClick={() => setShowForm(false)} className="px-4 py-2 border border-brand-sand/30 rounded-lg text-sm hover:bg-brand-ivory transition-colors">
+            <div className="flex justify-end gap-3 mt-6 pt-4 border-t border-slate-100">
+              <button onClick={() => setShowForm(false)} className="px-4 py-2 border border-slate-200 rounded-lg text-sm hover:bg-brand-ivory transition-colors">
                 Cancel
               </button>
               <button

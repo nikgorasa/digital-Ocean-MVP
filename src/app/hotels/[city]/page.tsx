@@ -372,7 +372,7 @@ export default async function CityHotelsPage({
                 </div>
               </div>
             </div>
-            <div className="bg-white rounded-xl p-6 shadow-sm border border-brand-sand/20 h-fit">
+            <div className="bg-white rounded-xl p-6 shadow-sm border border-slate-100 h-fit">
               <h3 className="text-lg font-semibold text-brand-charcoal mb-4">Quick Facts</h3>
               <div className="space-y-3 text-sm">
                 <div className="flex justify-between">
@@ -416,7 +416,7 @@ export default async function CityHotelsPage({
               <div
                 key={area}
                 id={area.toLowerCase().replace(/\s+/g, "-")}
-                className="bg-white rounded-xl p-5 shadow-sm border border-brand-sand/20 hover:shadow-md transition-shadow"
+                className="bg-white rounded-xl p-5 shadow-sm border border-slate-100 hover:shadow-md transition-shadow"
               >
                 <h3 className="font-semibold text-brand-charcoal mb-2">{area}</h3>
                 <p className="text-sm text-brand-charcoal/60 mb-3">
@@ -439,11 +439,11 @@ export default async function CityHotelsPage({
             <h2 className="text-2xl font-bold text-brand-charcoal mb-6 font-display">
               Flights to {meta.name}
             </h2>
-            <div className="bg-white rounded-xl overflow-hidden shadow-sm border border-brand-sand/20">
+            <div className="bg-white rounded-xl overflow-hidden shadow-sm border border-slate-100">
               <div className="overflow-x-auto">
                 <table className="w-full text-sm">
                   <thead>
-                    <tr className="bg-brand-ivory border-b border-brand-sand/20">
+                    <tr className="bg-brand-ivory border-b border-slate-100">
                       <th className="text-left p-3 font-semibold text-brand-charcoal">Airline</th>
                       <th className="text-left p-3 font-semibold text-brand-charcoal">Flight</th>
                       <th className="text-left p-3 font-semibold text-brand-charcoal">Route</th>
@@ -453,7 +453,7 @@ export default async function CityHotelsPage({
                   </thead>
                   <tbody>
                     {flights.map((f) => (
-                      <tr key={f.id} className="border-b border-brand-sand/10 hover:bg-brand-ivory/50">
+                      <tr key={f.id} className="border-b border-slate-100 hover:bg-brand-ivory/50">
                         <td className="p-3 font-medium">{f.airline}</td>
                         <td className="p-3 text-brand-charcoal/70">{f.flightNumber}</td>
                         <td className="p-3 text-brand-charcoal/70">
@@ -489,7 +489,7 @@ export default async function CityHotelsPage({
             {meta.faqs.map((faq, i) => (
               <details
                 key={i}
-                className="bg-white rounded-xl shadow-sm border border-brand-sand/20 group"
+                className="bg-white rounded-xl shadow-sm border border-slate-100 group"
               >
                 <summary className="p-4 cursor-pointer font-semibold text-brand-charcoal hover:text-brand-antique-gold transition-colors list-none flex justify-between items-center">
                   {faq.question}
