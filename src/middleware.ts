@@ -21,6 +21,7 @@ const PUBLIC_API_ROUTES = [
   "/api/tbo-hotels",
   "/api/tbo",
   "/api/tbo-flights",
+  "/api/cities/airports",
 ];
 
 function isPublicApiRoute(pathname: string): boolean {
