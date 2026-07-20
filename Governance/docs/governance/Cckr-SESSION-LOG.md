@@ -1,7 +1,7 @@
 # GoRASA CockroachDB Standalone — SESSION-LOG
 
 > **Purpose:** Living document tracking all sessions, changes, deployments, and learnings.
-> **Last updated:** 2026-07-18 (Session 30 — EPIC #276: Airport Data implementation complete)
+> **Last updated:** 2026-07-18 (Session 31 — Hotel search cache + 15-day TBO cache TTLs + dark color scheme fix)
 
 ---
 
@@ -1373,3 +1373,49 @@ Migrate the app's unconfigured Gmail-SMTP email layer to **Brevo** (transactiona
 **Governance docs updated:** Cckr-SESSION-LOG.md, DB-CHANGES.md (moved from PENDING to DONE)
 
 **Awaiting:** Commit, push, deploy
+
+---
+
+### Session 2026-07-18 (Session 31) — Hotel Search Cache + 15-Day TBO Cache TTLs + Dark Color Scheme
+
+**Objective:** Fix hotel search performance (no search result caching), update TBO cache TTLs to 15-day recommendation, and fix light color scheme on result cards.
+
+**Changes:**
+
+**Hotel Search Result Cache:**
+- Added in-memory search result cache to `tbo-hotel-client.ts` (5-min TTL, matching flight client pattern)
+- Cache key: checkIn + checkOut + hotelCodes + city + cityCode + countryCode + rooms
+- `cleanSearchCache()` evicts expired entries
+- Moved `fetchHotelImages()` to lazy-load (fire-and-forget after search results return) — was blocking search response
+
+**TBO Cache TTLs (15-day recommendation):**
+- Updated `static-cache.ts` defaults: CityList, HotelCodeList, HotelDetails all changed from 7 days (604800) to 15 days (1296000)
+- Removed hardcoded `ttlSeconds: 86400` overrides in `tbo-hotel-client.ts` (3 instances) — now uses DB config values
+- Updated `cache_config` table on both DEV + PROD clusters via Prisma
+- Cron schedule (`sync-tbo-static`) already runs 1st + 15th of each month — matches 15-day cycle
+
+**Dark Color Scheme Fix:**
+- Fixed CSS tokens: `--color-text-secondary` changed from `#D7C3A4` (1.72:1 contrast on white) to `#6B5E4F` (dark brown, 7.58:1)
+- Fixed `--color-text-muted` from `rgba(215, 195, 164, 0.7)` to `rgba(107, 94, 79, 0.7)`
+- Replaced all `text-brand-sand` with `text-slate-600` across 11 files (flights, hotels, Footer, HomePageClient, booking modals, blog, FAQ, breadcrumbs)
+- Replaced `border-brand-sand/*` with `border-slate-200`/`border-slate-100` on white backgrounds
+- Replaced `bg-brand-sand/50` divider lines with `bg-slate-200`
+
+**DB Changes:**
+- Updated `cache_config` TTLs: CityList, HotelCodeList, HotelDetails → 1296000 seconds (15 days) on DEV + PROD
+
+**Files changed:** 22 files (+275/-236 lines)
+- `src/lib/static-cache.ts` — TTL defaults updated to 15 days
+- `src/lib/tbo-hotel-client.ts` — Search result cache + lazy images + removed hardcoded TTLs
+- `src/app/globals.css` — CSS token fixes for text-secondary and text-muted
+- `src/app/flights/page.tsx` — text-brand-sand → text-slate-600, border fixes
+- `src/app/hotels/page.tsx` — text-brand-sand → text-slate-600, border fixes
+- 16 additional files — border and text color fixes
+
+**Verification:**
+- TypeScript: 0 errors
+- Build: compiled successfully
+- Post-task: 9/9 passed
+- Deployed: https://cckr.vercel.app (READY)
+
+**Commit:** `7032094`
