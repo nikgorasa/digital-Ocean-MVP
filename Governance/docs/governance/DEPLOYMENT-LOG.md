@@ -32,6 +32,9 @@
 | 2026-07-17 | DEV | ✅ Live | https://cckr.vercel.app | UX improvements — error states, accessibility, ConfirmDialog, fallback quick replies (829fe0d) |
 | 2026-07-17 | DEV | ✅ Live | https://cckr.vercel.app | FLIGHT-UX — flight grouping, cabin class filter, mock bug fix, expandable fares (d5df778) |
 | 2026-07-17 | DEV | ✅ Live | https://cckr.vercel.app | FLIGHT-CITY — airport data separation, IATA codes, search by code (7969ff7) |
+| 2026-07-22 | DEV | ✅ Live | https://cckr.vercel.app | EPIC-DISC — discounts/promos capped at markup, Gorasa Reward 1.5%, context-aware governance v2.1.0 (eb9c086) |
+| 2026-07-22 | PROD | ✅ Live | https://project-yidb6.vercel.app | EPIC-DISC — same as DEV (eb9c086) |
+| 2026-07-22 | DEV+PROD | ✅ Live | Both | Deploy instructions fix — correct PROD link to cckr2 (330b69d) |
 | 2026-06-26 | DEV | ✅ Pushed | https://cckr.vercel.app | API config guardrails — dual-endpoint validation, seed defaults fix, governance scripts (d091a52) |
 | 2026-06-19 | DEV | ✅ Live | https://cckr.vercel.app | First deployment — Supabase removed, aqua-pony CockroachDB cluster |
 | 2026-06-17 | DEV | ✅ Live | https://cckr.vercel.app | Initial CockroachDB standalone deployment |

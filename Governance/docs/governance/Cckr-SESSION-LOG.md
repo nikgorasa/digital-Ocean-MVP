@@ -1560,4 +1560,19 @@ Migrate the app's unconfigured Gmail-SMTP email layer to **Brevo** (transactiona
 - Post-task: 5/5 passed (governance checks)
 - DB applied: Both DEV + PROD clusters
 
-**Commits:** (pending)
+**Commits:**
+- `eb9c086` — feat: EPIC-DISC — discounts/promos capped at markup + Gorasa Reward + context-aware governance (28 files, +1775/-44)
+- `330b69d` — fix: correct PROD deploy instructions — link to cckr2 first
+
+**Deployments:**
+- DEV (cckr): ✅ https://cckr.vercel.app — deployed 2026-07-22
+- PROD (cckr2): ✅ https://project-yidb6.vercel.app — deployed 2026-07-22
+
+**Post-deploy verification:**
+- TypeScript: 0 errors
+- Build: compiled successfully (both DEV and PROD)
+- Post-task governance: 11/11 passed
+- TBO endpoint routing: 7/7 passed
+- Config multi-source: 5/5 passed
+- CitySearchDropdown mode: all flight pages use mode="flight"
+- Middleware whitelist: 55 routes accounted for (all authenticated routes)
