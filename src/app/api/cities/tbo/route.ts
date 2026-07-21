@@ -6,6 +6,10 @@ import { cacheGet, cacheSet } from "@/lib/static-cache";
 interface TBOCity {
   Code: string;
   Name: string;
+  CountryCode?: string;
+  CountryName?: string;
+  CityCode?: number;
+  CityName?: string;
 }
 
 interface CityResult {
@@ -14,7 +18,19 @@ interface CityResult {
   state: string;
   source: "tbo" | "fallback";
   iata_code?: string;
+  country_code?: string;
+  flag?: string;
 }
+
+const COUNTRY_FLAGS: Record<string, string> = {
+  IN: "🇮🇳", AE: "🇦🇪", TH: "🇹🇭", SG: "🇸🇬", MY: "🇲🇾",
+  ID: "🇮🇩", JP: "🇯🇵", KR: "🇰🇷", GB: "🇬🇧", US: "🇺🇸",
+  TR: "🇹🇷", VN: "🇻🇳", PH: "🇵🇭", LK: "🇱🇰", NP: "🇳🇵",
+  MV: "🇲🇻", FR: "🇫🇷", DE: "🇩🇪", AU: "🇦🇺", SA: "🇸🇦",
+  QA: "🇶🇦", OM: "🇴🇲", KW: "🇰🇼", EG: "🇪🇬", ZA: "🇿🇦",
+  HK: "🇭🇰", CN: "🇨🇳", CA: "🇨🇦", RU: "🇷🇺", BR: "🇧🇷",
+  MX: "🇲🇽", KE: "🇰🇪",
+};
 
 let _tboCitiesCache: CityResult[] | null = null;
 let _tboCitiesCacheKey = "";
@@ -58,12 +74,15 @@ async function fetchTBOCities(countryCode: string): Promise<CityResult[]> {
   const parsed = tboCities.map(c => {
     const parts = (c.Name || "").split(",").map(s => s.trim());
     const name = parts[0];
+    const countryCode = c.CountryCode || "";
     return {
       code: c.Code,
       name,
       state: parts[1] || "",
       source: "tbo" as const,
       iata_code: iataMap[name.toLowerCase()] || undefined,
+      country_code: countryCode,
+      flag: COUNTRY_FLAGS[countryCode] || undefined,
     };
   });
 
@@ -82,18 +101,6 @@ async function fetchTBOCities(countryCode: string): Promise<CityResult[]> {
   return unique;
 }
 
-async function fetchDBCities(): Promise<CityResult[]> {
-  const data = await cities.findAll();
-
-  return (data as { id: string; name: string; country: string; iata_code: string | null }[]).map((c) => ({
-    code: c.id,
-    name: c.name,
-    state: c.country || "",
-    source: "fallback" as const,
-    iata_code: c.iata_code || undefined,
-  }));
-}
-
 export async function GET(req: NextRequest) {
   const countryCode = req.nextUrl.searchParams.get("countryCode") || "IN";
 
@@ -103,14 +110,8 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ source: "tbo", cities: tboCities, countryCode });
     }
   } catch (e) {
-    console.warn(`TBO CityList failed for ${countryCode}, falling back to DB:`, e);
+    console.warn(`TBO CityList failed for ${countryCode}:`, e);
   }
 
-  try {
-    const dbCities = await fetchDBCities();
-    return NextResponse.json({ source: "database", cities: dbCities, countryCode });
-  } catch (e) {
-    console.error("DB cities fallback also failed:", e);
-    return NextResponse.json({ source: "fallback", cities: [], countryCode });
-  }
+  return NextResponse.json({ source: "tbo_unavailable", cities: [], countryCode });
 }

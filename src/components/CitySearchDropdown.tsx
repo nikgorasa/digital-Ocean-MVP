@@ -152,6 +152,8 @@ const ALL_AIRPORTS: City[] = [
 
 const POPULAR_IATA = ["BOM", "DEL", "DXB", "BKK", "SIN", "LHR"];
 
+const POPULAR_HOTEL_CITIES = ["Goa", "Mumbai", "Dubai", "Bangkok", "Singapore", "Delhi"];
+
 // Group airports by country for structured display
 const COUNTRY_GROUPS = [
   { label: "India", code: "IN", flag: "🇮🇳" },
@@ -337,13 +339,21 @@ export default function CitySearchDropdown({
 
   const popular = query
     ? []
-    : dataSource.filter(c => POPULAR_IATA.includes(c.iata_code || ""));
+    : dataSource.filter(c =>
+        mode === "hotel"
+          ? POPULAR_HOTEL_CITIES.includes(c.name)
+          : POPULAR_IATA.includes(c.iata_code || "")
+      );
 
   const recent = query
     ? []
-    : recentSearches.filter(c => !POPULAR_IATA.includes(c.iata_code || ""));
+    : recentSearches.filter(c =>
+        mode === "hotel"
+          ? !POPULAR_HOTEL_CITIES.includes(c.name)
+          : !POPULAR_IATA.includes(c.iata_code || "")
+      );
 
-  // Group airports by country (excluding popular airports)
+  // Group items by country (excluding popular items)
   const groupedAirports = useMemo(() => {
     if (query) return [];
     return COUNTRY_GROUPS
@@ -351,16 +361,18 @@ export default function CitySearchDropdown({
         ...group,
         airports: dataSource.filter(c => {
           const groupCode = getCountryGroup(c.country_code || "");
-          const isPopular = POPULAR_IATA.includes(c.iata_code || "");
+          const isPopular = mode === "hotel"
+            ? POPULAR_HOTEL_CITIES.includes(c.name)
+            : POPULAR_IATA.includes(c.iata_code || "");
           return groupCode === group.code && !isPopular;
         }),
       }))
       .filter(g => g.airports.length > 0);
-  }, [query, dataSource]);
+  }, [query, dataSource, mode]);
 
-  const renderAirportItem = (city: City) => (
+  const renderCityItem = (city: City) => (
     <Command.Item
-      key={`${city.code}-${city.iata_code}`}
+      key={`${city.code}-${city.iata_code || city.name}`}
       value={`${city.name} ${city.iata_code || ""} ${city.airport_name || ""} ${city.state || ""}`}
       onSelect={() => handleSelect(city)}
       className="px-3 py-2 text-sm cursor-pointer hover:bg-emerald-50 data-[selected=true]:bg-emerald-50 transition-colors rounded-lg"
@@ -370,16 +382,21 @@ export default function CitySearchDropdown({
           {city.flag && <span className="text-sm leading-none">{city.flag}</span>}
           <div className="flex items-center gap-1.5">
             <span className="font-medium text-slate-800">{city.name}</span>
-            {city.iata_code && (
+            {mode === "flight" && city.iata_code && (
               <span className="text-[10px] font-mono font-bold text-brand-antique-gold bg-brand-antique-gold/10 px-1.5 py-0.5 rounded">
                 {city.iata_code}
               </span>
             )}
+            {mode === "hotel" && city.state && (
+              <span className="text-[11px] text-slate-400">{city.state}</span>
+            )}
           </div>
         </div>
-        <span className="text-[10px] text-slate-400 truncate ml-2 hidden sm:inline">
-          {city.airport_name}
-        </span>
+        {mode === "flight" && (
+          <span className="text-[10px] text-slate-400 truncate ml-2 hidden sm:inline">
+            {city.airport_name}
+          </span>
+        )}
       </div>
     </Command.Item>
   );
@@ -436,32 +453,42 @@ export default function CitySearchDropdown({
             <Command.List className="py-1 overflow-y-auto flex-1 overscroll-contain">
               {filteredAirports.length === 0 && query && !dbLoading && (
                 <div className="px-3 py-4 text-center">
-                  <p className="text-xs text-slate-400">No airports found for &ldquo;{search}&rdquo;</p>
-                  <p className="text-[10px] text-slate-300 mt-1">Try a city name, airport name, or IATA code</p>
+                  <p className="text-xs text-slate-400">
+                    {mode === "hotel" ? "No cities found" : "No airports found"} for &ldquo;{search}&rdquo;
+                  </p>
+                  <p className="text-[10px] text-slate-300 mt-1">
+                    {mode === "hotel" ? "Try a different city name" : "Try a city name, airport name, or IATA code"}
+                  </p>
                 </div>
               )}
 
               {/* Search results */}
               {query && filteredAirports.length > 0 && (
                 <Command.Group heading="Results" className="px-1">
-                  {filteredAirports.slice(0, 20).map((city) => renderAirportItem(city))}
+                  {filteredAirports.slice(0, 20).map((city) => renderCityItem(city))}
                 </Command.Group>
               )}
 
               {/* No query: Recent, Popular, then grouped */}
               {!query && (
                 <>
+                  {mode === "hotel" && hotelCities.length === 0 && (
+                    <div className="px-3 py-4 text-center">
+                      <p className="text-xs text-slate-400">Type to search cities</p>
+                    </div>
+                  )}
+
                   {/* Recent searches */}
                   {recent.length > 0 && (
                     <Command.Group heading="Recently Searched" className="px-1">
-                      {recent.map((city) => renderAirportItem(city))}
+                      {recent.map((city) => renderCityItem(city))}
                     </Command.Group>
                   )}
 
-                  {/* Popular airports */}
+                  {/* Popular */}
                   {popular.length > 0 && (
-                    <Command.Group heading="Popular Airports" className="px-1">
-                      {popular.map((city) => renderAirportItem(city))}
+                    <Command.Group heading={mode === "hotel" ? "Popular Destinations" : "Popular Airports"} className="px-1">
+                      {popular.map((city) => renderCityItem(city))}
                     </Command.Group>
                   )}
 
@@ -477,7 +504,7 @@ export default function CitySearchDropdown({
                         heading={`${group.flag} ${group.label}`}
                         className="px-1"
                       >
-                        {visibleAirports.map((city) => renderAirportItem(city))}
+                        {visibleAirports.map((city) => renderCityItem(city))}
                         {hasMore && !isExpanded && (
                           <button
                             type="button"
