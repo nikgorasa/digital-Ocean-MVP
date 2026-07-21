@@ -208,7 +208,19 @@ function dbHotelDetailsToCache(d: Record<string, unknown>): { name: string; rati
 }
 
 async function getHotelDetailsFromCache(hotelCode: string): Promise<{ name: string; rating: string; address: string; city: string; imageUrl?: string; amenities: string[]; facilities: string[]; countryCode?: string; checkInTime?: string; checkOutTime?: string } | null> {
-  if (_hotelDetailsCache[hotelCode]) return _hotelDetailsCache[hotelCode];
+  const existing = _hotelDetailsCache[hotelCode];
+  if (existing) {
+    if (existing.imageUrl) return existing;
+    try {
+      const dbEntry = await cacheGet<Record<string, unknown>>("HotelDetails", hotelCode);
+      if (dbEntry) {
+        const converted = dbHotelDetailsToCache(dbEntry);
+        _hotelDetailsCache[hotelCode] = { ...existing, ...converted };
+        return _hotelDetailsCache[hotelCode];
+      }
+    } catch {}
+    return existing;
+  }
   try {
     const dbEntry = await cacheGet<Record<string, unknown>>("HotelDetails", hotelCode);
     if (dbEntry) {
@@ -454,7 +466,15 @@ export async function searchHotels(params: {
   const cached = searchCache.get(cacheKey);
   if (cached && Date.now() - cached.ts < SEARCH_CACHE_TTL_MS) {
     console.log(`[TBO Hotel] Cache HIT for ${params.city || params.cityCode}`);
-    return cached.data;
+    const enriched = await Promise.all(
+      cached.data.hotels.map(async (h) => {
+        if (h.picture) return h;
+        const details = await getHotelDetailsFromCache(String(h.hotelCode));
+        if (details?.imageUrl) return { ...h, picture: details.imageUrl };
+        return h;
+      })
+    );
+    return { ...cached.data, hotels: enriched };
   }
   console.log(`[TBO Hotel] Cache MISS for ${params.city || params.cityCode} — fetching`);
 
