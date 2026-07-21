@@ -466,15 +466,7 @@ export async function searchHotels(params: {
   const cached = searchCache.get(cacheKey);
   if (cached && Date.now() - cached.ts < SEARCH_CACHE_TTL_MS) {
     console.log(`[TBO Hotel] Cache HIT for ${params.city || params.cityCode}`);
-    const enriched = await Promise.all(
-      cached.data.hotels.map(async (h) => {
-        if (h.picture) return h;
-        const details = await getHotelDetailsFromCache(String(h.hotelCode));
-        if (details?.imageUrl) return { ...h, picture: details.imageUrl };
-        return h;
-      })
-    );
-    return { ...cached.data, hotels: enriched };
+    return cached.data;
   }
   console.log(`[TBO Hotel] Cache MISS for ${params.city || params.cityCode} — fetching`);
 
@@ -498,7 +490,13 @@ export async function searchHotels(params: {
     EndUserIp: getEndUserIp(),
     TokenId: tokenId,
   };
-  const res = await api.searchHotels(searchReq, { requestId });
+
+  // Run search + image fetch in parallel — images must be loaded before toDisplay
+  const [res] = await Promise.all([
+    api.searchHotels(searchReq, { requestId }),
+    fetchHotelImages(resolvedCodes.split(","), requestId).catch(() => {}),
+  ]);
+
   const traceId = res.TraceId || "";
   if (res.Status?.Code !== 200 || !res.HotelResult?.length) {
     throw new Error(`Hotel search failed: ${res.Status?.Description || "No hotels found"}`);
@@ -510,9 +508,6 @@ export async function searchHotels(params: {
   // Cache the result
   const output = { hotels, traceId };
   searchCache.set(cacheKey, { data: output, ts: Date.now() });
-
-  // Lazy-load images (fire-and-forget, don't block search response)
-  fetchHotelImages(resolvedCodes.split(","), requestId).catch(() => {});
 
   return output;
 }
