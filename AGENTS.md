@@ -206,11 +206,11 @@ The `CitySearchDropdown` component has a `mode` prop that controls data source:
 > **Note:** `git push origin main` does NOT auto-deploy. There are no GitHub Actions workflows set up. All deployments require explicit `vercel deploy` CLI commands.
 
 ```bash
-# DEV (cckr — linked via .vercel/project.json)
-vercel deploy --prod --yes --token=$VERCEL_TOKEN
+# DEV (cckr — default link via .vercel/project.json)
+vercel deploy --prod --yes
 
-# PROD (cckr2 — requires --scope flag or separate link)
-vercel deploy --prod --yes --token=$VERCEL_TOKEN --scope="nikhil-gorasa-s-projects"
+# PROD (cckr2 — must link to cckr2 first, then deploy, then re-link to cckr)
+vercel link --yes --project cckr2 && vercel deploy --prod --yes && vercel link --yes --project cckr
 ```
 
 ### Schema Change
