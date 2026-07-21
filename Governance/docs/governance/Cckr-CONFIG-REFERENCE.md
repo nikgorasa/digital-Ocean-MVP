@@ -89,6 +89,47 @@ c.connect().then(() => c.query('SELECT 1')).then(r => { console.log('OK'); c.end
 
 ---
 
+## 4b. Pricing Configuration (EPIC-DISC)
+
+### Flight Default Markup
+
+| Parameter | Value | Location |
+|-----------|-------|----------|
+| Default flight markup | 5% PERCENT | PricingRule seed row (`default-flight-markup`) |
+| Category | FLIGHT | PricingRule.category |
+| Priority | 0 | Lowest — overridden by specific rules |
+
+**Seed SQL:**
+```sql
+INSERT INTO "PricingRule" (id, type, name, category, "markupType", "markupValue", "isActive", priority, "createdAt", "updatedAt")
+VALUES ('default-flight-markup', 'GLOBAL', 'Flight Default 5%', 'FLIGHT', 'PERCENT', 5, true, 0, now(), now());
+```
+
+### Gorasa Reward Rate
+
+| Parameter | Value | Location |
+|-----------|-------|----------|
+| Earn rate | 1.5% | `src/lib/reward-service.ts` |
+| Credit trigger | Booking confirmed + paid | Webhook handler |
+| Storage | `User.loyaltyPoints` (INT) | Prisma schema |
+| Per-booking tracking | `Booking.rewardPointsEarned` (INT) | Prisma schema |
+
+### Admin UI Locations
+
+| Feature | URL | Purpose |
+|---------|-----|---------|
+| Pricing Rules | `/admin/pricing-rules` | Manage markup rules (FLIGHT/HOTEL/ALL) |
+| Promo Codes | `/admin/promos` | Manage discount codes |
+| Corporate Rates | `/admin/corporate-rates` | Manage company-specific discounts |
+| Reports | `/admin/reports` | Revenue, discount, and reward metrics |
+| Config | `/admin/config` | TBO API endpoints and credentials |
+
+### Discount Cap Logic
+
+Promo + corporate + admin discounts are **capped at the markup amount**. GoRASA never discounts below its cost basis. See `src/lib/pricing-service.ts` for implementation.
+
+---
+
 ## 5. Prisma Schema
 
 ### Provider MUST be `postgresql`

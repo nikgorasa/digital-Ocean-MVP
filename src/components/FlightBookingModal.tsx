@@ -55,6 +55,8 @@ interface Flight {
   resultIndex?: string;
   isDomestic?: boolean;
   isPassportRequiredAtBook?: boolean;
+  baseRate?: number;
+  markupAmount?: number;
 }
 
 interface SSRBaggage {
@@ -124,6 +126,7 @@ export default function FlightBookingModal({
   const [promoCode, setPromoCode] = useState("");
   const [promoLoading, setPromoLoading] = useState(false);
   const [promoError, setPromoError] = useState("");
+  const [promoClamped, setPromoClamped] = useState(false);
   const [discountApplied, setDiscountApplied] = useState(0);
   const [couponCodeUsed, setCouponCodeUsed] = useState("");
   const [errorMessage, setErrorMessage] = useState("");
@@ -242,6 +245,7 @@ export default function FlightBookingModal({
     setCouponCodeUsed("");
     setPromoCode("");
     setPromoError("");
+    setPromoClamped(false);
     setSelectedBaggage("");
     setSelectedMeals([]);
     setSelectedSeat("");
@@ -311,10 +315,12 @@ export default function FlightBookingModal({
         setDiscountApplied(data.discount || 0);
         setCouponCodeUsed(promoCode.trim());
         setPromoError("");
+        setPromoClamped(data.clamped || false);
       } else {
         setPromoError(data.error || "Invalid promo code");
         setDiscountApplied(0);
         setCouponCodeUsed("");
+        setPromoClamped(false);
       }
     } catch {
       setPromoError("Failed to validate promo code");
@@ -512,6 +518,9 @@ export default function FlightBookingModal({
 
       const pnrCode = tboPnr || `GR${Date.now().toString(36).toUpperCase()}`;
 
+      const totalBaseRate = flights.reduce((s, f) => s + (f.baseRate || 0), 0);
+      const totalMarkupAmount = flights.reduce((s, f) => s + (f.markupAmount || 0), 0);
+
       const saveRes = await fetch("/api/bookings", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -532,6 +541,8 @@ export default function FlightBookingModal({
           travelDates: date || "TBD",
           leadGuestPan: isInternational ? undefined : (pan || undefined),
           supplierBookingRef: tboBookingId || undefined,
+          baseRate: totalBaseRate || undefined,
+          markupAmount: totalMarkupAmount || undefined,
           metadata: {
             traceId: traceId || undefined,
             resultIndex: flight.id,
@@ -758,6 +769,11 @@ export default function FlightBookingModal({
                 </button>
               </div>
               {promoError && <p className="text-xs text-red-500 mt-1">{promoError}</p>}
+              {promoClamped && (
+                <p className="text-xs text-amber-600 mt-1">
+                  Discount capped at ₹{discountApplied} (maximum discount for this booking)
+                </p>
+              )}
               {couponCodeUsed && discountApplied > 0 && (
                 <p className="text-xs text-green-600 mt-1">✓ {couponCodeUsed} applied — {formatCurrency(discountApplied)} off</p>
               )}

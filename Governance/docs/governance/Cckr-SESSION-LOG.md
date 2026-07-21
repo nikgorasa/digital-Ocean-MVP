@@ -1,7 +1,7 @@
 # GoRASA CockroachDB Standalone — SESSION-LOG
 
 > **Purpose:** Living document tracking all sessions, changes, deployments, and learnings.
-> **Last updated:** 2026-07-20 (Session 32 — Indian airport official name corrections batch)
+> **Last updated:** 2026-07-22 (Session 34 — EPIC-DISC: Discounts, Promos & Rewards)
 
 ---
 
@@ -1447,3 +1447,117 @@ Migrate the app's unconfigured Gmail-SMTP email layer to **Brevo** (transactiona
 - `Governance/docs/governance/Cckr-SESSION-LOG.md` — Session 32 entry
 
 **Commit:** (uncommitted)
+
+---
+
+## Session 33 — Hotel Pricing Fix + Responsive Modals + Image Fallbacks
+
+**Date:** 2026-07-20
+**Goal:** Fix hotel pricing display, responsive mobile modals, and hotel image loading issues
+
+**Changes:**
+
+**Pricing Fix (HOTEL-PRICING-01, #284):**
+- `toDisplay()` now receives `nights` count as context parameter
+- When `dayRates` is empty: `roomFare = totalFare/nights`, `roomTax = totalTax/nights` (always per-night)
+- Total = `roomFare * nights + totalTax` — prevents double-counting
+- Verified with live TBO API: Goa search returns correct pricing with dayRates present
+
+**Hotel Images (Session 31 follow-up):**
+- `fetchHotelImages` now runs in parallel with TBO search API via `Promise.all` (not fire-and-forget)
+- Images always in cache before `toDisplay()` runs
+- `getHotelDetailsFromCache()` enriches from DB when in-memory entry lacks `imageUrl`
+- TBO CDN fallback URL constructed when image URL invalid
+- Page `onError` tries TBO CDN (`ibe.tbotechnology.in/images/HotelImages/{code}/`) before Unsplash
+
+**Responsive Modals:**
+- All 4 modal components use bottom-sheet on mobile (slide up, near-fullscreen, `max-h-[92vh]`, 44px touch targets)
+- Centered dialog on desktop
+- Files: `hotels/page.tsx`, `flights/page.tsx`, `FlightBookingModal.tsx`, `HotelBookingModal.tsx`
+
+**Flight Fare Layout:**
+- Cards stack vertically on mobile, airline names truncate
+- Responsive gaps (`gap-4 sm:gap-10`), duration hidden on mobile, fare badges `shrink-0`
+
+**Hotel City Data Fix:**
+- Removed DB fallback that returned 2,161 airports as hotel cities
+- Added `country_code` + flag to TBO city output (32 countries)
+- Dropdown headings/empty states now mode-aware
+
+**Files changed:** 8 files
+- `src/lib/tbo-hotel-client.ts` — Pricing derivation, DB enrichment, parallel images
+- `src/app/hotels/page.tsx` — Pricing display, image fallback chain, responsive modal
+- `src/app/flights/page.tsx` — Responsive modal, fare layout
+- `src/components/FlightBookingModal.tsx` — Bottom-sheet mobile, centered desktop
+- `src/components/HotelBookingModal.tsx` — Same pattern
+- `src/components/CitySearchDropdown.tsx` — Mode-aware headings, POPULAR_HOTEL_CITIES
+- `src/app/api/cities/tbo/route.ts` — Removed DB fallback, added country_code/flag
+- `src/lib/static-cache.ts` — TBO cache TTL 15 days
+
+**GitHub Issues:**
+- #284 (HOTEL-PRICING-01) — Fixed
+- #285 (HOTEL-PRICING-02) — Partial (total display improved)
+- Comments added: #282, #243, #221, #276, #250
+
+**Verification:**
+- TypeScript: 0 errors
+- Build: compiled successfully
+- Post-task: 9/9 passed
+- Deployed: https://cckr.vercel.app
+
+**Commits:** `0634a32` (pricing), `bc1c506` (city data), `894e451` (responsive), `a931b5d` (images sync), `fba5eb1` (images DB enrichment)
+
+---
+
+## Session 34 — EPIC-DISC: Discounts, Promos & Rewards
+
+**Date:** 2026-07-22
+**Goal:** Implement markup-floor protection for discounts, add Gorasa Reward loyalty system
+**Issues:** EPIC-DISC (DISC-01 through DISC-09)
+
+**Schema Changes (applied to DEV + PROD):**
+
+| Table | Column | Type | Default | Purpose |
+|-------|--------|------|---------|---------|
+| Booking | baseRate | FLOAT | null | TBO base price before markup |
+| Booking | markupAmount | FLOAT | null | GoRASA markup from PricingRule |
+| Booking | totalDiscount | FLOAT | 0 | Sum of all discounts (promo + corporate + admin) |
+| Booking | rewardPointsEarned | INT | 0 | Gorasa Reward points (1.5% of paid amount) |
+| PricingRule | (seed row) | — | — | Flight default 5% markup (GLOBAL, FLIGHT, PERCENT) |
+
+**Code Changes (18 files):**
+1. `prisma/schema.prisma` — Added baseRate, markupAmount, totalDiscount, rewardPointsEarned to Booking
+2. `src/lib/pricing-service.ts` — Markup-floor cap logic: promo + corporate + admin ≤ markup
+3. `src/lib/pricing-types.ts` — Extended PricingResult with baseRate, markupAmount, totalDiscount
+4. `src/lib/tbo-hotel-client.ts` — Pass baseRate and markupAmount into booking creation
+5. `src/lib/tbo-flight-client.ts` — Pass baseRate and markupAmount into flight booking creation
+6. `src/lib/db/bookings.ts` — Include new fields in booking create/update queries
+7. `src/lib/reward-service.ts` — New: Gorasa Reward calculation (1.5% of final paid amount)
+8. `src/components/HotelBookingModal.tsx` — Show "Discount capped at ₹X" when promo clamped
+9. `src/components/FlightBookingModal.tsx` — Same clamped discount messaging
+10. `src/app/api/pricing-rules/route.ts` — Support FLIGHT category in pricing rules
+11. `src/app/api/pricing-rules/[id]/route.ts` — Support FLIGHT category
+12. `src/app/api/promos/validate/route.ts` — Return cappedAmount when promo exceeds markup
+13. `src/app/admin/pricing-rules/page.tsx` — FLIGHT category in admin UI
+14. `src/app/admin/bookings/page.tsx` — Show baseRate, markupAmount, totalDiscount columns
+15. `src/lib/report-service.ts` — Use actual baseRate/markupAmount instead of hardcoded /1.15
+16. `src/app/api/admin/reports/route.ts` — Include discount and reward metrics
+17. `scripts/seed-pricing-rules.ts` — Add Flight Default 5% seed rule
+18. `src/app/trips/page.tsx` — Show rewardPointsEarned on confirmed bookings
+
+**Key Behaviors:**
+- Flights now have 5% default markup via PricingRule (GLOBAL, category FLIGHT)
+- Promo codes clamped to markup amount — discount can never exceed GoRASA's margin
+- Corporate discounts clamped to remaining markup after promo deduction
+- Combined discounts (promo + corporate + admin) capped at markup floor
+- Gorasa Reward: 1.5% of final paid amount credited to loyaltyPoints on confirmed booking
+- Reports use actual baseRate/markupAmount instead of hardcoded /1.15 divisor
+- UI shows "Discount capped at ₹X" when promo is clamped by markup floor
+
+**Verification:**
+- TypeScript: 0 errors
+- Build: compiled successfully
+- Post-task: 5/5 passed (governance checks)
+- DB applied: Both DEV + PROD clusters
+
+**Commits:** (pending)

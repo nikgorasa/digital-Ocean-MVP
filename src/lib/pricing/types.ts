@@ -21,6 +21,8 @@ export interface PromoValidation {
   discountAmount: number;
   finalPrice: number;
   error?: string;
+  clamped?: boolean;
+  reason?: string;
 }
 
 export interface CorporateDiscount {

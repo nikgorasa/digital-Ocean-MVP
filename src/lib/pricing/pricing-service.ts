@@ -153,7 +153,8 @@ export async function validatePromoCode(
   code: string,
   bookingAmount: number,
   category: string,
-  userId: string
+  userId: string,
+  markupAmount?: number
 ): Promise<PromoValidation> {
   const promo = await prisma.promoCode.findFirst({
     where: { code: code.toUpperCase(), isActive: true },
@@ -219,6 +220,19 @@ export async function validatePromoCode(
 
   discount = Math.min(discount, bookingAmount);
 
+  const rawDiscount = discount;
+  let clamped = false;
+  let reason: string | undefined;
+
+  if (markupAmount != null && markupAmount > 0) {
+    const clampedDiscount = Math.min(rawDiscount, markupAmount);
+    if (clampedDiscount < rawDiscount) {
+      clamped = true;
+      reason = `Discount capped at markup (₹${markupAmount})`;
+      discount = clampedDiscount;
+    }
+  }
+
   await prisma.promoCode.update({
     where: { id: promo.id },
     data: { usedCount: (promo.usedCount || 0) + 1 },
@@ -228,6 +242,8 @@ export async function validatePromoCode(
     valid: true,
     discountAmount: discount,
     finalPrice: Math.max(0, bookingAmount - discount),
+    clamped,
+    reason,
   };
 }
 
@@ -235,7 +251,8 @@ export async function getCorporateDiscount(
   companyId: string,
   category: string,
   destination: string | undefined,
-  bookingAmount: number
+  bookingAmount: number,
+  remainingMarkup?: number
 ): Promise<CorporateDiscount> {
   if (!companyId) {
     return { discountAmount: 0, finalPrice: bookingAmount, ruleName: null };
@@ -273,6 +290,11 @@ export async function getCorporateDiscount(
   }
 
   discount = Math.min(discount, bookingAmount);
+
+  if (remainingMarkup != null && remainingMarkup > 0) {
+    const maxDiscount = Math.max(0, remainingMarkup);
+    discount = Math.min(discount, maxDiscount);
+  }
 
   return {
     discountAmount: discount,

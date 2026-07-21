@@ -61,7 +61,32 @@ export async function getCurrentUser() {
     include: { company: { select: { name: true } } },
   });
 
-  if (user) return user;
+  if (user) {
+    // Auto-assign company by domain for existing users without companyId
+    if (!user.companyId) {
+      const emailDomain = session.user.email.split("@")[1]?.toLowerCase();
+      if (emailDomain) {
+        const matchedCompany = await prisma.company.findFirst({
+          where: {
+            domain: { equals: emailDomain, mode: "insensitive" },
+            isActive: true,
+          },
+        });
+        if (matchedCompany) {
+          console.log(`[auto-assign] Existing user ${session.user.email} matched company domain ${emailDomain} → ${matchedCompany.name}`);
+          return prisma.user.update({
+            where: { id: user.id },
+            data: {
+              companyId: matchedCompany.id,
+              role: "CORPORATE_USER",
+            },
+            include: { company: { select: { name: true } } },
+          });
+        }
+      }
+    }
+    return user;
+  }
 
   // Auto-assign company by email domain
   const emailDomain = session.user.email.split("@")[1]?.toLowerCase();

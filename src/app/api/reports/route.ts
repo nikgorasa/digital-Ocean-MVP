@@ -10,10 +10,12 @@ function normalizeType(raw: string): string {
   return t || "OTHER";
 }
 
-function calcCostBreakdown(originalPrice: number, discountApplied: number, promoCost: number) {
-  const costPrice = Math.round(originalPrice / 1.15);
-  const markup = originalPrice - costPrice;
-  const adminDiscount = discountApplied;
+function calcCostBreakdown(b: { originalPrice?: number | null; price: number; baseRate?: number | null; markupAmount?: number | null; discountApplied?: number | null; promoCost?: number | null; totalDiscount?: number | null }) {
+  const originalPrice = b.originalPrice || b.price;
+  const costPrice = b.baseRate ?? Math.round(originalPrice / 1.15);
+  const markup = b.markupAmount ?? Math.round(originalPrice - costPrice);
+  const adminDiscount = b.discountApplied || 0;
+  const promoCost = b.promoCost || 0;
   const customerPays = originalPrice - adminDiscount - promoCost;
   const netEarnings = customerPays - costPrice;
   const markupPercent = costPrice > 0 ? Math.round((markup / costPrice) * 100) : 0;
@@ -57,7 +59,7 @@ export async function GET(request: NextRequest) {
 
     const enriched = bookings.map((b) => {
       const normalizedType = normalizeType(b.type);
-      const breakdown = calcCostBreakdown(b.originalPrice || b.price, b.discountApplied || 0, b.promoCost || 0);
+      const breakdown = calcCostBreakdown(b);
       return {
         id: b.id,
         rawType: b.type,

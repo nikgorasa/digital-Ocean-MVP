@@ -501,6 +501,8 @@ export interface TBOFlightDisplay {
   cabinBaggage: string | null;
   currency: string;
   publishedFare: number;
+  baseRate?: number;
+  markupAmount?: number;
   offeredFare: number;
   baseFare: number;
   tax: number;

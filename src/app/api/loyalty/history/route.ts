@@ -13,7 +13,7 @@ export async function GET(request: NextRequest) {
     const [bookingRows, redemptionRows] = await Promise.all([
       prisma.booking.findMany({
         where: { userId },
-        select: { itemName: true, bookedAt: true, price: true },
+        select: { itemName: true, bookedAt: true, price: true, rewardPointsEarned: true },
         orderBy: { bookedAt: 'desc' },
         take: 50,
       }),
@@ -27,7 +27,7 @@ export async function GET(request: NextRequest) {
 
     const earned = bookingRows.map((b) => ({
       action: `Booking (${b.itemName})`,
-      points: `+${Math.round(Number(b.price) / 100)}`,
+      points: `+${b.rewardPointsEarned ?? Math.round(Number(b.price) * 0.015)}`,
       date: String(b.bookedAt || ""),
       type: "earned" as const,
     }));

@@ -61,6 +61,7 @@ export default function HotelBookingModal({
   const [promoCode, setPromoCode] = useState("");
   const [promoLoading, setPromoLoading] = useState(false);
   const [promoError, setPromoError] = useState("");
+  const [promoClamped, setPromoClamped] = useState(false);
   const [discountApplied, setDiscountApplied] = useState(0);
   const [couponCodeUsed, setCouponCodeUsed] = useState("");
   const [bookingId, setBookingId] = useState<string | null>(null);
@@ -155,6 +156,7 @@ export default function HotelBookingModal({
     setCouponCodeUsed("");
     setPromoCode("");
     setPromoError("");
+    setPromoClamped(false);
     setFormErrors({});
     setVoucherStatus(null);
     setBookingDetail(null);
@@ -202,10 +204,12 @@ export default function HotelBookingModal({
         setDiscountApplied(data.discount || 0);
         setCouponCodeUsed(promoCode.trim());
         setPromoError("");
+        setPromoClamped(data.clamped || false);
       } else {
         setPromoError(data.error || "Invalid promo code");
         setDiscountApplied(0);
         setCouponCodeUsed("");
+        setPromoClamped(false);
       }
     } catch {
       setPromoError("Failed to validate promo code");
@@ -663,6 +667,11 @@ export default function HotelBookingModal({
                 </button>
               </div>
               {promoError && <p className="text-xs text-red-500 mt-1">{promoError}</p>}
+              {promoClamped && (
+                <p className="text-xs text-amber-600 mt-1">
+                  Discount capped at ₹{discountApplied} (maximum discount for this booking)
+                </p>
+              )}
               {couponCodeUsed && discountApplied > 0 && (
                 <p className="text-xs text-green-600 mt-1">✓ {couponCodeUsed} applied — {formatCurrency(discountApplied)} off</p>
               )}

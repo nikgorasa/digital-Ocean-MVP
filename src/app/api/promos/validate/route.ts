@@ -4,7 +4,7 @@ import { validatePromoCode } from "@/lib/pricing";
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { code, bookingAmount, category, userId } = body;
+    const { code, bookingAmount, category, userId, markupAmount } = body;
 
     if (!code || bookingAmount == null || !category || !userId) {
       return NextResponse.json(
@@ -13,13 +13,15 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const result = await validatePromoCode(code, bookingAmount, category, userId);
+    const result = await validatePromoCode(code, bookingAmount, category, userId, markupAmount);
     return NextResponse.json({
       valid: result.valid,
       discount: result.discountAmount,
       discountAmount: result.discountAmount,
       finalPrice: result.finalPrice,
       error: result.error,
+      clamped: result.clamped,
+      reason: result.reason,
     });
   } catch (error) {
     return NextResponse.json({ error: "Invalid request" }, { status: 400 });

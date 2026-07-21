@@ -94,6 +94,8 @@ interface Flight {
   validatingAirline?: string;
   gstAllowed?: boolean;
   resultIndex?: string;
+  baseRate?: number;
+  markupAmount?: number;
 }
 
 const CABIN_OPTIONS = ["Economy", "Premium Economy", "Business", "First Class"] as const;
@@ -329,6 +331,8 @@ export default function FlightsPage() {
         isFreeMealAvailable: f.isFreeMealAvailable ?? false,
         validatingAirline: f.validatingAirline || "",
         gstAllowed: f.gstAllowed ?? false,
+        baseRate: f.baseRate,
+        markupAmount: f.markupAmount,
       }));
       setResults(flights);
       setSearchTraceId(data.traceId || "");

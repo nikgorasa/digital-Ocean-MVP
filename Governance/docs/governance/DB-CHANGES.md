@@ -192,3 +192,36 @@ UPDATE "City" SET name = 'Belagavi' WHERE iata_code = 'IXG';
 **Applied via:** Direct SQL on both DEV + PROD CockroachDB clusters (2026-07-20)
 
 **Seed script:** Added `CITY_NAME_OVERRIDES` map in `seed-airports.ts` to preserve official names on future re-seeds.
+
+---
+
+## 2026-07-22 — EPIC-DISC: Pricing Breakdown + Rewards Schema
+
+**Type:** Migration (DDL + DML)
+**Status:** Applied to DEV + PROD ✓
+
+**Changes:**
+
+| Table | Column | Type | Default | Purpose |
+|-------|--------|------|---------|---------|
+| Booking | baseRate | FLOAT | null | TBO base price before markup |
+| Booking | markupAmount | FLOAT | null | GoRASA markup from PricingRule |
+| Booking | totalDiscount | FLOAT | 0 | Sum of all discounts (promo + corporate + admin) |
+| Booking | rewardPointsEarned | INT | 0 | Gorasa Reward points (1.5% of paid amount) |
+| PricingRule | (seed row) | — | — | Flight default 5% markup |
+
+**SQL (DEV + PROD):**
+```sql
+ALTER TABLE "Booking" ADD COLUMN IF NOT EXISTS "baseRate" FLOAT;
+ALTER TABLE "Booking" ADD COLUMN IF NOT EXISTS "markupAmount" FLOAT;
+ALTER TABLE "Booking" ADD COLUMN IF NOT EXISTS "totalDiscount" FLOAT DEFAULT 0;
+ALTER TABLE "Booking" ADD COLUMN IF NOT EXISTS "rewardPointsEarned" INT DEFAULT 0;
+```
+
+**Seed (both clusters):**
+```sql
+INSERT INTO "PricingRule" (id, type, name, category, "markupType", "markupValue", "isActive", priority, "createdAt", "updatedAt")
+VALUES ('default-flight-markup', 'GLOBAL', 'Flight Default 5%', 'FLIGHT', 'PERCENT', 5, true, 0, now(), now());
+```
+
+**Applied via:** Direct SQL on both DEV + PROD CockroachDB clusters (2026-07-22)

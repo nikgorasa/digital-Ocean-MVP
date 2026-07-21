@@ -27,6 +27,13 @@ async function getBooking(bookingId: string) {
       validatedPrice: true,
       priceRevalidatedAt: true,
       userId: true,
+      metadata: true,
+      baseRate: true,
+      markupAmount: true,
+      promoCost: true,
+      corporateDiscount: true,
+      discountApplied: true,
+      totalDiscount: true,
     },
   });
 }
@@ -127,14 +134,27 @@ export async function POST(request: NextRequest) {
 
       // Apply corporate discount
       const category = booking.type === "HOTEL" ? "HOTEL" : booking.type === "FLIGHT" ? "FLIGHT" : "ALL";
+      const remainingMarkup = Math.max(0, (booking.markupAmount || 0) - (booking.promoCost || 0));
       const corporateDiscount = await getCorporateDiscount(
         user.companyId,
         category,
         undefined,
-        booking.price
+        booking.price,
+        remainingMarkup
       );
 
       const finalAmount = corporateDiscount.finalPrice;
+
+      // DISC-05: Stacking enforcement — total discount can never exceed markup
+      const promoDiscountAmt = booking.promoCost || 0;
+      const adminDiscountAmt = booking.discountApplied || 0;
+      const corporateDiscountAmt = corporateDiscount.discountAmount;
+      const totalDiscountRaw = promoDiscountAmt + corporateDiscountAmt + adminDiscountAmt;
+      const markup = booking.markupAmount || 0;
+      let totalDiscount = totalDiscountRaw;
+      if (totalDiscountRaw > markup && markup > 0) {
+        totalDiscount = markup;
+      }
 
       // Calculate tax based on company tax rate
       const taxRate = company.taxRate ?? 0;
@@ -168,7 +188,7 @@ export async function POST(request: NextRequest) {
         prisma.walletLedger.create({
           data: {
             companyId: user.companyId,
-            type: "DEDUCTION",
+            type: "DEBIT",
             amount: -totalWithTax,
             balanceAfter: company.walletBalance - totalWithTax,
             referenceType: "BOOKING",
@@ -187,6 +207,11 @@ export async function POST(request: NextRequest) {
             confirmedAt: new Date(),
             companyId: user.companyId,
             corporateDiscount: corporateDiscount.discountAmount,
+            totalDiscount,
+            metadata: {
+              ...((booking.metadata as Record<string, unknown>) || {}),
+              totalDiscount,
+            },
           },
         }),
         // Create payment record
@@ -208,8 +233,10 @@ export async function POST(request: NextRequest) {
             amount: finalAmount,
             taxAmount,
             totalAmount: totalWithTax,
-            status: "PENDING",
+            status: "PAID",
             dueDate,
+            paidAt: new Date(),
+            paidAmount: totalWithTax,
           },
         }),
       ]);
@@ -270,6 +297,24 @@ export async function POST(request: NextRequest) {
 
     if (Math.abs(priceChange) > 1 && acceptPriceChange) {
       await updateBookingPrice(bookingId, revalidation.newPrice, priceChange);
+    }
+
+    // DISC-05: Stacking enforcement — clamp totalDiscount to markup
+    const promoDiscountAmtStd = booking.promoCost || 0;
+    const corporateDiscountAmtStd = booking.corporateDiscount || 0;
+    const adminDiscountAmtStd = booking.discountApplied || 0;
+    const totalDiscountRawStd = promoDiscountAmtStd + corporateDiscountAmtStd + adminDiscountAmtStd;
+    const markupStd = booking.markupAmount || 0;
+    if (totalDiscountRawStd > markupStd && markupStd > 0) {
+      await prisma.booking.update({
+        where: { id: bookingId },
+        data: { totalDiscount: markupStd },
+      });
+    } else if (booking.totalDiscount !== totalDiscountRawStd) {
+      await prisma.booking.update({
+        where: { id: bookingId },
+        data: { totalDiscount: totalDiscountRawStd },
+      });
     }
 
     const appUrl = process.env.NEXT_PUBLIC_APP_URL

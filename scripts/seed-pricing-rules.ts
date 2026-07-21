@@ -49,6 +49,34 @@ async function seed() {
     console.log(`  ✓ ${hotel.hotelCode} — ${hotel.hotelName} (7% markup)`);
   }
 
+  // DISC-01: Flight default pricing rule (5% markup)
+  console.log('\nSeeding flight default pricing rule...');
+  const flightRule = await prisma.pricingRule.upsert({
+    where: { id: 'flight-default' },
+    update: {
+      name: 'Flight Default',
+      type: 'GLOBAL',
+      category: 'FLIGHT',
+      markupType: 'PERCENT',
+      markupValue: 5,
+      markupPercent: 5,
+      isActive: true,
+      priority: 0,
+    },
+    create: {
+      id: 'flight-default',
+      name: 'Flight Default',
+      type: 'GLOBAL',
+      category: 'FLIGHT',
+      markupType: 'PERCENT',
+      markupValue: 5,
+      markupPercent: 5,
+      isActive: true,
+      priority: 0,
+    },
+  });
+  console.log(`  ✓ Flight Default — 5% markup (id: ${flightRule.id})`);
+
   console.log('\nDone. Run ./Governance/scripts/Cckr-api-config-check.sh after any config change.');
 }
 

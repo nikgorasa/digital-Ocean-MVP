@@ -39,7 +39,7 @@ export async function POST(request: NextRequest) {
       prisma.walletLedger.create({
         data: {
           companyId,
-          type: "TOPUP",
+          type: "CREDIT",
           amount,
           balanceAfter: newBalance,
           referenceType: "ADMIN",

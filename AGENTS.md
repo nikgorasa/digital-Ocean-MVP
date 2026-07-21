@@ -8,7 +8,7 @@ This version has breaking changes — APIs, conventions, and file structure may 
 
 # GoRASA CockroachDB Standalone — Governance
 
-**Version:** 2.0.0
+**Version:** 2.1.0
 
 > This governance framework is MANDATORY for all work on this project.
 > Non-compliance will result in incomplete work being rejected.
@@ -28,10 +28,25 @@ Each connects to a **different CockroachDB cluster**. Zero shared data.
 
 ## Before Starting
 
-**Run the pre-flight check:**
+**Run the pre-flight check with your task type:**
+
 ```bash
+# Context-aware (recommended) — runs only checks relevant to your task
+bash scripts/preflight-check.sh --task css          # CSS fix — 3 checks
+bash scripts/preflight-check.sh --task tbo          # TBO API work — 8 checks
+bash scripts/preflight-check.sh --task api_new      # New API route — 7 checks
+bash scripts/preflight-check.sh --task flight_ui    # Flight page UI — 5 checks
+bash scripts/preflight-check.sh --task config       # Config changes — 6 checks
+bash scripts/preflight-check.sh --task schema       # Schema change — 7 checks
+bash scripts/preflight-check.sh --task deploy       # Deployment — 9 checks
+
+# Backward compatible — runs all 18 checks
 bash scripts/preflight-check.sh
 ```
+
+**Task types:** css, ui, api_new, api_modify, tbo, schema, db_seed, flight_ui, hotel_ui, config, middleware, email, payment, governance, deploy, all
+
+**Flags:** `--quick` (gating checks only, skip informational)
 
 ---
 
@@ -78,15 +93,27 @@ BEFORE using ANY database-related MCP tool (Neon, Supabase, or others), you MUST
 
 ---
 
-## Pre-Flight Check (13 checks — MANDATORY)
+## Pre-Flight Check (18 checks — MANDATORY)
 
 **Before starting ANY significant work:**
 
 ```bash
-bash scripts/preflight-check.sh
+bash scripts/preflight-check.sh --task TYPE
 ```
 
-Checks: docs exist, session context, config reference, env vars, TypeScript, git status, recent commits, no stale imports, vercel.json safety, Prisma provider, git email, dual DB isolation, API config guard.
+**Core checks (always run):** TypeScript, stale imports, env vars, docs exist
+
+**Structural checks (task-dependent):** Prisma provider, vercel.json, git email, dual DB isolation, API config guard, airport count
+
+**Behavioral checks (NEW — catch real regression bugs):**
+- BEH-01: Middleware whitelist — new API route not in `PUBLIC_API_ROUTES` → silent 401
+- BEH-02: Flight city mode — flight pages must use `mode="flight"` on CitySearchDropdown
+- BEH-03: Hotel city mode — hotel pages must NOT use `mode="flight"`
+- BEH-04: TBO endpoint routing — search→affiliate, booking→HotelBE
+- BEH-05: Config multi-source sync — 4 config sources must match
+- BEH-06: Schema cluster reminder — apply SQL to BOTH DEV and PROD
+- BEH-07: Webhook signatures — payment webhooks must verify signatures
+- BEH-08: Currency hardcoded — no ₹ or INR in email templates
 
 ---
 
@@ -166,6 +193,7 @@ The `CitySearchDropdown` component has a `mode` prop that controls data source:
 | `Governance/docs/governance/DEPLOYMENT-LOG.md` | Deployments |
 | `Governance/docs/governance/LEARNING-FROM-MISTAKES.md` | Issue deep-dives |
 | `Governance/scripts/Cckr-api-config-check.sh` | API config validation (6 checks) |
+| `Governance/scripts/Cckr-governance-check.sh` | Context-aware governance (18 checks, task routing) |
 | `Governance/docs/static-data/TBO-STATIC-DATA-REFERENCE.md` | TBO API endpoint reference |
 | `scripts/seed-airports.ts` | Airport data download + DB upsert (OurAirports → City table) |
 | `src/app/api/cities/airports/route.ts` | Airport search API endpoint (DB-backed) |

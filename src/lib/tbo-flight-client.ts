@@ -17,6 +17,7 @@ import type {
 } from "./tbo-flight-types";
 import * as api from "./tbo-flight-api";
 import { readConfig } from "./config-service";
+import { calculatePrice } from "./pricing/pricing-service";
 
 let cachedToken: { tokenId: string; date: string } | null = null;
 
@@ -123,15 +124,22 @@ function lastSeg(r: TBOFlightResult): TBOFlightSegment | undefined {
   return legs?.[legs.length - 1];
 }
 
-function toDisplay(
+async function toDisplay(
   r: TBOFlightResult,
   leg: "outbound" | "inbound" | "oneway",
-): TBOFlightDisplay {
+): Promise<TBOFlightDisplay> {
   const f = firstSeg(r);
   const l = lastSeg(r);
   const originCountry = f?.Origin?.Airport?.CountryCode || "";
   const destCountry = l?.Destination?.Airport?.CountryCode || "";
   const isDomestic = originCountry === destCountry && originCountry === "IN";
+
+  const pricing = await calculatePrice(
+    r.Fare.PublishedFare,
+    { category: "FLIGHT", airlineCode: f?.Airline?.AirlineCode },
+    r.Fare.Currency || "INR",
+  );
+
   return {
     resultIndex: r.ResultIndex,
     leg,
@@ -154,7 +162,9 @@ function toDisplay(
     baggage: f?.Baggage ?? "",
     cabinBaggage: f?.CabinBaggage ?? "",
     currency: r.Fare.Currency,
-    publishedFare: r.Fare.PublishedFare,
+    publishedFare: pricing.displayedPrice,
+    baseRate: pricing.baseRate,
+    markupAmount: pricing.markupAmount,
     offeredFare: r.Fare.OfferedFare,
     baseFare: r.Fare.BaseFare,
     tax: r.Fare.Tax,
@@ -290,7 +300,7 @@ export async function searchFlights(params: {
   // what TBO actually returns. This prevents "No flights found" for valid searches.
   const filteredList = flightList;
 
-  const flights = filteredList.map((r) => {
+  const flights = await Promise.all(filteredList.map((r) => {
     const isReturn = params.JourneyType === 2 || params.JourneyType === 5;
     const tripInd = r.Segments?.[0]?.[0]?.TripIndicator ?? 1;
     let leg: "outbound" | "inbound" | "oneway";
@@ -298,7 +308,7 @@ export async function searchFlights(params: {
     else if (tripInd === 1) leg = "outbound";
     else leg = "inbound";
     return toDisplay(r, leg);
-  });
+  }));
   const result: TBOFlightSearchOutput = { flights, traceId: res.Response.TraceId };
   const t4 = Date.now();
   console.log(`[TBO] Result processing: ${t4 - t3}ms (${flightList.length} flights → ${result.flights.length} displayed)`);

@@ -221,6 +221,10 @@ model Booking {
   companyId         String?
   corporateDiscount Float                @default(0)
   metadata          Json?
+  baseRate          Float?
+  markupAmount      Float?
+  totalDiscount     Float                @default(0)
+  rewardPointsEarned Int                 @default(0)
   user              User                 @relation(fields: [userId], references: [id])
   cancellation      CancellationRequest?
   invoice           Invoice?

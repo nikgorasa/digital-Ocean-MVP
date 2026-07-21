@@ -90,30 +90,40 @@ export async function handleZaakpayWebhook(params: {
       },
     });
 
+    const booking = await prisma.booking.findUnique({
+      where: { id: payment.bookingId },
+    });
+
+    const totalDiscount = (booking?.promoCost || 0) + (booking?.corporateDiscount || 0);
+
     await prisma.booking.update({
       where: { id: payment.bookingId },
       data: {
         paymentStatus: "COMPLETED",
         status: "CONFIRMED",
         confirmedAt: new Date(),
+        metadata: {
+          ...((booking?.metadata as Record<string, unknown>) || {}),
+          totalDiscount,
+        },
       },
     });
 
     try {
-      const booking = await prisma.booking.findUnique({
+      const bookingWithUser = await prisma.booking.findUnique({
         where: { id: payment.bookingId },
         include: { user: { select: { email: true, name: true } } },
       });
-      if (booking?.user?.email) {
+      if (bookingWithUser?.user?.email) {
         const template = emailTemplates.bookingConfirmation({
-          guestName: booking.user.name || "Guest",
-          hotelName: booking.itemName,
-          checkIn: typeof booking.travelDates === "string" ? booking.travelDates : "TBD",
+          guestName: bookingWithUser.user.name || "Guest",
+          hotelName: bookingWithUser.itemName,
+          checkIn: typeof bookingWithUser.travelDates === "string" ? bookingWithUser.travelDates : "TBD",
           checkOut: "",
-          confirmationNo: booking.pnr || payment.bookingId,
-          amount: booking.price,
+          confirmationNo: bookingWithUser.pnr || payment.bookingId,
+          amount: bookingWithUser.price,
         });
-        await sendEmail({ to: booking.user.email, subject: template.subject, html: template.html });
+        await sendEmail({ to: bookingWithUser.user.email, subject: template.subject, html: template.html });
       }
     } catch (e) {
       console.error("[Email] Failed to send booking confirmation:", e);

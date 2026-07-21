@@ -20,6 +20,8 @@ const createBookingSchema = z.object({
   paymentMethod: z.string().optional(),
   leadGuestPan: z.string().optional(),
   supplierBookingRef: z.string().optional(),
+  baseRate: z.number().optional(),
+  markupAmount: z.number().optional(),
   metadata: z.union([z.string(), z.object({}).passthrough()]).optional(),
 });
 
@@ -54,7 +56,20 @@ export async function POST(request: Request) {
       );
     }
 
-    const { type, itemName, providerOrAirline, price, originalPrice, discountApplied, promoCost, couponCodeUsed, pnr, seatOrRoom, paxCount, travelDates, paymentMethod, leadGuestPan, supplierBookingRef, metadata } = parsed.data;
+    const { type, itemName, providerOrAirline, price, originalPrice, discountApplied, promoCost, couponCodeUsed, pnr, seatOrRoom, paxCount, travelDates, paymentMethod, leadGuestPan, supplierBookingRef, baseRate, markupAmount, metadata } = parsed.data;
+
+    // DISC-06: Admin discount guardrail — total discount (promo + admin) can never exceed markup
+    const parsedMarkup = markupAmount ?? (metadata && typeof metadata === "object" && "markupAmount" in metadata ? (metadata as Record<string, unknown>).markupAmount as number : undefined);
+    if (discountApplied && parsedMarkup) {
+      const promo = promoCost || 0;
+      const maxAdminDiscount = Math.max(0, parsedMarkup - promo);
+      if (discountApplied > maxAdminDiscount) {
+        return NextResponse.json(
+          { error: `Discount exceeds markup. Maximum admin discount: ₹${maxAdminDiscount}` },
+          { status: 400 }
+        );
+      }
+    }
 
     const bookingId = crypto.randomUUID();
     const pnrCode = pnr || `GR${Date.now().toString(36).toUpperCase()}`;
@@ -76,7 +91,11 @@ export async function POST(request: Request) {
       travelDates: typeof travelDates === "object" ? JSON.stringify(travelDates) : travelDates,
       leadGuestPan: leadGuestPan || null,
       supplierBookingRef: supplierBookingRef || null,
-      metadata: typeof metadata === "object" ? metadata : metadata ? JSON.parse(metadata) : undefined,
+      metadata: {
+        ...(typeof metadata === "object" ? metadata : metadata ? JSON.parse(metadata) : {}),
+        ...(baseRate != null ? { baseRate: Number(baseRate) } : {}),
+        ...(markupAmount != null ? { markupAmount: Number(markupAmount) } : {}),
+      },
       status: "PENDING",
     });
 
