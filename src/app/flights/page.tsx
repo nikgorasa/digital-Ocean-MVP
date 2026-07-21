@@ -390,10 +390,10 @@ export default function FlightsPage() {
           : "border-slate-200 hover:shadow-lg"
       }`}
     >
-      <div className="p-5">
-        <div className="flex items-center justify-between cursor-pointer" onClick={() => setSelectedFlight(flight)}>
-          <div className="flex items-center gap-4">
-            <div className="w-10 h-10 rounded-xl bg-brand-ivory flex items-center justify-center overflow-hidden">
+      <div className="p-4 sm:p-5">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 cursor-pointer" onClick={() => setSelectedFlight(flight)}>
+          <div className="flex items-center gap-3 sm:gap-4 flex-1 min-w-0">
+            <div className="w-10 h-10 rounded-xl bg-brand-ivory flex items-center justify-center overflow-hidden shrink-0">
               <img
                 src={getAirlineLogo(flight.airlineCode)}
                 alt={flight.airline}
@@ -404,8 +404,8 @@ export default function FlightsPage() {
                 }}
               />
             </div>
-            <div>
-              <p className="font-bold text-brand-charcoal">{flight.airline}</p>
+            <div className="min-w-0">
+              <p className="font-bold text-brand-charcoal truncate">{flight.airline}</p>
               <p className="text-xs text-slate-600">{flight.flightNumber}</p>
               <div className="flex items-center gap-2 mt-1 flex-wrap">
                 {flight.baggage && (
@@ -451,29 +451,29 @@ export default function FlightsPage() {
             </div>
           </div>
 
-          <div className="flex items-center gap-10 flex-wrap justify-between">
-            <div className="text-center min-w-[72px]">
-              <p className="text-lg font-bold text-brand-charcoal">{formatFlightTime(flight.departureTime, flight.origin)}</p>
+          <div className="flex items-center gap-4 sm:gap-10 justify-between sm:justify-end ml-13 sm:ml-0">
+            <div className="text-center min-w-[64px]">
+              <p className="text-base sm:text-lg font-bold text-brand-charcoal">{formatFlightTime(flight.departureTime, flight.origin)}</p>
               <p className="text-[10px] text-slate-600 font-medium">{formatFlightDate(flight.departureTime)}</p>
               <p className="text-xs text-slate-600 font-semibold mt-0.5">{flight.origin}</p>
             </div>
-            <div className="flex flex-col items-center">
+            <div className="hidden sm:flex flex-col items-center">
               <p className="text-xs font-medium text-slate-600">{flight.duration}</p>
               <div className="w-24 h-0.5 bg-slate-200 my-1.5 rounded-full" />
               <p className="text-xs font-medium text-slate-600">{flight.stops === 0 ? "Non-stop" : `${flight.stops} stop${flight.stops > 1 ? "s" : ""}`}</p>
             </div>
-            <div className="text-center min-w-[72px]">
-              <p className="text-lg font-bold text-brand-charcoal">{formatFlightTime(flight.arrivalTime, flight.destination)}</p>
+            <div className="text-center min-w-[64px]">
+              <p className="text-base sm:text-lg font-bold text-brand-charcoal">{formatFlightTime(flight.arrivalTime, flight.destination)}</p>
               <p className="text-[10px] text-slate-600 font-medium">{formatFlightDate(flight.arrivalTime)}</p>
               <p className="text-xs text-slate-600 font-semibold mt-0.5">{flight.destination}</p>
             </div>
           </div>
 
-          <div className="text-right">
+          <div className="text-right shrink-0 ml-auto">
             {isReturnTrip && (
               <button
                 onClick={(e) => { e.stopPropagation(); toggleSelection(flight); }}
-                className={`mb-2 px-3 py-1 text-[10px] font-bold rounded-lg border transition-colors cursor-pointer ${
+                className={`mb-2 px-3 py-1.5 text-[10px] font-bold rounded-lg border transition-colors cursor-pointer min-h-[32px] ${
                   isSelected
                     ? "bg-brand-emerald text-white border-brand-emerald"
                     : "bg-transparent text-slate-600 border-slate-200 hover:border-brand-antique-gold hover:text-brand-antique-gold"
@@ -482,10 +482,12 @@ export default function FlightsPage() {
                 {isSelected ? "✓ Selected" : "Select"}
               </button>
             )}
-            <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${getTierColor(flight.tier)}`}>
-              {flight.tier}
-            </span>
-            <p className="text-2xl font-black text-brand-charcoal mt-1">{formatCurrency(flight.price * totalPassengers)}</p>
+            <div className="flex items-center justify-end gap-1.5">
+              <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${getTierColor(flight.tier)}`}>
+                {flight.tier}
+              </span>
+            </div>
+            <p className="text-xl sm:text-2xl font-black font-mono text-brand-charcoal mt-1">{formatCurrency(flight.price * totalPassengers)}</p>
             <p className="text-[10px] text-slate-600">total for {totalPassengers} pax</p>
           </div>
         </div>
@@ -498,7 +500,7 @@ export default function FlightsPage() {
                 e.stopPropagation();
                 setExpandedGroup(isExpanded ? null : groupKey!);
               }}
-              className="flex items-center gap-2 text-xs font-semibold text-brand-antique-gold hover:text-brand-emerald transition-colors cursor-pointer"
+              className="flex items-center gap-2 text-xs font-semibold text-brand-antique-gold hover:text-brand-emerald transition-colors cursor-pointer min-h-[36px]"
             >
               {isExpanded ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
               {isExpanded ? "Hide fare options" : `View ${fareCount} fare options`}
@@ -522,7 +524,7 @@ export default function FlightsPage() {
                       .map((fare) => (
                         <div
                           key={fare.id}
-                          className={`flex items-center justify-between p-3 rounded-xl border transition-colors cursor-pointer ${
+                          className={`flex flex-col sm:flex-row sm:items-center sm:justify-between p-3 rounded-xl border transition-colors cursor-pointer gap-2 sm:gap-3 ${
                             flightSelections.get(legKey)?.id === fare.id
                               ? "border-brand-antique-gold bg-brand-antique-gold/5"
                               : "border-slate-100 hover:border-brand-antique-gold/50 hover:bg-brand-ivory/50"
@@ -531,45 +533,45 @@ export default function FlightsPage() {
                             setSelectedFlight(fare);
                           }}
                         >
-                          <div className="flex items-center gap-3">
-                            <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${getTierColor(fare.tier)}`}>
+                          <div className="flex items-center gap-2 flex-wrap min-w-0">
+                            <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full shrink-0 ${getTierColor(fare.tier)}`}>
                               {fare.tier}
                             </span>
                             {fare.fareType && fare.fareType !== "Unknown" && (
-                              <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded-full ${getFareTypeColor(fare.fareType)}`}>
+                              <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded-full shrink-0 ${getFareTypeColor(fare.fareType)}`}>
                                 {formatFareType(fare.fareType)}
                               </span>
                             )}
-                            <span className="text-[10px] text-slate-600">
+                            <span className="text-[10px] text-slate-600 shrink-0">
                               {fare.fareClass && `Class ${fare.fareClass}`}
                             </span>
                             {fare.baggage && (
-                              <span className="text-[10px] text-slate-600 flex items-center gap-0.5">
+                              <span className="text-[10px] text-slate-600 flex items-center gap-0.5 shrink-0">
                                 <Luggage size={10} /> {fare.baggage}
                               </span>
                             )}
                             {fare.isRefundable ? (
-                              <span className="text-[10px] font-bold text-green-600">Refundable</span>
+                              <span className="text-[10px] font-bold text-green-600 shrink-0">Refundable</span>
                             ) : (
-                              <span className="text-[10px] font-bold text-red-500">Non-Refundable</span>
+                              <span className="text-[10px] font-bold text-red-500 shrink-0">Non-Refundable</span>
                             )}
-                          </div>
-          <div className="flex items-center gap-4 min-w-0 flex-1 sm:flex-none">
-                            <div className="flex items-center gap-1.5">
+                            <span className="hidden sm:flex items-center gap-1.5 shrink-0">
                               {fare.fareInclusions?.some(inc => inc.toLowerCase().includes("meal")) && (
                                 <span className="text-[10px] text-emerald-600" title="Meal included"><Utensils size={10} /></span>
                               )}
                               {fare.fareInclusions?.some(inc => inc.toLowerCase().includes("lounge")) && (
                                 <span className="text-[10px] text-purple-600" title="Lounge access"><Armchair size={10} /></span>
                               )}
-                            </div>
-                            <p className="text-lg font-black text-brand-charcoal">{formatCurrency(fare.price * totalPassengers)}</p>
+                            </span>
+                          </div>
+                          <div className="flex items-center justify-between sm:justify-end gap-3 sm:gap-4 shrink-0">
+                            <p className="text-lg font-black font-mono text-brand-charcoal">{formatCurrency(fare.price * totalPassengers)}</p>
                             <button
                               onClick={(e) => {
                                 e.stopPropagation();
                                 toggleSelection(fare);
                               }}
-                              className="px-3 py-1.5 text-[10px] font-bold rounded-lg bg-brand-antique-gold text-white hover:bg-brand-emerald transition-colors cursor-pointer"
+                              className="px-3 py-1.5 text-[10px] font-bold rounded-lg bg-brand-antique-gold text-white hover:bg-brand-emerald transition-colors cursor-pointer min-h-[36px]"
                             >
                               Select
                             </button>
@@ -1110,15 +1112,15 @@ export default function FlightsPage() {
       {/* Flight Detail Modal */}
       <AnimatePresence>
         {selectedFlight && (
-          <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+          <div className="fixed inset-0 z-[100] flex items-end sm:items-center sm:justify-center sm:p-4">
             <div className="absolute inset-0 bg-brand-charcoal/60 backdrop-blur-md" onClick={() => setSelectedFlight(null)} />
             <motion.div
-              initial={{ opacity: 0, scale: 0.95 }}
-              animate={{ opacity: 1, scale: 1 }}
-              exit={{ opacity: 0, scale: 0.95 }}
-              className="relative bg-white w-full max-w-md rounded-3xl shadow-2xl overflow-hidden p-5 sm:p-8"
+              initial={{ opacity: 0, y: 40 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: 40 }}
+              className="relative bg-white w-full sm:max-w-md sm:rounded-3xl rounded-t-3xl shadow-2xl overflow-hidden p-5 sm:p-8 max-h-[92vh] sm:max-h-[90vh] overflow-y-auto"
             >
-              <button onClick={() => setSelectedFlight(null)} className="absolute top-6 right-6 p-2 text-slate-600 hover:text-brand-charcoal">
+              <button onClick={() => setSelectedFlight(null)} className="absolute top-4 right-4 sm:top-6 sm:right-6 p-2 min-w-[44px] min-h-[44px] flex items-center justify-center text-slate-600 hover:text-brand-charcoal cursor-pointer rounded-xl hover:bg-slate-100 transition-colors">
                 <X size={20} />
               </button>
 

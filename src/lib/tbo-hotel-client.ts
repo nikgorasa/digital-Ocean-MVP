@@ -354,12 +354,17 @@ async function fetchHotelImages(hotelCodes: string[], requestId?: string): Promi
           for (const detail of res.HotelDetails) {
             const existing = _hotelDetailsCache[detail.HotelCode] || {};
             const images = detail.Images || [];
+            let imageUrl = images[0] || existing.imageUrl || "";
+            if (imageUrl && !imageUrl.startsWith("http")) {
+              console.warn(`[fetchHotelImages] Invalid image URL for ${detail.HotelCode}: ${imageUrl}`);
+              imageUrl = `https://ibe.tbotechnology.in/images/HotelImages/${detail.HotelCode}/Hotel_${detail.HotelCode}_1.jpg`;
+            }
             _hotelDetailsCache[detail.HotelCode] = {
               ...existing,
               name: detail.HotelName || existing.name || "",
               rating: detail.HotelRating || existing.rating || "",
               address: detail.Address || existing.address || "",
-              imageUrl: images[0] || existing.imageUrl,
+              imageUrl,
               amenities: detail.Amenities || existing.amenities || [],
               facilities: detail.HotelFacilities || existing.facilities || [],
               countryCode: detail.CountryCode || existing.countryCode,

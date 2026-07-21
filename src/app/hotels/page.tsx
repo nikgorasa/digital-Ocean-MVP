@@ -606,7 +606,14 @@ export default function HotelsPage() {
                             className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
                             onError={(e) => {
                               const target = e.target as HTMLImageElement;
-                              target.src = "https://images.unsplash.com/photo-1566073771259-6a8506099945?auto=format&fit=crop&w=800&q=80";
+                              console.warn(`[Hotel Image] Failed to load: ${target.src} for hotel ${hotel.name} (${hotel.hotelCode})`);
+                              const tboFallback = `https://ibe.tbotechnology.in/images/HotelImages/${hotel.hotelCode}/Hotel_${hotel.hotelCode}_1.jpg`;
+                              if (target.dataset.tboFallback !== "true") {
+                                target.dataset.tboFallback = "true";
+                                target.src = tboFallback;
+                              } else {
+                                target.src = "https://images.unsplash.com/photo-1566073771259-6a8506099945?auto=format&fit=crop&w=800&q=80";
+                              }
                             }}
                           />
                         ) : (
@@ -662,15 +669,15 @@ export default function HotelsPage() {
       {/* Hotel Detail + Room Selection Modal */}
       <AnimatePresence>
         {selectedHotel && (
-          <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+          <div className="fixed inset-0 z-[100] flex items-end sm:items-center sm:justify-center sm:p-4">
             <div className="absolute inset-0 bg-brand-charcoal/60 backdrop-blur-md" onClick={() => { setSelectedHotel(null); setSelectedRoom(null); }} />
             <motion.div
-              initial={{ opacity: 0, scale: 0.95 }}
-              animate={{ opacity: 1, scale: 1 }}
-              exit={{ opacity: 0, scale: 0.95 }}
-              className="relative bg-white w-full max-w-lg rounded-3xl shadow-2xl overflow-hidden max-h-[90vh] overflow-y-auto"
+              initial={{ opacity: 0, y: 40 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: 40 }}
+              className="relative bg-white w-full sm:max-w-lg sm:rounded-3xl rounded-t-3xl shadow-2xl overflow-hidden max-h-[92vh] sm:max-h-[90vh] overflow-y-auto"
             >
-              <div className="h-40 sm:h-56 relative">
+              <div className="h-44 sm:h-56 relative">
                 {selectedHotel.picture ? (
                   <img
                     src={selectedHotel.picture}
@@ -679,7 +686,14 @@ export default function HotelsPage() {
                     className="w-full h-full object-cover"
                     onError={(e) => {
                       const target = e.target as HTMLImageElement;
-                      target.src = "https://images.unsplash.com/photo-1566073771259-6a8506099945?auto=format&fit=crop&w=800&q=80";
+                      console.warn(`[Hotel Image] Failed to load: ${target.src} for hotel ${selectedHotel.name} (${selectedHotel.hotelCode})`);
+                      const tboFallback = `https://ibe.tbotechnology.in/images/HotelImages/${selectedHotel.hotelCode}/Hotel_${selectedHotel.hotelCode}_1.jpg`;
+                      if (target.dataset.tboFallback !== "true") {
+                        target.dataset.tboFallback = "true";
+                        target.src = tboFallback;
+                      } else {
+                        target.src = "https://images.unsplash.com/photo-1566073771259-6a8506099945?auto=format&fit=crop&w=800&q=80";
+                      }
                     }}
                   />
                 ) : (
@@ -687,7 +701,7 @@ export default function HotelsPage() {
                     <Building2 size={64} className="text-slate-600" />
                   </div>
                 )}
-                <button onClick={() => { setSelectedHotel(null); setSelectedRoom(null); }} aria-label="Close hotel details" className="absolute top-4 right-4 p-2 min-w-[44px] min-h-[44px] flex items-center justify-center bg-white/90 rounded-full hover:bg-white transition-colors cursor-pointer">
+                <button onClick={() => { setSelectedHotel(null); setSelectedRoom(null); }} aria-label="Close hotel details" className="absolute top-3 right-3 sm:top-4 sm:right-4 p-2 min-w-[44px] min-h-[44px] flex items-center justify-center bg-white/90 rounded-full hover:bg-white transition-colors cursor-pointer">
                   <X size={18} />
                 </button>
                 <div className="absolute bottom-4 left-4 flex gap-2">
