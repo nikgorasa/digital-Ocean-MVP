@@ -850,7 +850,7 @@ export default function HotelsPage() {
                       </div>
                       <div className="flex justify-between items-center pt-2 border-t border-slate-200">
                         <span className="font-bold text-brand-charcoal">Total for {nights} night{nights > 1 ? "s" : ""}</span>
-                        <span className="font-mono font-black text-xl text-brand-antique-gold">{formatCurrency(selectedRoom.totalFare + selectedRoom.totalTax)}</span>
+                        <span className="font-mono font-black text-xl text-brand-antique-gold">{formatCurrency(selectedRoom.roomFare * nights + selectedRoom.totalTax)}</span>
                       </div>
                     </div>
                     <button

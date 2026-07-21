@@ -103,7 +103,7 @@ async function ensureToken(): Promise<string> {
 
 async function toDisplay(
   h: TBOHotelResult,
-  context?: { destination?: string; hotelName?: string; countryCode?: string },
+  context?: { destination?: string; hotelName?: string; countryCode?: string; nights?: number },
 ): Promise<TBOHotelDisplay> {
   const details = (await getHotelDetailsFromCache(h.HotelCode)) || {} as { name: string; rating: string; address: string; city: string; imageUrl?: string; amenities: string[]; facilities: string[]; countryCode?: string; checkInTime?: string; checkOutTime?: string };
   const hotelAmenities = details.amenities || [];
@@ -115,6 +115,16 @@ async function toDisplay(
     const totalTax = r.TotalTax || 0;
     const dayRates: TBOHotelDayRate[] = r.DayRates?.[0] || [];
     const cancelPolicies = r.CancelPolicies || [];
+    const nights = context?.nights || 1;
+
+    // roomFare = per-night room cost (before tax)
+    // dayRates[0].BasePrice is per-night; when absent, derive from totalFare
+    const roomFare = dayRates.length > 0
+      ? dayRates[0].BasePrice
+      : Math.round(totalFare / nights);
+    const roomTax = dayRates.length > 0
+      ? totalTax / dayRates.length
+      : totalTax / nights;
 
     return {
       roomId: r.RoomID?.[0] || `${h.HotelCode}-${ri}`,
@@ -138,8 +148,8 @@ async function toDisplay(
       roomIndex: ri + 1,
       typeCode: "",
       ratePlanCode: "",
-      roomFare: dayRates[0]?.BasePrice || totalFare,
-      roomTax: totalTax / Math.max(1, dayRates.length || 1),
+      roomFare,
+      roomTax,
       currency: h.Currency,
       amenities: hotelAmenities,
     };
@@ -506,8 +516,11 @@ export async function searchHotels(params: {
   if (res.Status?.Code !== 200 || !res.HotelResult?.length) {
     throw new Error(`Hotel search failed: ${res.Status?.Description || "No hotels found"}`);
   }
+  const nights = Math.max(1, Math.ceil(
+    (new Date(params.checkOut).getTime() - new Date(params.checkIn).getTime()) / 86400000
+  ));
   const hotels = await Promise.all(
-    res.HotelResult.map(h => toDisplay(h, { destination: params.city, countryCode }))
+    res.HotelResult.map(h => toDisplay(h, { destination: params.city, countryCode, nights }))
   );
 
   // Cache the result
