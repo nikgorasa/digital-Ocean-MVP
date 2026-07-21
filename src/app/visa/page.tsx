@@ -198,7 +198,7 @@ export default function VisaPage() {
 
       <main className="min-h-screen bg-brand-ivory">
         {/* Hero */}
-        <section className="bg-brand-emerald py-16">
+        <section className="bg-brand-emerald py-10 sm:py-16">
           <div className="max-w-6xl mx-auto px-4">
             <Breadcrumb items={breadcrumbItems} />
             <h1 className="text-4xl md:text-5xl font-bold text-white font-display mb-4">
@@ -213,7 +213,7 @@ export default function VisaPage() {
 
         {/* Quick Stats */}
         <section className="max-w-6xl mx-auto px-4 -mt-8">
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
             <div className="bg-white rounded-xl p-4 shadow-sm border border-slate-100 text-center">
               <p className="text-2xl font-bold text-green-600">
                 {visaData.filter((c) => c.visaOnArrival || !c.visaRequired).length}

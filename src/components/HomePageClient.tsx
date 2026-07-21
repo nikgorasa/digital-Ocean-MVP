@@ -282,7 +282,7 @@ export default function HomePageClient({
         </section>
 
         {/* Corporate Travel */}
-        <section className="py-20 bg-gradient-to-br from-brand-emerald via-brand-emerald to-brand-charcoal relative overflow-hidden">
+        <section className="py-14 sm:py-20 bg-gradient-to-br from-brand-emerald via-brand-emerald to-brand-charcoal relative overflow-hidden">
           <div className="absolute inset-0 opacity-5">
             <div className="absolute top-0 right-0 w-96 h-96 bg-brand-antique-gold rounded-full blur-3xl" />
             <div className="absolute bottom-0 left-0 w-72 h-72 bg-blue-500 rounded-full blur-3xl" />

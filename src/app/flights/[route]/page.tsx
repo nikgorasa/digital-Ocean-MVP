@@ -440,7 +440,7 @@ export default async function FlightRoutePage({
 
       <main className="min-h-screen bg-brand-ivory">
         {/* Hero */}
-        <section className="bg-brand-emerald py-16">
+        <section className="bg-brand-emerald py-10 sm:py-16">
           <div className="max-w-6xl mx-auto px-4">
             <Breadcrumb items={breadcrumbItems} />
             <h1 className="text-4xl md:text-5xl font-bold text-white font-display mb-4">
@@ -466,9 +466,9 @@ export default async function FlightRoutePage({
 
         {/* Route Info */}
         <section className="max-w-6xl mx-auto px-4 py-12">
-          <div className="grid md:grid-cols-3 gap-8">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
             <div className="md:col-span-2">
-              <h2 className="text-2xl font-bold text-brand-charcoal mb-4 font-display">
+              <h2 className="text-xl sm:text-2xl font-bold text-brand-charcoal mb-4 font-display">
                 {meta.origin} to {meta.destination} Flight Information
               </h2>
               <p className="text-brand-charcoal/80 leading-relaxed mb-6">{meta.overview}</p>

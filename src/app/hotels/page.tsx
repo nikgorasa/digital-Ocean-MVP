@@ -252,7 +252,7 @@ export default function HotelsPage() {
         ]} />
         <HotelJsonLd hotels={filteredResults} cityName={selectedCity.name} />
         {/* Hero */}
-        <section className="py-12 bg-brand-emerald">
+        <section className="py-6 sm:py-12 bg-brand-emerald">
           <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
             <motion.div
               initial={{ opacity: 0, y: 20 }}
@@ -670,7 +670,7 @@ export default function HotelsPage() {
               exit={{ opacity: 0, scale: 0.95 }}
               className="relative bg-white w-full max-w-lg rounded-3xl shadow-2xl overflow-hidden max-h-[90vh] overflow-y-auto"
             >
-              <div className="h-56 relative">
+              <div className="h-40 sm:h-56 relative">
                 {selectedHotel.picture ? (
                   <img
                     src={selectedHotel.picture}
@@ -702,14 +702,14 @@ export default function HotelsPage() {
                 </div>
               </div>
 
-              <div className="p-6">
-                <h2 className="text-2xl font-serif font-bold text-brand-charcoal mb-1">{selectedHotel.name}</h2>
+              <div className="p-4 sm:p-6">
+                <h2 className="text-xl sm:text-2xl font-serif font-bold text-brand-charcoal mb-1">{selectedHotel.name}</h2>
                 <p className="text-sm text-slate-600 flex items-center gap-1 mb-3">
                   <MapPin size={14} />
                   {selectedHotel.address || selectedCity.name}
                 </p>
 
-                <div className="flex items-center gap-3 mb-4">
+                <div className="flex flex-wrap items-center gap-2 sm:gap-3 mb-4">
                   {selectedHotel.tripAdvisorRating > 0 && (
                     <div className="flex items-center gap-1 bg-brand-champagne/20 px-2 py-1 rounded-lg">
                       <Star size={14} className="fill-brand-antique-gold text-brand-antique-gold" />
@@ -741,7 +741,7 @@ export default function HotelsPage() {
                 <p className="text-brand-charcoal/80 text-sm mb-4">{selectedHotel.description}</p>
 
                 {/* Check-in/out Info */}
-                <div className="bg-brand-ivory rounded-xl p-3 mb-4 flex items-center gap-4 text-xs text-slate-600">
+                <div className="bg-brand-ivory rounded-xl p-3 mb-4 flex flex-wrap items-center gap-2 sm:gap-4 text-xs text-slate-600">
                   <span>Check-in: <strong>{checkIn || "TBD"}</strong></span>
                   <span>Check-out: <strong>{checkOut || "TBD"}</strong></span>
                   <span className="text-brand-antique-gold font-bold">{nights} night{nights > 1 ? "s" : ""}</span>

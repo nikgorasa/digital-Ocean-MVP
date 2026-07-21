@@ -82,7 +82,7 @@ export default function AboutPage() {
 
       <main className="min-h-screen bg-brand-ivory">
         {/* Hero */}
-        <section className="py-16 bg-brand-emerald">
+        <section className="py-10 sm:py-16 bg-brand-emerald">
           <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
             <h1 className="text-4xl md:text-5xl font-serif font-bold text-white mb-4">About GoRASA</h1>
             <p className="text-lg text-white/80 max-w-2xl mx-auto">
@@ -92,7 +92,7 @@ export default function AboutPage() {
         </section>
 
         {/* Story */}
-        <section className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
+        <section className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-10 sm:py-16">
           <h2 className="text-2xl font-serif font-bold text-brand-charcoal mb-6">Our Story</h2>
           <div className="prose prose-brand max-w-none text-brand-charcoal/80 leading-relaxed space-y-4">
             <p>
@@ -108,10 +108,10 @@ export default function AboutPage() {
         </section>
 
         {/* Trust Signals */}
-        <section className="bg-white py-16">
+        <section className="bg-white py-10 sm:py-16">
           <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
             <h2 className="text-2xl font-serif font-bold text-brand-charcoal mb-8 text-center">Why Trust GoRASA</h2>
-            <div className="grid md:grid-cols-2 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               {TRUST_SIGNALS.map((signal) => (
                 <div key={signal.title} className="flex gap-4 p-4 rounded-xl border border-slate-100">
                   <div className="w-12 h-12 rounded-xl bg-brand-antique-gold/10 flex items-center justify-center shrink-0">
@@ -128,9 +128,9 @@ export default function AboutPage() {
         </section>
 
         {/* Team */}
-        <section className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
+        <section className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-10 sm:py-16">
           <h2 className="text-2xl font-serif font-bold text-brand-charcoal mb-8 text-center">Our Team</h2>
-          <div className="grid md:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
             {TEAM_MEMBERS.map((member) => (
               <div key={member.name} className="bg-white rounded-xl p-6 border border-slate-100 text-center">
                 <div className="w-16 h-16 rounded-full bg-brand-emerald flex items-center justify-center mx-auto mb-4">
@@ -145,7 +145,7 @@ export default function AboutPage() {
         </section>
 
         {/* Certifications */}
-        <section className="bg-white py-16">
+        <section className="bg-white py-10 sm:py-16">
           <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
             <h2 className="text-2xl font-serif font-bold text-brand-charcoal mb-8 text-center">Certifications & Compliance</h2>
             <div className="flex flex-wrap justify-center gap-3">
@@ -160,9 +160,9 @@ export default function AboutPage() {
         </section>
 
         {/* Contact */}
-        <section className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
+        <section className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-10 sm:py-16">
           <h2 className="text-2xl font-serif font-bold text-brand-charcoal mb-8 text-center">Contact Us</h2>
-          <div className="grid md:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
             <div className="bg-white rounded-xl p-6 border border-slate-100 text-center">
               <Phone size={24} className="mx-auto text-brand-antique-gold mb-3" />
               <h3 className="font-semibold text-brand-charcoal mb-1">Phone</h3>

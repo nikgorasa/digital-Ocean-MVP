@@ -354,15 +354,15 @@ export default async function CityHotelsPage({
 
         {/* Overview & Quick Facts */}
         <section className="max-w-6xl mx-auto px-4 py-12">
-          <div className="grid md:grid-cols-3 gap-8">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
             <div className="md:col-span-2">
-              <h2 className="text-2xl font-bold text-brand-charcoal mb-4 font-display">
+              <h2 className="text-xl sm:text-2xl font-bold text-brand-charcoal mb-4 font-display">
                 About Hotels in {meta.name}
               </h2>
               <p className="text-brand-charcoal/80 leading-relaxed">{meta.overview}</p>
               <div className="mt-6">
                 <h3 className="text-lg font-semibold text-brand-charcoal mb-3">Highlights</h3>
-                <div className="grid grid-cols-2 gap-2">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                   {meta.highlights.map((h) => (
                     <div key={h} className="flex items-center gap-2 text-sm text-brand-charcoal/70">
                       <span className="w-2 h-2 rounded-full bg-brand-antique-gold" />

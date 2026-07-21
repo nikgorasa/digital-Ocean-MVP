@@ -451,7 +451,7 @@ export default function FlightsPage() {
             </div>
           </div>
 
-          <div className="flex items-center gap-10">
+          <div className="flex items-center gap-10 flex-wrap justify-between">
             <div className="text-center min-w-[72px]">
               <p className="text-lg font-bold text-brand-charcoal">{formatFlightTime(flight.departureTime, flight.origin)}</p>
               <p className="text-[10px] text-slate-600 font-medium">{formatFlightDate(flight.departureTime)}</p>
@@ -554,7 +554,7 @@ export default function FlightsPage() {
                               <span className="text-[10px] font-bold text-red-500">Non-Refundable</span>
                             )}
                           </div>
-                          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-4 min-w-0 flex-1 sm:flex-none">
                             <div className="flex items-center gap-1.5">
                               {fare.fareInclusions?.some(inc => inc.toLowerCase().includes("meal")) && (
                                 <span className="text-[10px] text-emerald-600" title="Meal included"><Utensils size={10} /></span>
@@ -626,7 +626,7 @@ export default function FlightsPage() {
               className="bg-white rounded-2xl p-5 shadow-xl"
             >
               {/* Trip Type Tabs */}
-              <div className="flex gap-1 mb-4 bg-brand-ivory rounded-xl p-1 w-fit">
+              <div className="flex gap-1 mb-4 bg-brand-ivory rounded-xl p-1 w-full flex-wrap">
                 {(["one-way", "return", "multi-city"] as const).map((t) => (
                   <button
                     key={t}
@@ -682,7 +682,7 @@ export default function FlightsPage() {
                   <div className="md:col-span-3 space-y-3">
                     {multiCityLegs.map((leg, i) => (
                       <div key={i} className="flex items-start gap-2">
-                        <div className="flex-1 grid grid-cols-3 gap-2">
+                        <div className="flex-1 grid grid-cols-1 sm:grid-cols-3 gap-2">
                           <div>
                             <label className="text-[10px] font-bold uppercase tracking-widest text-slate-600 mb-1 block">
                               From
@@ -797,7 +797,7 @@ export default function FlightsPage() {
                           {/* Cabin Class */}
                           <div>
                             <p className="text-[10px] font-bold uppercase tracking-widest text-slate-600 mb-2">Cabin Class</p>
-                            <div className="grid grid-cols-2 gap-1.5">
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-1.5">
                               {CABIN_OPTIONS.map((c) => (
                                 <button
                                   key={c}
@@ -1079,14 +1079,14 @@ export default function FlightsPage() {
             animate={{ y: 0 }}
             className="fixed bottom-0 left-0 right-0 z-50 bg-white border-t border-slate-200 shadow-2xl px-6 py-4"
           >
-            <div className="max-w-5xl mx-auto flex items-center justify-between">
-              <div className="flex items-center gap-4">
+            <div className="max-w-5xl mx-auto flex flex-col sm:flex-row items-stretch sm:items-center gap-3 sm:justify-between">
+              <div className="flex flex-wrap items-center gap-3">
                 {Array.from(flightSelections.entries()).map(([leg, f]) => (
-                  <div key={leg} className="flex items-center gap-2 text-sm">
+                  <div key={leg} className="flex items-center gap-2 text-xs sm:text-sm">
                     <span className="text-[10px] font-bold uppercase text-slate-600">{leg}</span>
                     <span className="font-semibold text-brand-charcoal">{f.airline} {f.flightNumber}</span>
                     <span className="text-slate-600">{f.origin}→{f.destination}</span>
-                    <span className="font-mono font-bold text-brand-charcoal">{formatCurrency(f.price * totalPassengers)}</span>
+                    <span className="font-mono font-bold text-brand-charcoal text-xs sm:text-sm">{formatCurrency(f.price * totalPassengers)}</span>
                   </div>
                 ))}
               </div>
@@ -1098,7 +1098,7 @@ export default function FlightsPage() {
                     setShowBookingModal(true);
                   }
                 }}
-                className="px-8 py-3 bg-brand-antique-gold text-white rounded-xl font-bold hover:bg-brand-emerald transition-colors cursor-pointer active:scale-[0.98]"
+                className="px-4 sm:px-8 py-3 bg-brand-antique-gold text-white rounded-xl font-bold hover:bg-brand-emerald transition-colors cursor-pointer active:scale-[0.98]"
               >
                 {user ? `Book ${flightSelections.size} Flights` : "Sign in to Book"}
               </button>
@@ -1116,7 +1116,7 @@ export default function FlightsPage() {
               initial={{ opacity: 0, scale: 0.95 }}
               animate={{ opacity: 1, scale: 1 }}
               exit={{ opacity: 0, scale: 0.95 }}
-              className="relative bg-white w-full max-w-md rounded-3xl shadow-2xl overflow-hidden p-8"
+              className="relative bg-white w-full max-w-md rounded-3xl shadow-2xl overflow-hidden p-5 sm:p-8"
             >
               <button onClick={() => setSelectedFlight(null)} className="absolute top-6 right-6 p-2 text-slate-600 hover:text-brand-charcoal">
                 <X size={20} />
@@ -1137,7 +1137,7 @@ export default function FlightsPage() {
                     <p className="text-xs text-slate-600">{formatFlightDate(selectedFlight.departureTime)}</p>
                     <p className="text-sm text-slate-600 font-semibold mt-0.5">{selectedFlight.origin}</p>
                   </div>
-                  <div className="flex flex-col items-center">
+            <div className="hidden sm:flex flex-col items-center">
                     <Clock size={16} className="text-slate-600 mb-1" />
                     <p className="text-sm font-medium text-brand-charcoal">{selectedFlight.duration}</p>
                     <p className="text-xs font-medium text-slate-600">{selectedFlight.stops === 0 ? "Non-stop" : `${selectedFlight.stops} stop${selectedFlight.stops > 1 ? "s" : ""}`}</p>
@@ -1149,7 +1149,7 @@ export default function FlightsPage() {
                   </div>
                 </div>
 
-                <div className="grid grid-cols-2 gap-3">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <div className="p-3 bg-brand-ivory rounded-xl">
                     <p className="text-[10px] text-slate-600 uppercase">Tier</p>
                     <span className={`text-xs font-bold px-2 py-0.5 rounded-full ${getTierColor(selectedFlight.tier)}`}>

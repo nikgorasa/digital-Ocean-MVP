@@ -308,7 +308,7 @@ export default function SupportPage() {
                       animate={{ opacity: 1, x: 0 }}
                       exit={{ opacity: 0, x: 20 }}
                     >
-                      <div className="bg-white rounded-2xl border border-slate-200 overflow-hidden flex flex-col" style={{ height: "500px" }}>
+                      <div className="bg-white rounded-2xl border border-slate-200 overflow-hidden flex flex-col h-[60vh] sm:h-[500px]">
                         {/* Messages */}
                         <div className="flex-1 overflow-y-auto p-4 space-y-4">
                           {messages.map((msg) => (
@@ -458,7 +458,7 @@ export default function SupportPage() {
                               />
                             </div>
 
-                            <div className="grid grid-cols-2 gap-3">
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                               <div>
                                 <label className="block text-xs font-medium text-slate-600 mb-1">Category *</label>
                                 <select
@@ -497,7 +497,7 @@ export default function SupportPage() {
                               />
                             </div>
 
-                            <div className="grid grid-cols-2 gap-3">
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                               <div>
                                 <label className="block text-xs font-medium text-slate-600 mb-1">Booking Ref (optional)</label>
                                 <input

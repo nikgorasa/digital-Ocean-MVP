@@ -224,7 +224,7 @@ export default async function PackageDetailPage({
         </section>
 
         <div className="max-w-6xl mx-auto px-4 py-8">
-          <div className="grid lg:grid-cols-3 gap-8">
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
             {/* Main Content */}
             <div className="lg:col-span-2 space-y-8">
               {/* Overview */}
@@ -275,7 +275,7 @@ export default async function PackageDetailPage({
               )}
 
               {/* Inclusions & Exclusions */}
-              <div className="grid md:grid-cols-2 gap-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 {inclusions.length > 0 && (
                   <section className="bg-white rounded-xl p-6 shadow-sm border border-slate-100">
                     <h2 className="text-lg font-bold text-brand-charcoal mb-4 font-display flex items-center gap-2">
@@ -422,7 +422,7 @@ export default async function PackageDetailPage({
               <h2 className="text-2xl font-bold text-brand-charcoal mb-6 font-display">
                 Related Packages
               </h2>
-              <div className="grid md:grid-cols-3 gap-6">
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
                 {relatedPackages.map((rp) => {
                   const rpImages = parseJsonSafe<string[]>(rp.images, []);
                   const rpInclusions = parseJsonSafe<string[]>(rp.inclusions, []);
