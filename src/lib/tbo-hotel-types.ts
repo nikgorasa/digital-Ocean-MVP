@@ -110,6 +110,8 @@ export interface TBOHotelSearchResponse {
 export interface TBOHotelPreBookRequest {
   BookingCode: string;
   PaymentMode: string;
+  EndUserIp?: string;
+  TokenId?: string;
 }
 
 export interface TBOHotelValidationInfo {

@@ -538,6 +538,8 @@ export async function preBook(params: {
   const req: TBOHotelPreBookRequest = {
     BookingCode: params.bookingCode,
     PaymentMode: params.paymentMode || "Default",
+    EndUserIp: getEndUserIp(),
+    TokenId: await ensureToken(),
   };
   const res = await api.preBook(req);
   if (res.Status?.Code !== 200) {

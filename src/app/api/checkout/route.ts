@@ -120,20 +120,20 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // Reject bookings without supplier confirmation (ghost bookings)
-    if (!booking.supplierBookingRef && booking.type === "FLIGHT") {
-      return NextResponse.json({
-        error: "This booking was not confirmed by the airline. Please book again.",
-        ghostBooking: true,
-      }, { status: 400 });
-    }
-
-    // Reject demo bookings from real checkout
+    // Reject demo bookings from real checkout (check FIRST, before other guards)
     const bookingMeta = booking.metadata as Record<string, unknown> | null;
     if (bookingMeta?.isDemo) {
       return NextResponse.json({
         error: "Demo bookings cannot be checked out. Use AdminDemoPanel to simulate payment.",
         isDemo: true,
+      }, { status: 400 });
+    }
+
+    // Reject bookings without supplier confirmation (ghost bookings) — skip for demo
+    if (!booking.supplierBookingRef && booking.type === "FLIGHT") {
+      return NextResponse.json({
+        error: "This booking was not confirmed by the airline. Please book again.",
+        ghostBooking: true,
       }, { status: 400 });
     }
 
