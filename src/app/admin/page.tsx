@@ -4,7 +4,6 @@ import React, { useEffect, useState } from "react";
 import { motion } from "motion/react";
 import { formatCurrency } from "@/lib";
 import { Users, Package, BarChart3, DollarSign, TrendingUp, Activity } from "lucide-react";
-import AdminDemoPanel from "@/components/AdminDemoPanel";
 
 interface DashboardStats {
   totalUsers: number;
@@ -109,11 +108,6 @@ export default function AdminDashboard() {
             </div>
           ))}
         </div>
-      </div>
-
-      {/* Demo Control Panel */}
-      <div className="mt-8">
-        <AdminDemoPanel />
       </div>
     </div>
   );

@@ -358,7 +358,7 @@ export default function HotelBookingModal({
           travelDates: `${checkIn} to ${checkOut}`,
           leadGuestPan: showPan && pan.trim() ? pan.trim().toUpperCase() : undefined,
           supplierBookingRef: bookData?.bookingId ? String(bookData.bookingId) : undefined,
-          markupAmount: Math.max(0, (hotel.price - room.totalFare) * nights),
+          markupAmount: Math.max(0, hotel.price - room.totalFare),
           metadata: {
             tboBookingId: bookData?.bookingId,
             confirmationNo: bookData?.confirmationNo,
