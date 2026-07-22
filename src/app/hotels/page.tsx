@@ -826,7 +826,7 @@ export default function HotelsPage() {
                               )}
                             </div>
                             <div className="text-right">
-                              <p className="text-lg font-black font-mono text-brand-charcoal">{formatCurrency(room.roomFare + room.roomTax)}</p>
+                              <p className="text-xl font-black font-mono text-brand-charcoal">{formatCurrency(Math.round(selectedHotel.price / nights))}</p>
                               <p className="text-[10px] text-slate-600/70">per night</p>
                             </div>
                           </div>
@@ -846,11 +846,11 @@ export default function HotelsPage() {
                       </div>
                       <div className="flex justify-between items-center mb-2">
                         <span className="text-sm text-slate-600">Taxes & Fees</span>
-                        <span className="font-mono font-bold">{formatCurrency(selectedRoom.totalTax)}</span>
+                        <span className="font-mono font-bold">{formatCurrency(Math.round((selectedHotel.price / nights - selectedRoom.roomFare) * nights))}</span>
                       </div>
                       <div className="flex justify-between items-center pt-2 border-t border-slate-200">
                         <span className="font-bold text-brand-charcoal">Total for {nights} night{nights > 1 ? "s" : ""}</span>
-                        <span className="font-mono font-black text-xl text-brand-antique-gold">{formatCurrency(selectedRoom.roomFare * nights + selectedRoom.totalTax)}</span>
+                        <span className="font-mono font-black text-xl text-brand-antique-gold">{formatCurrency(selectedHotel.price)}</span>
                       </div>
                     </div>
                     <button
