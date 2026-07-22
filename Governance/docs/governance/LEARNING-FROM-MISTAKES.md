@@ -67,3 +67,27 @@
 - **Root Cause:** The TBO flight search API validates that the `Segments` array length must match `JourneyType`. For `JourneyType=2` (Return), exactly 2 segments are required — one for outbound (Origin→Destination) and one for inbound (Destination→Origin). For `JourneyType=3` (Multi-city/Circle), N segments are required for N legs. The code always built a single segment regardless of `JourneyType`. The route handler also never forwarded the `returnDate` parameter from the frontend to `searchFlights()`, and multi-city dates were not passed.
 - **Resolution:** Added `PreferredArrivalTime` param to `searchFlights` mapped from frontend `returnDate`. For `JourneyType === 2` with a `PreferredArrivalTime`, pushes a second segment with reversed origin/destination and the return date as `PreferredDepartureTime`. Added `multiCityDates` param for JourneyType=3 — builds N alternating segments for N legs. Flattened both outbound/inbound result arrays with `.flat()` so inbound flights aren't discarded.
 - **Prevention:** Any `JourneyType` value change must ensure `Segments` array length matches. Add a parameter validation check that asserts `Segments.length === JourneyType` (with special handling for JourneyType 5). Whenever the API `tripType` or `JourneyType` changes, verify the segment-building logic produces the correct number of segments. The TBO API contract for Search requires exactly N segments where N = JourneyType (1 for one-way, 2 for return, 3+ for multi-city).
+
+### Issue 007 — Hotel Pricing: Double-Markup and Screen Mismatch
+
+- **Date:** 2026-07-22
+- **Duration:** ~3 hours (4 iterations)
+- **Severity:** Critical
+- **Symptoms:** Room card showed ₹2,176 total, booking modal showed ₹2,284 total. Taxes & Fees showed ₹108 (raw TBO tax) but should have been ₹215 (tax + markup). Room Fare + Taxes & Fees ≠ Total on multiple screens. Different screens showed different prices for the same room.
+- **Root Cause:** Modal used `room.totalFare + room.roomTax` (raw TBO = ₹2,176) instead of `hotel.price` (marked-up = ₹2,284). The markup from the pricing table was applied in `tbo-hotel-client.ts` by `calculatePrice()` to produce `hotel.price`, but the modal ignored it and used raw room values.
+- **Failed Fix 1:** Added `calculatePrice()` call in modal useEffect — caused DOUBLE-markup because `calculatePrice()` was already called once in TBO client. Modal applied markup on top of already-marked-up price (₹37,407 vs ₹32,176).
+- **Failed Fix 2:** Used `markupRatio = hotel.price / rawTotal` — ratio was derived from cheapest room's total, applied incorrectly to a different selected room.
+- **Failed Fix 3:** Showed raw TBO values throughout — room card showed ₹2,176 but modal total was ₹2,284. Screens didn't match.
+- **Correct Fix:** Use `hotel.price` directly as source of truth. `hotel.price` already includes markup from pricing table. Formula:
+  ```
+  Room Fare    = room.roomFare (raw TBO, never changes)
+  Taxes & Fees = hotel.price - roomFare (TBO tax + markup combined)
+  Total        = hotel.price
+  ```
+  User does NOT see markup as separate line. Markup is hidden inside "Taxes & Fees".
+- **Prevention:**
+  1. NEVER call `calculatePrice()` in a UI component — it's already called in the TBO client. Use `hotel.price` directly.
+  2. The pricing table markup is baked into `hotel.price` at search time. Don't recalculate it at display time.
+  3. When a value is computed upstream (TBO client), pass it through — don't recompute it downstream (component).
+  4. Always verify that Room Fare + Taxes & Fees = Total on ALL screens before shipping.
+  5. Use concrete numbers to verify formulas: ₹2,069 + ₹215 = ₹2,284 ✓

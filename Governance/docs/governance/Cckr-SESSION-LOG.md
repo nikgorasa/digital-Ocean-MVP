@@ -1592,12 +1592,32 @@ Migrate the app's unconfigured Gmail-SMTP email layer to **Brevo** (transactiona
    - Shows failure message, booking reference, retry + home buttons
    - Matches /payment/success page style
 
-2. **#284/#285 — Hotel price mismatch:**
-   - Modal showed raw TBO per-night values without multiplying by nights
-   - Room Fare showed ₹13,472 (per-night) instead of ₹26,944 (× 2 nights)
-   - First attempt added `calculatePrice()` in modal — caused double-markup (₹37,407 vs ₹32,176)
-   - Removed over-engineering. Modal now shows: `room.roomFare × nights` and `room.roomTax × nights`
-   - Total uses `room.totalFare + room.totalTax` (raw TBO, consistent with room selection screen)
+2. **#284/#285 — Hotel price mismatch (multiple iterations):**
+
+   **Root Cause:** Modal used raw TBO total (`room.totalFare + room.totalTax` = ₹2,176) instead of marked-up total (`hotel.price` = ₹2,284). Taxes & Fees showed raw TBO tax (₹108) instead of tax + markup (₹215).
+
+   **Iteration 1 (wrong):** Added `calculatePrice()` call in modal useEffect — caused DOUBLE-markup (₹37,407 vs ₹32,176). `calculatePrice()` was already called once in TBO client to produce `hotel.price`. Calling it again applied markup twice.
+
+   **Iteration 2 (wrong):** Used `markupRatio = hotel.price / (room.totalFare + room.totalTax)` — worked for 1 room but broke for different rooms (ratio derived from cheapest room, applied to selected room).
+
+   **Iteration 3 (wrong):** Showed raw TBO values (`room.roomFare × nights`) — room card showed ₹2,176 but modal showed ₹2,284. Screens didn't match.
+
+   **Iteration 4 (correct):** Use `hotel.price` directly as the source of truth. Formula:
+   ```
+   Room Fare    = room.roomFare (raw TBO, never changes) = ₹2,069
+   Taxes & Fees = hotel.price - roomFare = ₹2,284 - ₹2,069 = ₹215
+                  (TBO tax ₹108 + markup ₹107 — hidden from user)
+   Total        = hotel.price = ₹2,284
+
+   Per-night breakup:
+   Room Fare (₹2,069 × N nights)    = ₹2,069 × N
+   Taxes & Fees (₹215 × N nights)   = ₹215 × N
+   Total (₹2,284 × N nights)        = ₹2,284 × N
+   ```
+
+   **Key Principle:** USER DOES NOT SEE MARKUP AS SEPARATE LINE. Markup is hidden inside "Taxes & Fees". Room Fare + Taxes & Fees = Total, always.
+
+   **Lesson:** Never call `calculatePrice()` in a component — it's already called in the TBO client. Use `hotel.price` directly. The pricing table markup is already baked into `hotel.price`.
 
 3. **#150 — Currency hardcoded to INR:**
    - Flight structured data now uses `flight.currency` from TBO response
