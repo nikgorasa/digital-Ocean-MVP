@@ -72,7 +72,7 @@ export async function POST(req: NextRequest) {
       case "block": {
         const bookingCode = body.bookingCode || body.room?.bookingCode;
         if (!bookingCode) {
-          return NextResponse.json({ error: "bookingCode required" }, { status: 400 });
+          return NextResponse.json({ success: false, error: "This room is no longer available. Please search again." }, { status: 200 });
         }
         const paymentMode = body.paymentMode;
         const result = await preBook({ bookingCode, paymentMode });

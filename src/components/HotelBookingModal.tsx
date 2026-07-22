@@ -206,8 +206,13 @@ export default function HotelBookingModal({
     }
   };
 
-  const handleBook = async () => {
+      const handleBook = async () => {
     if (!isValid || !user) return;
+    if (!room.bookingCode) {
+      setErrorMessage("This room is no longer available. Please search again.");
+      setStep("error");
+      return;
+    }
     setStep("blocking");
 
     try {
@@ -231,8 +236,8 @@ export default function HotelBookingModal({
 
         const blockData = await blockRes.json();
 
-        if (!blockData.success) {
-          setErrorMessage("Price could not be verified. Please try again.");
+        if (!blockRes.ok || !blockData.success) {
+          setErrorMessage(blockData.error || "Price could not be verified. Please try again.");
           setStep("error");
           return;
         }
