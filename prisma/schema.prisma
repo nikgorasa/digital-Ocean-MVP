@@ -623,13 +623,13 @@ model ConfigAuditLog {
 
 model StaticCache {
   id        String   @id @default(cuid())
-  cacheKey  String   @unique
-  dataType  String
+  cacheKey  String   @unique @map("cache_key")
+  dataType  String   @map("data_type")
   data      Json
   metadata  Json?
-  expiresAt DateTime @db.Timestamptz
-  createdAt DateTime @default(now()) @db.Timestamptz
-  updatedAt DateTime @updatedAt @db.Timestamptz
+  expiresAt DateTime @db.Timestamptz @map("expires_at")
+  createdAt DateTime @default(now()) @db.Timestamptz @map("created_at")
+  updatedAt DateTime @updatedAt @db.Timestamptz @map("updated_at")
 
   @@index([dataType])
   @@index([expiresAt])
@@ -639,14 +639,14 @@ model StaticCache {
 
 model CacheConfig {
   id            String    @id @default(cuid())
-  dataType      String    @unique
-  ttlSeconds    Int
-  isActive      Boolean   @default(true)
-  lastRefreshAt DateTime? @db.Timestamptz
-  refreshStatus String?
-  refreshError  String?
-  createdAt     DateTime  @default(now()) @db.Timestamptz
-  updatedAt     DateTime  @updatedAt @db.Timestamptz
+  dataType      String    @unique @map("data_type")
+  ttlSeconds    Int       @map("ttl_seconds")
+  isActive      Boolean   @default(true) @map("is_active")
+  lastRefreshAt DateTime? @db.Timestamptz @map("last_refresh_at")
+  refreshStatus String?   @map("refresh_status")
+  refreshError  String?   @map("refresh_error")
+  createdAt     DateTime  @default(now()) @db.Timestamptz @map("created_at")
+  updatedAt     DateTime  @updatedAt @db.Timestamptz @map("updated_at")
 
   @@map("cache_config")
 }
