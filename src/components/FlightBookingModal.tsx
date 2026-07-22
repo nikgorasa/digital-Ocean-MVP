@@ -467,37 +467,39 @@ export default function FlightBookingModal({
           return;
         }
 
-        // Step 2: Book via TBO — creates a reservation
-        try {
-          const bookRes = await fetch("/api/tbo", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              action: "book",
-              params: { traceId, resultIndex: flight.id, passengers },
-            }),
-          });
-          const bookData = await bookRes.json();
-          if (bookData.bookingId) {
-            tboBookingId = bookData.bookingId;
-            tboPnr = bookData.pnr || null;
-            if (bookData.isTimeChanged) {
-              setIsTimeChanged(true);
+        // Step 2: Book via TBO — creates a reservation (skip for LCC flights)
+        if (!flight.isLCC) {
+          try {
+            const bookRes = await fetch("/api/tbo", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                action: "book",
+                params: { traceId, resultIndex: flight.id, passengers },
+              }),
+            });
+            const bookData = await bookRes.json();
+            if (bookData.bookingId) {
+              tboBookingId = bookData.bookingId;
+              tboPnr = bookData.pnr || null;
+              if (bookData.isTimeChanged) {
+                setIsTimeChanged(true);
+              }
+            } else {
+              setErrorMessage("Flight booking failed at the airline. Please try again.");
+              setStep("error");
+              return;
             }
-          } else {
-            setErrorMessage("Flight booking failed at the airline. Please try again.");
+          } catch (e) {
+            console.error("TBO book failed:", e);
+            setErrorMessage("Flight booking failed. Please try again.");
             setStep("error");
             return;
           }
-        } catch (e) {
-          console.error("TBO book failed:", e);
-          setErrorMessage("Flight booking failed. Please try again.");
-          setStep("error");
-          return;
         }
 
-        // Step 3: Ticket — finalize the booking
-        if (tboBookingId) {
+        // Step 3: Ticket — finalize the booking (for LCC, this replaces Book)
+        {
           try {
             const ticketRes = await fetch("/api/tbo", {
               method: "POST",
