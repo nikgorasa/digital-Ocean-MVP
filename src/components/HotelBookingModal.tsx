@@ -79,6 +79,8 @@ export default function HotelBookingModal({
   const [corporateResult, setCorporateResult] = useState<{
     invoiceNumber?: string;
     walletBalance?: number;
+    creditLimit?: number;
+    availableBalance?: number;
     corporateDiscount?: number;
     corporateRuleName?: string;
   } | null>(null);
@@ -520,6 +522,8 @@ export default function HotelBookingModal({
         setCorporateResult({
           invoiceNumber: data.invoiceNumber,
           walletBalance: data.walletBalance,
+          creditLimit: data.creditLimit,
+          availableBalance: data.availableBalance,
           corporateDiscount: data.corporateDiscount,
           corporateRuleName: data.corporateRuleName,
         });
@@ -1083,12 +1087,12 @@ export default function HotelBookingModal({
                       <span className="text-sm font-bold font-mono text-blue-600">{corporateResult.invoiceNumber}</span>
                     </div>
                   )}
-                  {corporateResult.walletBalance !== undefined && (
-                    <div className="flex justify-between items-center">
-                      <span className="text-xs text-slate-500">Remaining Credit</span>
-                      <span className="text-sm font-bold text-slate-900">{formatCurrency(corporateResult.walletBalance)}</span>
+                {corporateResult.walletBalance !== undefined && (
+                  <div className="flex justify-between text-sm">
+                      <span className="text-slate-500">Remaining Balance</span>
+                      <span className="text-sm font-bold text-slate-900">{formatCurrency(corporateResult.availableBalance || corporateResult.walletBalance)}</span>
                     </div>
-                  )}
+                )}
                 </>
               )}
             </div>

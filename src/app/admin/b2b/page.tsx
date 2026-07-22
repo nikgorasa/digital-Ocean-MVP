@@ -10,6 +10,7 @@ interface Company {
   name: string;
   domain: string | null;
   walletBalance: number;
+  creditLimit: number;
   discountRate: number;
   employees: number;
   isActive: boolean;
@@ -24,8 +25,8 @@ export default function B2BPage() {
   const [quickAmounts, setQuickAmounts] = useState<number[]>([10000, 25000, 50000, 100000]);
   const [showCreate, setShowCreate] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
-  const [editForm, setEditForm] = useState({ name: "", domain: "", discountRate: 0 });
-  const [newCompany, setNewCompany] = useState({ name: "", domain: "", discountRate: 10, walletBalance: 0 });
+  const [editForm, setEditForm] = useState({ name: "", domain: "", discountRate: 0, creditLimit: 0 });
+  const [newCompany, setNewCompany] = useState({ name: "", domain: "", discountRate: 10, walletBalance: 0, creditLimit: 0 });
 
   const fetchCompanies = async () => {
     try {
@@ -82,7 +83,7 @@ export default function B2BPage() {
         body: JSON.stringify(newCompany),
       });
       if (res.ok) {
-        setNewCompany({ name: "", domain: "", discountRate: 10, walletBalance: 0 });
+        setNewCompany({ name: "", domain: "", discountRate: 10, walletBalance: 0, creditLimit: 0 });
         setShowCreate(false);
         fetchCompanies();
       }
@@ -93,7 +94,7 @@ export default function B2BPage() {
 
   const startEdit = (corp: Company) => {
     setEditingId(corp.id);
-    setEditForm({ name: corp.name, domain: corp.domain || "", discountRate: corp.discountRate });
+    setEditForm({ name: corp.name, domain: corp.domain || "", discountRate: corp.discountRate, creditLimit: corp.creditLimit || 0 });
   };
 
   const saveEdit = async () => {
@@ -194,6 +195,15 @@ export default function B2BPage() {
                 className="w-full px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm"
               />
             </div>
+            <div>
+              <label className="text-[10px] font-bold uppercase tracking-widest text-slate-400 mb-1 block">Credit Limit (₹)</label>
+              <input
+                type="number"
+                value={newCompany.creditLimit}
+                onChange={(e) => setNewCompany({ ...newCompany, creditLimit: Number(e.target.value) })}
+                className="w-full px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm"
+              />
+            </div>
           </div>
           <div className="flex gap-2">
             <button onClick={createCompany} className="px-6 py-2.5 bg-green-600 text-white rounded-xl text-sm font-medium hover:bg-green-700 cursor-pointer">Create</button>
@@ -247,6 +257,15 @@ export default function B2BPage() {
                           className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm"
                         />
                       </div>
+                      <div>
+                        <label className="text-[10px] font-bold uppercase tracking-widest text-slate-400 mb-1 block">Credit Limit (₹)</label>
+                        <input
+                          type="number"
+                          value={editForm.creditLimit}
+                          onChange={(e) => setEditForm({ ...editForm, creditLimit: Number(e.target.value) })}
+                          className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm"
+                        />
+                      </div>
                     </div>
                     <div className="flex gap-2">
                       <button onClick={saveEdit} className="flex items-center gap-1 px-3 py-1.5 bg-green-600 text-white rounded-lg text-xs font-medium hover:bg-green-700 cursor-pointer">
@@ -281,15 +300,23 @@ export default function B2BPage() {
                         </button>
                       </div>
                     </div>
-                    <div className="grid grid-cols-2 gap-4 mt-4">
+                    <div className="grid grid-cols-3 gap-4 mt-4">
                       <div>
                         <p className="text-[10px] text-slate-400 uppercase">Wallet Balance</p>
                         <p className="text-lg font-bold text-slate-900">{formatCurrency(corp.walletBalance)}</p>
                       </div>
                       <div>
+                        <p className="text-[10px] text-slate-400 uppercase">Credit Limit</p>
+                        <p className="text-lg font-bold text-blue-600">{formatCurrency(corp.creditLimit || 0)}</p>
+                      </div>
+                      <div>
                         <p className="text-[10px] text-slate-400 uppercase">Employees</p>
                         <p className="text-lg font-bold text-slate-900">{corp.employees || 0}</p>
                       </div>
+                    </div>
+                    <div className="mt-2">
+                      <p className="text-[10px] text-slate-400 uppercase">Available Balance</p>
+                      <p className="text-sm font-bold text-emerald-600">{formatCurrency((corp.walletBalance || 0) + (corp.creditLimit || 0))}</p>
                     </div>
                   </>
                 )}
@@ -308,7 +335,13 @@ export default function B2BPage() {
                 </div>
                 <h3 className="font-bold text-slate-900">{selectedCorp.name}</h3>
                 <p className="text-3xl font-black text-slate-900 mt-1">{formatCurrency(selectedCorp.walletBalance)}</p>
-                <p className="text-xs text-slate-400">Current Balance</p>
+                <p className="text-xs text-slate-400">Wallet Balance</p>
+                {(selectedCorp.creditLimit || 0) > 0 && (
+                  <div className="mt-2">
+                    <p className="text-sm font-bold text-blue-600">+ {formatCurrency(selectedCorp.creditLimit)} credit limit</p>
+                    <p className="text-xs text-emerald-600 font-medium">Available: {formatCurrency(selectedCorp.walletBalance + selectedCorp.creditLimit)}</p>
+                  </div>
+                )}
               </div>
 
               <div className="grid grid-cols-2 gap-2 mb-4">

@@ -277,6 +277,8 @@ export async function POST(request: NextRequest) {
         finalAmount: totalWithTax,
         taxAmount,
         walletBalance: updatedCompany.walletBalance,
+        creditLimit: company.creditLimit || 0,
+        availableBalance: updatedCompany.walletBalance + (company.creditLimit || 0),
         invoiceNumber,
         dueDate: dueDate.toISOString(),
       });

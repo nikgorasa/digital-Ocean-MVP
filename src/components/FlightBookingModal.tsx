@@ -141,6 +141,8 @@ export default function FlightBookingModal({
   const [corporateResult, setCorporateResult] = useState<{
     invoiceNumber?: string;
     walletBalance?: number;
+    creditLimit?: number;
+    availableBalance?: number;
     corporateDiscount?: number;
   } | null>(null);
 
@@ -625,6 +627,8 @@ export default function FlightBookingModal({
         setCorporateResult({
           invoiceNumber: data.invoiceNumber,
           walletBalance: data.walletBalance,
+          creditLimit: data.creditLimit,
+          availableBalance: data.availableBalance,
           corporateDiscount: data.corporateDiscount,
         });
         setConfirmation({
@@ -1400,10 +1404,10 @@ export default function FlightBookingModal({
                   </div>
                 )}
                 {corporateResult.walletBalance !== undefined && (
-                  <div className="flex justify-between items-center">
-                    <span className="text-xs text-slate-500">Remaining Credit</span>
-                    <span className="text-sm font-bold text-slate-900">{formatCurrency(corporateResult.walletBalance)}</span>
-                  </div>
+                    <div className="flex justify-between text-sm">
+                      <span className="text-slate-500">Remaining Balance</span>
+                      <span className="font-bold text-slate-900">{formatCurrency(corporateResult.availableBalance || corporateResult.walletBalance)}</span>
+                    </div>
                 )}
               </div>
             )}
