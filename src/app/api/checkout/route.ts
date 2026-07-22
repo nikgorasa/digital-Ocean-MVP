@@ -161,13 +161,16 @@ export async function POST(request: NextRequest) {
       const taxAmount = Math.round(finalAmount * taxRate) / 100;
       const totalWithTax = finalAmount + taxAmount;
 
-      // Check wallet balance
-      if (company.walletBalance < totalWithTax) {
-        const shortfall = totalWithTax - company.walletBalance;
+      // Check wallet balance (walletBalance + creditLimit = available balance)
+      const availableBalance = company.walletBalance + (company.creditLimit || 0);
+      if (availableBalance < totalWithTax) {
+        const shortfall = totalWithTax - availableBalance;
         return NextResponse.json({
           error: "Insufficient company credit",
           shortfall,
           walletBalance: company.walletBalance,
+          creditLimit: company.creditLimit || 0,
+          availableBalance,
           required: totalWithTax,
         }, { status: 400 });
       }
