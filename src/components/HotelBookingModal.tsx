@@ -617,7 +617,7 @@ export default function HotelBookingModal({
               <div className="pt-2 border-t border-slate-200 space-y-1">
                 <div className="flex justify-between text-sm">
                   <span className="text-slate-600">Room Fare</span>
-                  <span className="text-slate-900">{formatCurrency(room.roomFare || room.totalFare)}</span>
+                  <span className="text-slate-900">{formatCurrency(room.roomFare)}</span>
                 </div>
                 <div className="flex justify-between text-sm">
                   <span className="text-slate-600">Taxes & Fees</span>
@@ -920,11 +920,11 @@ export default function HotelBookingModal({
                 <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400">Price Breakup</p>
                 <div className="flex justify-between text-sm">
                   <span className="text-slate-600">Room Fare ({nights} night{nights > 1 ? "s" : ""})</span>
-                  <span className="text-slate-900">{formatCurrency(room.roomFare * nights || room.totalFare)}</span>
+                  <span className="text-slate-900">{formatCurrency(room.roomFare * nights)}</span>
                 </div>
                 <div className="flex justify-between text-sm">
                   <span className="text-slate-600">Taxes & Fees</span>
-                  <span className="text-slate-900">{formatCurrency(room.totalTax)}</span>
+                  <span className="text-slate-900">{formatCurrency(room.roomTax * nights)}</span>
                 </div>
                 {prebookTaxBreakup && prebookTaxBreakup.length > 0 && (
                   <div className="pl-3 space-y-0.5">

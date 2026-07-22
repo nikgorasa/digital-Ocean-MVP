@@ -48,7 +48,7 @@ function FlightJsonLd({ flights }: { flights: Flight[] }) {
     offers: {
       "@type": "Offer",
       price: flight.price,
-      priceCurrency: "INR",
+      priceCurrency: flight.currency || "INR",
       availability: "https://schema.org/InStock",
     },
   }));
@@ -74,6 +74,7 @@ interface Flight {
   duration: string;
   stops: number;
   price: number;
+  currency?: string;
   tier: string;
   baggage?: string;
   cabinBaggage?: string;
@@ -312,6 +313,7 @@ export default function FlightsPage() {
         duration: typeof f.duration === "number" ? formatDuration(f.duration) : f.duration,
         stops: f.segments?.[0] ? f.segments[0].length - 1 : 0,
         price: f.publishedFare || f.baseFare || 0,
+        currency: f.currency || "INR",
         tier: cabinClass || "Economy",
         baggage: f.baggage || "",
         cabinBaggage: f.cabinBaggage || "7 KG",

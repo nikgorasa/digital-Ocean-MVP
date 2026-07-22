@@ -28,7 +28,13 @@ async function getActiveRules(): Promise<any[]> {
 function matchesRule(rule: any, ctx: PricingContext): boolean {
   if (rule.category !== "ALL" && rule.category !== ctx.category) return false;
   if (rule.destination && rule.destination !== ctx.destination) return false;
-  if (rule.hotelCode && rule.hotelCode !== ctx.hotelCode) return false;
+  // Support comma-separated hotel codes (e.g., "1092990,1092991,1092992")
+  if (rule.hotelCode && ctx.hotelCode) {
+    const codes = rule.hotelCode.split(",").map((c: string) => c.trim());
+    if (!codes.includes(ctx.hotelCode)) return false;
+  } else if (rule.hotelCode && !ctx.hotelCode) {
+    return false;
+  }
   if (!rule.hotelCode && rule.hotelName && rule.hotelName !== ctx.hotelName) return false;
   if (rule.airlineCode && rule.airlineCode !== ctx.airlineCode) return false;
   if (rule.roomType && rule.roomType !== ctx.roomType) return false;

@@ -286,12 +286,13 @@ export default function PricingRulesPage() {
               />
             </div>
             <div>
-              <label className="text-[10px] font-bold uppercase tracking-widest text-slate-400 mb-1 block">Hotel Code (TBO)</label>
-              <input
+              <label className="text-[10px] font-bold uppercase tracking-widest text-slate-400 mb-1 block">Hotel Code(s) (TBO)</label>
+              <textarea
                 value={newRule.hotelCode}
                 onChange={(e) => setNewRule({ ...newRule, hotelCode: e.target.value })}
-                placeholder="1092990 (blank = all)"
-                className="w-full px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm"
+                placeholder="1092990, 1092991, 1092992 (comma-separated, blank = all)"
+                rows={2}
+                className="w-full px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm resize-none"
               />
             </div>
             <div>
@@ -406,7 +407,7 @@ export default function PricingRulesPage() {
                   </div>
                   <div className="flex items-center gap-3 mt-1 text-xs text-slate-400">
                     {rule.destination && <span>📍 {rule.destination}</span>}
-                    {rule.hotelCode && <span>🔢 Code: {rule.hotelCode}</span>}
+                    {rule.hotelCode && <span>🔢 {rule.hotelCode.includes(",") ? `${rule.hotelCode.split(",").length} hotels` : `Code: ${rule.hotelCode}`}</span>}
                     {rule.hotelName && <span>🏨 {rule.hotelName}</span>}
                     {rule.airlineCode && <span>✈️ {rule.airlineCode}</span>}
                     {rule.minPrice && <span>Min: ₹{rule.minPrice}</span>}
@@ -468,7 +469,7 @@ export default function PricingRulesPage() {
               <div><label className="text-[10px] font-bold uppercase tracking-widest text-slate-400 mb-1 block">Category</label><select value={editingRule.category} onChange={(e) => setEditingRule({ ...editingRule, category: e.target.value })} className="w-full px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm"><option value="ALL">All</option><option value="HOTEL">Hotel</option><option value="FLIGHT">Flight</option><option value="PACKAGE">Package</option></select></div>
               <div><label className="text-[10px] font-bold uppercase tracking-widest text-slate-400 mb-1 block">Markup Type</label><select value={editingRule.markupType} onChange={(e) => setEditingRule({ ...editingRule, markupType: e.target.value })} className="w-full px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm"><option value="PERCENT">Percentage</option><option value="FLAT">Flat</option></select></div>
               <div><label className="text-[10px] font-bold uppercase tracking-widest text-slate-400 mb-1 block">Markup Value</label><input type="number" value={editingRule.markupValue} onChange={(e) => setEditingRule({ ...editingRule, markupValue: Number(e.target.value) })} className="w-full px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm" /></div>
-              <div><label className="text-[10px] font-bold uppercase tracking-widest text-slate-400 mb-1 block">Hotel Code (TBO)</label><input value={editingRule.hotelCode || ""} onChange={(e) => setEditingRule({ ...editingRule, hotelCode: e.target.value })} placeholder="1092990" className="w-full px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm" /></div>
+              <div className="col-span-2"><label className="text-[10px] font-bold uppercase tracking-widest text-slate-400 mb-1 block">Hotel Code(s) (TBO)</label><textarea value={editingRule.hotelCode || ""} onChange={(e) => setEditingRule({ ...editingRule, hotelCode: e.target.value })} placeholder="1092990, 1092991, 1092992 (comma-separated)" rows={2} className="w-full px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm resize-none" /></div>
               <div><label className="text-[10px] font-bold uppercase tracking-widest text-slate-400 mb-1 block">Destination</label><input value={editingRule.destination || ""} onChange={(e) => setEditingRule({ ...editingRule, destination: e.target.value })} className="w-full px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm" /></div>
               <div><label className="text-[10px] font-bold uppercase tracking-widest text-slate-400 mb-1 block">Priority</label><input type="number" value={editingRule.priority} onChange={(e) => setEditingRule({ ...editingRule, priority: Number(e.target.value) })} className="w-full px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm" /></div>
             </div>
@@ -491,7 +492,7 @@ export default function PricingRulesPage() {
               <div className="flex justify-between"><span className="text-sm text-slate-500">Type</span><span className="font-bold">{viewingRule.type}</span></div>
               <div className="flex justify-between"><span className="text-sm text-slate-500">Category</span><span className="font-bold">{viewingRule.category}</span></div>
               <div className="flex justify-between"><span className="text-sm text-slate-500">Markup</span><span className="font-bold">{viewingRule.markupType === "PERCENT" ? `${viewingRule.markupValue}%` : `₹${viewingRule.markupValue}`}</span></div>
-              {viewingRule.hotelCode && <div className="flex justify-between"><span className="text-sm text-slate-500">Hotel Code</span><span className="font-bold">{viewingRule.hotelCode}</span></div>}
+              {viewingRule.hotelCode && <div className="flex justify-between"><span className="text-sm text-slate-500">Hotel Code(s)</span><span className="font-bold text-right max-w-[60%]">{viewingRule.hotelCode.includes(",") ? viewingRule.hotelCode.split(",").map((c: string) => c.trim()).join(", ") : viewingRule.hotelCode}</span></div>}
               {viewingRule.destination && <div className="flex justify-between"><span className="text-sm text-slate-500">Destination</span><span className="font-bold">{viewingRule.destination}</span></div>}
               <div className="flex justify-between"><span className="text-sm text-slate-500">Priority</span><span className="font-bold">{viewingRule.priority}</span></div>
               <div className="flex justify-between"><span className="text-sm text-slate-500">Status</span><span className={`font-bold ${viewingRule.isActive ? "text-green-600" : "text-slate-400"}`}>{viewingRule.isActive ? "Active" : "Inactive"}</span></div>

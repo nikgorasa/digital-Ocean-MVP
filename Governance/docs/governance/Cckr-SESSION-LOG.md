@@ -1576,3 +1576,56 @@ Migrate the app's unconfigured Gmail-SMTP email layer to **Brevo** (transactiona
 - Config multi-source: 5/5 passed
 - CitySearchDropdown mode: all flight pages use mode="flight"
 - Middleware whitelist: 55 routes accounted for (all authenticated routes)
+
+---
+
+## Session 35 — Critical Fixes: Payment, Pricing, Multi-Hotel Rules
+
+**Date:** 2026-07-22
+**Goal:** Fix critical issues — payment/failed 404, hotel price mismatch, multi-hotel pricing rules, currency hardcoding
+**Issues:** #110, #284, #285, #150, #80 (corporate audit)
+
+**Fixes:**
+
+1. **#110 — /payment/failed page (was 404):**
+   - Created `src/app/payment/failed/page.tsx`
+   - Shows failure message, booking reference, retry + home buttons
+   - Matches /payment/success page style
+
+2. **#284/#285 — Hotel price mismatch:**
+   - Modal showed raw TBO per-night values without multiplying by nights
+   - Room Fare showed ₹13,472 (per-night) instead of ₹26,944 (× 2 nights)
+   - First attempt added `calculatePrice()` in modal — caused double-markup (₹37,407 vs ₹32,176)
+   - Removed over-engineering. Modal now shows: `room.roomFare × nights` and `room.roomTax × nights`
+   - Total uses `room.totalFare + room.totalTax` (raw TBO, consistent with room selection screen)
+
+3. **#150 — Currency hardcoded to INR:**
+   - Flight structured data now uses `flight.currency` from TBO response
+   - Added `currency` field to Flight interface in flights/page.tsx
+   - Hotel search already dynamic via `getCurrencyForCountry()`
+   - Flights/[route] page kept as INR (Prisma Flight model has no currency field)
+
+4. **Multi-hotel pricing rules:**
+   - `matchesRule()` in pricing-service.ts now supports comma-separated hotel codes
+   - Admin pricing UI: Hotel Code input changed to textarea
+   - Display shows "3 hotels" when multiple codes, "Code: X" when single
+   - No schema change needed — stores in existing `hotelCode` field
+
+5. **Corporate booking audit (#80):**
+   - Code is correct (invoice PAID, wallet DEBIT/CREDIT, auto-assignment)
+   - Issue is configuration: company + wallet + CorporateRate + user assignment needed
+   - Documented in CORPORATE-FLOW.md (walletDeduction field referenced but doesn't exist in schema)
+
+**Files changed:** 5 files + 1 new
+- `src/app/payment/failed/page.tsx` — NEW: payment failure page
+- `src/components/HotelBookingModal.tsx` — Price display: per-night × nights
+- `src/app/flights/page.tsx` — Currency from TBO in structured data
+- `src/lib/pricing/pricing-service.ts` — Comma-separated hotel codes in matchesRule
+- `src/app/admin/pricing/page.tsx` — Multi-hotel textarea + display
+
+**Verification:**
+- TypeScript: 0 errors
+- Post-task: 11/11 passed
+- All behavioral checks pass
+
+**GitHub Comments:** #284, #285, #110, #150, #80
