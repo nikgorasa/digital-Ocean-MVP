@@ -82,6 +82,8 @@ export async function POST(request: Request) {
       providerOrAirline,
       price: Number(price),
       originalPrice: originalPrice ? Number(originalPrice) : null,
+      baseRate: baseRate != null ? Number(baseRate) : null,
+      markupAmount: markupAmount != null ? Number(markupAmount) : null,
       discountApplied: discountApplied ? Number(discountApplied) : 0,
       promoCost: promoCost ? Number(promoCost) : 0,
       couponCodeUsed,
@@ -93,8 +95,6 @@ export async function POST(request: Request) {
       supplierBookingRef: supplierBookingRef || null,
       metadata: {
         ...(typeof metadata === "object" ? metadata : metadata ? JSON.parse(metadata) : {}),
-        ...(baseRate != null ? { baseRate: Number(baseRate) } : {}),
-        ...(markupAmount != null ? { markupAmount: Number(markupAmount) } : {}),
       },
       status: "PENDING",
     });
