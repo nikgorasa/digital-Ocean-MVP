@@ -566,6 +566,7 @@ export default function FlightBookingModal({
             baseFare: totalBaseFare,
             tax: totalTax,
             addOns: Object.keys(addOns).length > 0 ? addOns : undefined,
+            ...(demoMode ? { isDemo: true } : {}),
           },
         }),
       });

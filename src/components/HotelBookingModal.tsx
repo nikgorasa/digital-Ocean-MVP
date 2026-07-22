@@ -384,6 +384,7 @@ export default function HotelBookingModal({
             hotelCode: hotel.hotelCode,
             roomName: room.name,
             bookingCode: room.bookingCode,
+            ...(demoMode ? { isDemo: true } : {}),
           },
         }),
       });

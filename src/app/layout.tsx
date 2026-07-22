@@ -3,6 +3,7 @@ import { Inter, Playfair_Display, Outfit } from "next/font/google";
 import "./globals.css";
 import { AuthProvider } from "@/hooks/useAuth";
 import { DemoModeProvider } from "@/hooks/useDemoMode";
+import { DemoModeBanner } from "@/components/Navbar";
 import SplashScreen from "@/components/SplashScreen";
 import { OrganizationJsonLd, WebSiteJsonLd } from "@/components/JsonLd";
 
@@ -138,6 +139,7 @@ export default function RootLayout({
         <WebSiteJsonLd />
         <AuthProvider>
           <DemoModeProvider>
+            <DemoModeBanner />
             <SplashScreen>{children}</SplashScreen>
           </DemoModeProvider>
         </AuthProvider>

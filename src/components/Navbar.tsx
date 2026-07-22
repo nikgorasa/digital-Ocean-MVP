@@ -308,3 +308,13 @@ export default function Navbar({
     </nav>
   );
 }
+
+export function DemoModeBanner() {
+  const { demoMode } = useDemoMode();
+  if (!demoMode) return null;
+  return (
+    <div className="bg-purple-600 text-white text-center py-2 px-4 text-sm font-bold fixed top-16 left-0 right-0 z-[999] shadow-lg">
+      DEMO MODE ACTIVE — Bookings will not reach TBO. Wallet deductions are real.
+    </div>
+  );
+}

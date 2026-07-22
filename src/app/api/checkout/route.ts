@@ -128,6 +128,15 @@ export async function POST(request: NextRequest) {
       }, { status: 400 });
     }
 
+    // Reject demo bookings from real checkout
+    const bookingMeta = booking.metadata as Record<string, unknown> | null;
+    if (bookingMeta?.isDemo) {
+      return NextResponse.json({
+        error: "Demo bookings cannot be checked out. Use AdminDemoPanel to simulate payment.",
+        isDemo: true,
+      }, { status: 400 });
+    }
+
     // ── CORPORATE CHECKOUT ──────────────────────────────────────────
     if (user.companyId) {
       const company = await prisma.company.findUnique({
