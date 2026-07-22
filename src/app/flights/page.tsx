@@ -5,7 +5,7 @@ import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import LoginModal from "@/components/LoginModal";
 import { useAuth } from "@/hooks/useAuth";
-import { useDemoMode } from "@/hooks/useDemoMode";
+
 import { motion, AnimatePresence } from "motion/react";
 import { formatCurrency } from "@/lib";
 import { parseFareType, parseFareInclusions, getFareTypeColor, formatFareType, type FareType } from "@/lib/fare-utils";
@@ -137,7 +137,6 @@ const CABIN_CLASS_MAP: Record<number, string> = {
 
 export default function FlightsPage() {
   const { user } = useAuth();
-  const { demoMode } = useDemoMode();
   const [showLogin, setShowLogin] = useState(false);
   const [originCity, setOriginCity] = useState<City>({ code: "13484", name: "Mumbai", state: "Maharashtra", source: "fallback", iata_code: "BOM" });
   const [destinationCity, setDestinationCity] = useState<City>({ code: "13482", name: "Delhi", state: "Delhi", source: "fallback", iata_code: "DEL" });

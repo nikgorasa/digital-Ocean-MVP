@@ -5,7 +5,7 @@ import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import LoginModal from "@/components/LoginModal";
 import { useAuth } from "@/hooks/useAuth";
-import { useDemoMode } from "@/hooks/useDemoMode";
+
 import { motion, AnimatePresence } from "motion/react";
 import { formatCurrency, getCurrencyForCountry } from "@/lib";
 import { formatMealPlan } from "@/lib/format-meal-plan";
@@ -86,7 +86,6 @@ function makeRoom(adults = 2, children = 0): RoomConfig {
 
 export default function HotelsPage() {
   const { user } = useAuth();
-  const { demoMode } = useDemoMode();
   const [showLogin, setShowLogin] = useState(false);
   const [selectedCity, setSelectedCity] = useState<City>({ code: "15648", name: "Goa", state: "Goa", source: "fallback" });
   const [hotelCountryCode, setHotelCountryCode] = useState("IN");

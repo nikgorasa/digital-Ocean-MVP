@@ -3,13 +3,12 @@
 import React, { useState, useRef, useEffect } from "react";
 import { motion } from "motion/react";
 import { formatCurrency } from "@/lib";
-import { useDemoMode } from "@/hooks/useDemoMode";
 import { useEscapeKey } from "@/hooks/useEscapeKey";
 import { formatMealPlan } from "@/lib/format-meal-plan";
 import {
   X, Loader2, CheckCircle, AlertCircle, Building2,
   Bed, MapPin, Calendar, Phone, Mail, User, CreditCard,
-  Tag, ChevronDown, ChevronUp, Globe, Home, Zap, FlaskConical, Clock
+  Tag, ChevronDown, ChevronUp, Globe, Home, Clock
 } from "lucide-react";
 import type { TBODisplayHotel, TBODisplayRoom } from "@/lib/tbo-hotel-types";
 import CheckoutButton from "./CheckoutButton";
@@ -41,7 +40,6 @@ export default function HotelBookingModal({
   isOpen, onClose, hotel, room, sessionId, traceId, user, location,
   checkIn, checkOut, guestCount,
 }: HotelBookingModalProps) {
-  const { demoMode } = useDemoMode();
   const [step, setStep] = useState<BookingStep>("form");
   const [firstName, setFirstName] = useState(user?.name?.split(" ")[0] || "");
   const [lastName, setLastName] = useState(user?.name?.split(" ").slice(1).join(" ") || "");
@@ -115,13 +113,11 @@ export default function HotelBookingModal({
   const totalRoomFare = perNightRoomFare * nights;
   const totalTaxes = perNightTaxes * nights;
   const finalPrice = baseAndTax - discountApplied;
-  const demoDiscount = demoMode ? 500 : 0;
-  const totalPayable = finalPrice - demoDiscount;
+  const totalPayable = finalPrice;
   const passportValid = !passportRequired || (passportNo.trim() && passportExpiry);
   const panValid = !panRequired || pan.trim().length > 0;
   const isValid = firstName.trim() && lastName.trim() && phone.trim().length >= 7 && email.trim() && passportValid && panValid;
 
-  const prefilled = firstName && lastName && phone && email && pan;
   const dirtyRef = useRef(false);
   const [formErrors, setFormErrors] = useState<Record<string, string>>({});
   const markDirty = () => { dirtyRef.current = true; };
@@ -176,20 +172,6 @@ export default function HotelBookingModal({
     onClose();
   };
 
-  const handlePrefill = () => {
-    setFirstName("Priya");
-    setLastName("Singh");
-    setPhone("9876543210");
-    setEmail("priya@example.com");
-    setPan("BDAPP1234K");
-    setAddressLine1("456 Corporate Tower, BKC");
-    setAddressCity("Mumbai");
-    setPassportNo("B9876543");
-    setPassportExpiry("2032-06-30");
-    setGstNumber("27AADCB2230M1ZT");
-    setGstCompanyName("GoRASA Corporate Travels");
-  };
-
   const handleApplyPromo = async () => {
     if (!promoCode.trim() || !user) return;
     setPromoLoading(true);
@@ -234,8 +216,7 @@ export default function HotelBookingModal({
       let confirmationNo = "";
       let bookData: Record<string, any> | null = null;
 
-      if (!demoMode) {
-        const blockRes = await fetch("/api/tbo-hotels", {
+      const blockRes = await fetch("/api/tbo-hotels", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
@@ -358,7 +339,6 @@ export default function HotelBookingModal({
             console.warn("BookingDetail failed:", e);
           }
         }
-      }
 
       const saveRes = await fetch("/api/bookings", {
         method: "POST",
@@ -367,7 +347,7 @@ export default function HotelBookingModal({
           type: "HOTEL",
           itemName: hotel.name,
           providerOrAirline: "GoRASA",
-          price: totalPayable,
+          price: hotel.price,
           originalPrice: room.totalFare,
           discountApplied: discountApplied,
           promoCost: discountApplied,
@@ -378,13 +358,14 @@ export default function HotelBookingModal({
           travelDates: `${checkIn} to ${checkOut}`,
           leadGuestPan: showPan && pan.trim() ? pan.trim().toUpperCase() : undefined,
           supplierBookingRef: bookData?.bookingId ? String(bookData.bookingId) : undefined,
+          markupAmount: Math.max(0, (hotel.price - room.totalFare) * nights),
           metadata: {
             tboBookingId: bookData?.bookingId,
             confirmationNo: bookData?.confirmationNo,
             hotelCode: hotel.hotelCode,
             roomName: room.name,
             bookingCode: room.bookingCode,
-            ...(demoMode ? { isDemo: true } : {}),
+            totalPayable,
           },
         }),
       });
@@ -568,37 +549,6 @@ export default function HotelBookingModal({
 
         {step === "form" && (
           <div className="p-6 space-y-5">
-            {/* Demo Mode Banner */}
-            {demoMode && (
-              <div className="bg-purple-50 border border-purple-200 rounded-xl p-3 flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <FlaskConical size={18} className="text-purple-600" aria-hidden="true" />
-                  <div>
-                    <p className="text-sm font-semibold text-purple-800">Demo Mode</p>
-                    <p className="text-xs text-purple-600">Use code DEMO500 for ₹500 off • Corporate rates auto-applied</p>
-                  </div>
-                </div>
-                <button
-                  onClick={handlePrefill}
-                  className="flex items-center gap-1 px-3 py-1.5 bg-purple-600 text-white rounded-lg text-xs font-semibold hover:bg-purple-700 cursor-pointer"
-                >
-                  <Zap size={12} />
-                  Fill Demo Data
-                </button>
-              </div>
-            )}
-
-            {/* Prefill button (always visible) */}
-            {demoMode && !prefilled && (
-              <button
-                onClick={handlePrefill}
-                className="flex items-center gap-1.5 px-3 py-2 bg-slate-100 text-slate-600 rounded-lg text-xs font-medium hover:bg-slate-200 cursor-pointer"
-              >
-                <Zap size={14} />
-                Quick Fill Demo Data
-              </button>
-            )}
-
             {/* Booking Summary */}
             <div className="bg-slate-50 rounded-xl p-4 space-y-2">
               <div className="flex items-start gap-3">
@@ -642,12 +592,6 @@ export default function HotelBookingModal({
                     <span className="text-green-600">-{formatCurrency(discountApplied)}</span>
                   </div>
                 )}
-                {demoMode && (
-                  <div className="flex justify-between text-sm">
-                    <span className="text-purple-600">Demo Discount</span>
-                    <span className="text-purple-600">-{formatCurrency(500)}</span>
-                  </div>
-                )}
                 <div className="flex justify-between items-center pt-1 border-t border-slate-200">
                   <span className="font-bold text-slate-900">Total for {nights} night{nights > 1 ? "s" : ""}</span>
                   <div className="text-right">
@@ -666,7 +610,7 @@ export default function HotelBookingModal({
                   <input
                     value={promoCode}
                     onChange={(e) => setPromoCode(e.target.value.toUpperCase())}
-                    placeholder={demoMode ? "DEMO500" : "Enter promo code"}
+                    placeholder="Enter promo code"
                     disabled={!!couponCodeUsed}
                     className="w-full pl-9 pr-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm disabled:opacity-50"
                   />
@@ -972,12 +916,6 @@ export default function HotelBookingModal({
                   <div className="flex justify-between text-sm">
                     <span className="text-green-600">Promo ({couponCodeUsed})</span>
                     <span className="text-green-600">-{formatCurrency(discountApplied)}</span>
-                  </div>
-                )}
-                {demoMode && (
-                  <div className="flex justify-between text-sm">
-                    <span className="text-purple-600">Demo Discount</span>
-                    <span className="text-purple-600">-{formatCurrency(500)}</span>
                   </div>
                 )}
                 <div className="border-t border-slate-200 pt-2 flex justify-between items-center">

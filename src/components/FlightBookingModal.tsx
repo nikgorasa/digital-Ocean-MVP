@@ -3,14 +3,12 @@
 import React, { useState, useRef } from "react";
 import { motion } from "motion/react";
 import { formatCurrency } from "@/lib";
-import { useDemoMode } from "@/hooks/useDemoMode";
 import { useEscapeKey } from "@/hooks/useEscapeKey";
 import { parseFareType, parseFareInclusions, getFareTypeColor, formatFareType, type FareType } from "@/lib/fare-utils";
 import {
   X, Loader2, CheckCircle, AlertCircle, Plane,
   MapPin, Calendar, Phone, Mail, User, CreditCard, Clock, Luggage,
-  Tag, Building2, ChevronDown, ChevronUp, Globe, Zap, Utensils, Armchair,
-  FlaskConical
+  Tag, Building2, ChevronDown, ChevronUp, Globe, Utensils, Armchair,
 } from "lucide-react";
 import CheckoutButton from "./CheckoutButton";
 import FormInput from "./ui/FormInput";
@@ -101,7 +99,6 @@ export default function FlightBookingModal({
   isOpen, onClose, flights, user, date, passengerCount, adults, children, infants, traceId,
 }: FlightBookingModalProps) {
   const flight = flights[0];
-  const { demoMode } = useDemoMode();
   const totalFlightPrice = flights.reduce((s, f) => s + f.price, 0);
   const totalBaseFare = flights.reduce((s, f) => s + (f.baseFare || 0), 0);
   const totalTax = flights.reduce((s, f) => s + (f.tax || 0), 0);
@@ -209,8 +206,7 @@ export default function FlightBookingModal({
   const addonsTotal = baggageFee + mealsFee + seatFee;
 
   const finalPrice = totalFlightPrice - discountApplied;
-  const demoDiscount = demoMode ? 500 : 0;
-  const totalPayable = finalPrice - demoDiscount + addonsTotal;
+  const totalPayable = finalPrice + addonsTotal;
 
   const otherPassengersValid = !isInternational || otherPaxCount === 0 || otherPassengers.every(
     (p, i) => {
@@ -226,7 +222,6 @@ export default function FlightBookingModal({
 
   const isValid = firstName.trim() && lastName.trim() && phone.trim().length >= 7 && email.trim()
     && otherPassengersValid && passportValid;
-  const prefilled = firstName && lastName && phone && email;
 
   useEscapeKey(() => {
     if (step === "form" && dirtyRef.current) {
@@ -280,21 +275,6 @@ export default function FlightBookingModal({
   const handleClose = () => {
     resetForm();
     onClose();
-  };
-
-  const handlePrefill = () => {
-    setFirstName("Amit");
-    setLastName("Patel");
-    setPhone("9876543210");
-    setEmail("amit@example.com");
-    setDateOfBirth("1992-05-15");
-    setGender("M");
-    setPan("ABCRS1234F");
-    setPassportNo("A1234567");
-    setPassportExpiry("2030-12-31");
-    setNationality("Indian");
-    setGstNumber("27AABCR1234M1Z5");
-    setGstCompanyName("GoRASA Travel Services");
   };
 
   const handleApplyPromo = async () => {
@@ -434,7 +414,7 @@ export default function FlightBookingModal({
       let tboBookingId: string | null = null;
       let tboPnr: string | null = null;
 
-      if (!demoMode && traceId) {
+      if (traceId) {
         // Step 1: FareQuote — validate real-time price
         try {
           const fqRes = await fetch("/api/tbo", {
@@ -547,7 +527,7 @@ export default function FlightBookingModal({
             ? `${flight.airline} • ${flight.origin} → ${flight.destination}`
             : flights.map(f => `${f.airline} ${f.origin}→${f.destination}`).join(" + "),
           providerOrAirline: flight.airline,
-          price: totalPayable,
+          price: totalFlightPrice + addonsTotal,
           originalPrice: totalFlightPrice,
           discountApplied: discountApplied,
           promoCost: discountApplied,
@@ -568,7 +548,7 @@ export default function FlightBookingModal({
             baseFare: totalBaseFare,
             tax: totalTax,
             addOns: Object.keys(addOns).length > 0 ? addOns : undefined,
-            ...(demoMode ? { isDemo: true } : {}),
+            totalPayable,
           },
         }),
       });
@@ -691,36 +671,6 @@ export default function FlightBookingModal({
         {/* FORM STEP */}
         {step === "form" && (
           <div className="p-6 space-y-5">
-            {/* Demo Mode Banner */}
-            {demoMode && (
-              <div className="bg-purple-50 border border-purple-200 rounded-xl p-3 flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <FlaskConical size={18} className="text-purple-600" aria-hidden="true" />
-                  <div>
-                    <p className="text-sm font-semibold text-purple-800">Demo Mode</p>
-                    <p className="text-xs text-purple-600">Use code DEMO500 for ₹500 off</p>
-                  </div>
-                </div>
-                <button
-                  onClick={handlePrefill}
-                  className="flex items-center gap-1 px-3 py-1.5 bg-purple-600 text-white rounded-lg text-xs font-semibold hover:bg-purple-700 cursor-pointer"
-                >
-                  <Zap size={12} />
-                  Fill Demo Data
-                </button>
-              </div>
-            )}
-
-            {demoMode && !prefilled && (
-              <button
-                onClick={handlePrefill}
-                className="flex items-center gap-1.5 px-3 py-2 bg-slate-100 text-slate-600 rounded-lg text-xs font-medium hover:bg-slate-200 cursor-pointer"
-              >
-                <Zap size={14} />
-                Quick Fill Demo Data
-              </button>
-            )}
-
             {/* Booking Summary */}
             <div className="bg-blue-50 rounded-xl p-4 space-y-3">
               {flights.map((f, idx) => (
@@ -775,7 +725,7 @@ export default function FlightBookingModal({
                   <input
                     value={promoCode}
                     onChange={(e) => setPromoCode(e.target.value.toUpperCase())}
-                    placeholder={demoMode ? "DEMO500" : "Enter promo code"}
+                    placeholder="Enter promo code"
                     disabled={!!couponCodeUsed}
                     className="w-full pl-9 pr-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm disabled:opacity-50"
                   />
@@ -1198,12 +1148,6 @@ export default function FlightBookingModal({
                       <span className="text-green-600">-{formatCurrency(discountApplied)}</span>
                     </div>
                   )}
-                  {demoMode && (
-                    <div className="flex justify-between text-sm">
-                      <span className="text-purple-600">Demo Discount</span>
-                      <span className="text-purple-600">-{formatCurrency(500)}</span>
-                    </div>
-                  )}
                   {baggageFee > 0 && (
                     <div className="flex justify-between text-sm">
                       <span className="text-slate-600">Extra Baggage</span>
@@ -1298,12 +1242,6 @@ export default function FlightBookingModal({
                   <div className="flex justify-between text-sm">
                     <span className="text-green-600">Promo ({couponCodeUsed})</span>
                     <span className="text-green-600">-{formatCurrency(discountApplied)}</span>
-                  </div>
-                )}
-                {demoMode && (
-                  <div className="flex justify-between text-sm">
-                    <span className="text-purple-600">Demo Discount</span>
-                    <span className="text-purple-600">-{formatCurrency(500)}</span>
                   </div>
                 )}
                 {baggageFee > 0 && (

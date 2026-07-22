@@ -120,19 +120,10 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // Reject demo bookings from real checkout (check FIRST, before other guards)
-    const bookingMeta = booking.metadata as Record<string, unknown> | null;
-    if (bookingMeta?.isDemo) {
+    // Reject bookings without supplier confirmation (ghost bookings)
+    if (!booking.supplierBookingRef && (booking.type === "FLIGHT" || booking.type === "HOTEL")) {
       return NextResponse.json({
-        error: "Demo bookings cannot be checked out. Use AdminDemoPanel to simulate payment.",
-        isDemo: true,
-      }, { status: 400 });
-    }
-
-    // Reject bookings without supplier confirmation (ghost bookings) — skip for demo
-    if (!booking.supplierBookingRef && booking.type === "FLIGHT") {
-      return NextResponse.json({
-        error: "This booking was not confirmed by the airline. Please book again.",
+        error: "This booking was not confirmed with the supplier. Please book again.",
         ghostBooking: true,
       }, { status: 400 });
     }
@@ -328,24 +319,26 @@ export async function POST(request: NextRequest) {
     const adminDiscountAmtStd = booking.discountApplied || 0;
     const totalDiscountRawStd = promoDiscountAmtStd + corporateDiscountAmtStd + adminDiscountAmtStd;
     const markupStd = booking.markupAmount || 0;
+    let totalDiscountStd = totalDiscountRawStd;
     if (totalDiscountRawStd > markupStd && markupStd > 0) {
+      totalDiscountStd = markupStd;
+    }
+    if (booking.totalDiscount !== totalDiscountStd) {
       await prisma.booking.update({
         where: { id: bookingId },
-        data: { totalDiscount: markupStd },
-      });
-    } else if (booking.totalDiscount !== totalDiscountRawStd) {
-      await prisma.booking.update({
-        where: { id: bookingId },
-        data: { totalDiscount: totalDiscountRawStd },
+        data: { totalDiscount: totalDiscountStd },
       });
     }
 
     const appUrl = process.env.NEXT_PUBLIC_APP_URL
       || `${request.nextUrl.protocol}//${request.nextUrl.host}`;
 
+    // Apply promo discount at checkout (modal saves original marked-up price)
+    const checkoutAmount = Math.max(0, revalidation.newPrice - totalDiscountStd);
+
     const result = await createCheckout({
       bookingId,
-      amount: revalidation.newPrice,
+      amount: checkoutAmount,
       gateway: selectedGateway,
       userEmail: user.email,
       appUrl,

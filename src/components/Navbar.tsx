@@ -4,7 +4,6 @@ import React, { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useAuth } from "@/hooks/useAuth";
-import { useDemoMode } from "@/hooks/useDemoMode";
 import { motion, AnimatePresence } from "motion/react";
 import GoRasaLogo from "./GoRasaLogo";
 import {
@@ -20,7 +19,6 @@ import {
   Plane,
   Building2,
   Palmtree,
-  FlaskConical,
   Globe,
   ChevronDown,
 } from "lucide-react";
@@ -101,7 +99,6 @@ export default function Navbar({
   onLoginClick: () => void;
 }) {
   const { user, signOut } = useAuth();
-  const { demoMode, toggleDemoMode } = useDemoMode();
   const pathname = usePathname();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [navItems, setNavItems] = useState<{ href: string; label: string; icon: string }[]>([]);
@@ -185,22 +182,6 @@ export default function Navbar({
 
           {/* Auth / User Menu */}
           <div className="flex items-center space-x-3">
-            {/* Demo Mode Toggle — Admin Only */}
-            {isAdmin && (
-              <button
-                onClick={toggleDemoMode}
-                className={`flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${
-                  demoMode
-                    ? "bg-purple-500 text-white shadow-lg shadow-purple-500/30 border-2 border-purple-300"
-                    : "bg-white/10 text-white/80 border-2 border-white/20 hover:bg-white/20 hover:border-white/40"
-                }`}
-                title={demoMode ? "Demo Mode ON — Click to turn OFF" : "Click to turn ON Demo Mode (skip TBO APIs)"}
-              >
-                <FlaskConical size={16} />
-                {demoMode ? "DEMO ON" : "DEMO OFF"}
-              </button>
-            )}
-
             {user ? (
               <motion.div
                 initial={{ opacity: 0, scale: 0.9 }}
@@ -306,21 +287,5 @@ export default function Navbar({
         )}
       </AnimatePresence>
     </nav>
-  );
-}
-
-export function DemoModeBanner() {
-  const { demoMode, toggleDemoMode } = useDemoMode();
-  if (!demoMode) return null;
-  return (
-    <div className="bg-purple-600 text-white text-center py-2 px-4 text-sm font-bold fixed top-16 left-0 right-0 z-[999] shadow-lg flex items-center justify-center gap-4">
-      <span>DEMO MODE — Bookings will not reach TBO. Wallet deductions are real.</span>
-      <button
-        onClick={toggleDemoMode}
-        className="bg-white/20 hover:bg-white/30 px-3 py-1 rounded-lg text-xs font-bold cursor-pointer transition-colors"
-      >
-        Turn Off
-      </button>
-    </div>
   );
 }
