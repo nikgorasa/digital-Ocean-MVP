@@ -404,6 +404,7 @@ export interface TBOHotelSearchOutput {
 }
 
 export interface TBOHotelPreBookOutput {
+  bookingCode: string;
   hotelName: string;
   hotelCode: string;
   netAmount: number;

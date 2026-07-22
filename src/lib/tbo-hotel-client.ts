@@ -551,7 +551,10 @@ export async function preBook(params: {
   const hotel = res.HotelResult?.[0];
   const room = hotel?.Rooms?.[0];
   const priceBreakup = room?.PriceBreakUp?.[0];
+  const confirmedBookingCode = room?.BookingCode || params.bookingCode;
+  console.log("[TBO PreBook] Confirmed BookingCode:", confirmedBookingCode, "(original:", params.bookingCode, ")");
   return {
+    bookingCode: confirmedBookingCode,
     hotelName: hotel?.HotelCode || '',
     hotelCode: hotel?.HotelCode || '',
     netAmount: room?.NetAmount || 0,

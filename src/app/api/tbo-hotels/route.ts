@@ -83,9 +83,9 @@ export async function POST(req: NextRequest) {
           : false;
         return NextResponse.json({
           success: true,
-          bookingCode,
           isPriceChanged,
           ...result,
+          bookingCode: result.bookingCode,
         });
       }
 
