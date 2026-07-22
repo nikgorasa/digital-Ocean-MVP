@@ -165,10 +165,13 @@ export async function POST(request: NextRequest) {
         totalDiscount = markup;
       }
 
+      // Apply total discount (promo + corporate + admin) capped at markup
+      const finalAmountAfterAllDiscounts = Math.max(0, booking.price - totalDiscount);
+
       // Calculate tax based on company tax rate
       const taxRate = company.taxRate ?? 0;
-      const taxAmount = Math.round(finalAmount * taxRate) / 100;
-      const totalWithTax = finalAmount + taxAmount;
+      const taxAmount = Math.round(finalAmountAfterAllDiscounts * taxRate) / 100;
+      const totalWithTax = finalAmountAfterAllDiscounts + taxAmount;
 
       // Check wallet balance (walletBalance + creditLimit = available balance)
       const availableBalance = company.walletBalance + (company.creditLimit || 0);
@@ -242,7 +245,7 @@ export async function POST(request: NextRequest) {
             companyId: user.companyId,
             bookingId,
             number: invoiceNumber,
-            amount: finalAmount,
+            amount: finalAmountAfterAllDiscounts,
             taxAmount,
             totalAmount: totalWithTax,
             status: "PAID",
@@ -261,7 +264,7 @@ export async function POST(request: NextRequest) {
           companyName: company.name,
           invoiceNumber,
           bookingItem: booking.itemName,
-          amount: finalAmount,
+          amount: finalAmountAfterAllDiscounts,
           taxAmount,
           totalAmount: totalWithTax,
           dueDate: dueDateStr,
