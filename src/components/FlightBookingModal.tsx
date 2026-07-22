@@ -459,7 +459,10 @@ export default function FlightBookingModal({
             }
           }
         } catch (e) {
-          console.warn("FareQuote failed, continuing:", e);
+          console.warn("FareQuote failed:", e);
+          setErrorMessage("Price verification failed. Please try again.");
+          setStep("error");
+          return;
         }
 
         // Step 2: Book via TBO — creates a reservation
@@ -479,9 +482,16 @@ export default function FlightBookingModal({
             if (bookData.isTimeChanged) {
               setIsTimeChanged(true);
             }
+          } else {
+            setErrorMessage("Flight booking failed at the airline. Please try again.");
+            setStep("error");
+            return;
           }
         } catch (e) {
-          console.warn("TBO book failed:", e);
+          console.error("TBO book failed:", e);
+          setErrorMessage("Flight booking failed. Please try again.");
+          setStep("error");
+          return;
         }
 
         // Step 3: Ticket — finalize the booking
@@ -511,12 +521,15 @@ export default function FlightBookingModal({
               tboPnr = ticketData.results[0].pnr || tboPnr;
             }
           } catch (e) {
-            console.warn("TBO ticket failed:", e);
+            console.error("TBO ticket failed:", e);
+            setErrorMessage("Ticket issuance failed. Your booking is reserved but not confirmed. Please contact support.");
+            setStep("error");
+            return;
           }
         }
       }
 
-      const pnrCode = tboPnr || `GR${Date.now().toString(36).toUpperCase()}`;
+      const pnrCode = tboPnr || `TBO${tboBookingId?.slice(-8) || "PENDING"}`;
 
       const totalBaseRate = flights.reduce((s, f) => s + (f.baseRate || 0), 0);
       const totalMarkupAmount = flights.reduce((s, f) => s + (f.markupAmount || 0), 0);

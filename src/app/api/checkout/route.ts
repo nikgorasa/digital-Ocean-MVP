@@ -34,6 +34,7 @@ async function getBooking(bookingId: string) {
       corporateDiscount: true,
       discountApplied: true,
       totalDiscount: true,
+      supplierBookingRef: true,
     },
   });
 }
@@ -117,6 +118,14 @@ export async function POST(request: NextRequest) {
           expired: true,
         }, { status: 400 });
       }
+    }
+
+    // Reject bookings without supplier confirmation (ghost bookings)
+    if (!booking.supplierBookingRef && booking.type === "FLIGHT") {
+      return NextResponse.json({
+        error: "This booking was not confirmed by the airline. Please book again.",
+        ghostBooking: true,
+      }, { status: 400 });
     }
 
     // ── CORPORATE CHECKOUT ──────────────────────────────────────────
