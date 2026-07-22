@@ -106,11 +106,15 @@ export default function HotelBookingModal({
   const nights = Math.max(1, Math.ceil(
     (new Date(checkOut).getTime() - new Date(checkIn).getTime()) / 86400000
   ));
-  const baseAndTax = hotel.price; // Use marked-up total (includes markup from pricing table)
+  const baseAndTax = hotel.price; // Marked-up total (includes markup from pricing table)
+  const perNightRate = Math.round(hotel.price / nights); // Per-night including markup
+  const perNightRoomFare = room.roomFare; // Per-night raw TBO room fare
+  const perNightTaxes = perNightRate - perNightRoomFare; // Per-night taxes + markup
+  const totalRoomFare = perNightRoomFare * nights;
+  const totalTaxes = perNightTaxes * nights;
   const finalPrice = baseAndTax - discountApplied;
   const demoDiscount = demoMode ? 500 : 0;
   const totalPayable = finalPrice - demoDiscount;
-  const taxesAndFees = baseAndTax - room.roomFare; // TBO tax + markup combined
   const passportValid = !passportRequired || (passportNo.trim() && passportExpiry);
   const panValid = !panRequired || pan.trim().length > 0;
   const isValid = firstName.trim() && lastName.trim() && phone.trim().length >= 7 && email.trim() && passportValid && panValid;
@@ -617,11 +621,15 @@ export default function HotelBookingModal({
               <div className="pt-2 border-t border-slate-200 space-y-1">
                 <div className="flex justify-between text-sm">
                   <span className="text-slate-600">Room Fare</span>
-                  <span className="text-slate-900">{formatCurrency(room.roomFare)}</span>
+                  <span className="text-slate-900">{formatCurrency(perNightRoomFare)}</span>
                 </div>
                 <div className="flex justify-between text-sm">
                   <span className="text-slate-600">Taxes & Fees</span>
-                  <span className="text-slate-900">{formatCurrency(taxesAndFees)}</span>
+                  <span className="text-slate-900">{formatCurrency(perNightTaxes)}</span>
+                </div>
+                <div className="flex justify-between text-sm font-bold pt-1 border-t border-slate-100">
+                  <span className="text-slate-700">Per Night Total</span>
+                  <span className="text-slate-900">{formatCurrency(perNightRate)}</span>
                 </div>
                 {discountApplied > 0 && (
                   <div className="flex justify-between text-sm">
@@ -919,12 +927,16 @@ export default function HotelBookingModal({
               <div className="border-t border-slate-200 pt-3 space-y-2">
                 <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400">Price Breakup</p>
                 <div className="flex justify-between text-sm">
-                  <span className="text-slate-600">Room Fare ({nights} night{nights > 1 ? "s" : ""})</span>
-                  <span className="text-slate-900">{formatCurrency(room.roomFare * nights)}</span>
+                  <span className="text-slate-600">Room Fare ({formatCurrency(perNightRoomFare)} × {nights} night{nights > 1 ? "s" : ""})</span>
+                  <span className="text-slate-900">{formatCurrency(totalRoomFare)}</span>
                 </div>
                 <div className="flex justify-between text-sm">
-                  <span className="text-slate-600">Taxes & Fees</span>
-                  <span className="text-slate-900">{formatCurrency(taxesAndFees)}</span>
+                  <span className="text-slate-600">Taxes & Fees ({formatCurrency(perNightTaxes)} × {nights} night{nights > 1 ? "s" : ""})</span>
+                  <span className="text-slate-900">{formatCurrency(totalTaxes)}</span>
+                </div>
+                <div className="flex justify-between text-sm font-bold pt-1 border-t border-slate-100">
+                  <span className="text-slate-700">Total ({formatCurrency(perNightRate)} × {nights} night{nights > 1 ? "s" : ""})</span>
+                  <span className="text-slate-900">{formatCurrency(baseAndTax)}</span>
                 </div>
                 {prebookTaxBreakup && prebookTaxBreakup.length > 0 && (
                   <div className="pl-3 space-y-0.5">
