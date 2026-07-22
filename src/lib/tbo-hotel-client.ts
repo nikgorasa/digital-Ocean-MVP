@@ -537,12 +537,15 @@ export async function preBook(params: {
   await validateCredentials();
   const req: TBOHotelPreBookRequest = {
     BookingCode: params.bookingCode,
-    PaymentMode: params.paymentMode || "Default",
+    PaymentMode: params.paymentMode || "Limit",
     EndUserIp: getEndUserIp(),
     TokenId: await ensureToken(),
   };
+  console.log("[TBO PreBook] Request:", JSON.stringify({ BookingCode: req.BookingCode, PaymentMode: req.PaymentMode, EndUserIp: req.EndUserIp }));
   const res = await api.preBook(req);
+  console.log("[TBO PreBook] Response:", JSON.stringify({ Status: res.Status, ValidationInfo: res.ValidationInfo, HasHotelResult: !!res.HotelResult?.length }));
   if (res.Status?.Code !== 200) {
+    console.error("[TBO PreBook] FAILED:", JSON.stringify(res));
     throw new Error(`PreBook failed: ${res.Status?.Description}`);
   }
   const hotel = res.HotelResult?.[0];
