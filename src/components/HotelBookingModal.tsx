@@ -106,11 +106,11 @@ export default function HotelBookingModal({
   const nights = Math.max(1, Math.ceil(
     (new Date(checkOut).getTime() - new Date(checkIn).getTime()) / 86400000
   ));
-  const baseAndTax = room.totalFare + room.totalTax;
+  const baseAndTax = hotel.price; // Use marked-up total (includes markup from pricing table)
   const finalPrice = baseAndTax - discountApplied;
   const demoDiscount = demoMode ? 500 : 0;
   const totalPayable = finalPrice - demoDiscount;
-  const perNightTotal = (room.roomFare || room.totalFare / nights) + room.roomTax;
+  const taxesAndFees = baseAndTax - room.roomFare; // TBO tax + markup combined
   const passportValid = !passportRequired || (passportNo.trim() && passportExpiry);
   const panValid = !panRequired || pan.trim().length > 0;
   const isValid = firstName.trim() && lastName.trim() && phone.trim().length >= 7 && email.trim() && passportValid && panValid;
@@ -621,7 +621,7 @@ export default function HotelBookingModal({
                 </div>
                 <div className="flex justify-between text-sm">
                   <span className="text-slate-600">Taxes & Fees</span>
-                  <span className="text-slate-900">{formatCurrency(Math.round(hotel.price / nights - room.roomFare))}</span>
+                  <span className="text-slate-900">{formatCurrency(taxesAndFees)}</span>
                 </div>
                 {discountApplied > 0 && (
                   <div className="flex justify-between text-sm">
@@ -924,7 +924,7 @@ export default function HotelBookingModal({
                 </div>
                 <div className="flex justify-between text-sm">
                   <span className="text-slate-600">Taxes & Fees</span>
-                  <span className="text-slate-900">{formatCurrency(Math.round((hotel.price / nights - room.roomFare) * nights))}</span>
+                  <span className="text-slate-900">{formatCurrency(taxesAndFees)}</span>
                 </div>
                 {prebookTaxBreakup && prebookTaxBreakup.length > 0 && (
                   <div className="pl-3 space-y-0.5">
@@ -949,7 +949,7 @@ export default function HotelBookingModal({
                 })()}
                 <div className="flex justify-between text-sm">
                   <span className="text-slate-600">Subtotal</span>
-                  <span className="text-slate-900">{formatCurrency(room.totalFare + room.totalTax)}</span>
+                  <span className="text-slate-900">{formatCurrency(baseAndTax)}</span>
                 </div>
                 {discountApplied > 0 && (
                   <div className="flex justify-between text-sm">

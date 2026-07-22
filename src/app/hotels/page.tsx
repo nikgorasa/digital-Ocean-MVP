@@ -718,10 +718,18 @@ export default function HotelsPage() {
 
               <div className="p-4 sm:p-6">
                 <h2 className="text-xl sm:text-2xl font-serif font-bold text-brand-charcoal mb-1">{selectedHotel.name}</h2>
-                <p className="text-sm text-slate-600 flex items-center gap-1 mb-3">
-                  <MapPin size={14} />
-                  {selectedHotel.address || selectedCity.name}
-                </p>
+                {selectedHotel.address && (
+                  <p className="text-sm text-slate-600 flex items-start gap-1 mb-3">
+                    <MapPin size={14} className="mt-0.5 shrink-0" />
+                    <span>{selectedHotel.address}</span>
+                  </p>
+                )}
+                {!selectedHotel.address && (
+                  <p className="text-sm text-slate-600 flex items-center gap-1 mb-3">
+                    <MapPin size={14} />
+                    {selectedCity.name}
+                  </p>
+                )}
 
                 <div className="flex flex-wrap items-center gap-2 sm:gap-3 mb-4">
                   {selectedHotel.tripAdvisorRating > 0 && (
@@ -759,7 +767,9 @@ export default function HotelsPage() {
                   <span>Check-in: <strong>{checkIn || "TBD"}</strong></span>
                   <span>Check-out: <strong>{checkOut || "TBD"}</strong></span>
                   <span className="text-brand-antique-gold font-bold">{nights} night{nights > 1 ? "s" : ""}</span>
-                  <span className="text-[10px] text-slate-600/70">Times per hotel policy</span>
+                  {selectedHotel.checkInTime && selectedHotel.checkOutTime && (
+                    <span className="text-[10px] text-slate-600/70">Check-in/out: {selectedHotel.checkInTime} / {selectedHotel.checkOutTime}</span>
+                  )}
                 </div>
 
                 {/* Rooms Section */}
@@ -846,7 +856,7 @@ export default function HotelsPage() {
                       </div>
                       <div className="flex justify-between items-center mb-2">
                         <span className="text-sm text-slate-600">Taxes & Fees</span>
-                        <span className="font-mono font-bold">{formatCurrency(Math.round((selectedHotel.price / nights - selectedRoom.roomFare) * nights))}</span>
+                        <span className="font-mono font-bold">{formatCurrency(selectedHotel.price - selectedRoom.roomFare * nights)}</span>
                       </div>
                       <div className="flex justify-between items-center pt-2 border-t border-slate-200">
                         <span className="font-bold text-brand-charcoal">Total for {nights} night{nights > 1 ? "s" : ""}</span>
