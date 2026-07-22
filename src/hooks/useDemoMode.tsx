@@ -26,7 +26,6 @@ export function DemoModeProvider({ children }: { children: React.ReactNode }) {
         if (elapsed < DEMO_MODE_TTL_MS) {
           setDemoMode(true);
         } else {
-          // Expired — clear demo mode
           localStorage.removeItem("demoMode");
           localStorage.removeItem("demoModeTs");
         }

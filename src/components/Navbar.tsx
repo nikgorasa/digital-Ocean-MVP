@@ -189,15 +189,15 @@ export default function Navbar({
             {isAdmin && (
               <button
                 onClick={toggleDemoMode}
-                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold transition-all cursor-pointer ${
+                className={`flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${
                   demoMode
-                    ? "bg-purple-400/20 text-purple-200 border border-purple-400/30"
-                    : "bg-white/10 text-white/60 border border-white/20 hover:bg-white/20"
+                    ? "bg-purple-500 text-white shadow-lg shadow-purple-500/30 border-2 border-purple-300"
+                    : "bg-white/10 text-white/80 border-2 border-white/20 hover:bg-white/20 hover:border-white/40"
                 }`}
-                title={demoMode ? "Demo Mode ON — Click to disable" : "Demo Mode OFF — Click to enable (skip real APIs)"}
+                title={demoMode ? "Demo Mode ON — Click to turn OFF" : "Click to turn ON Demo Mode (skip TBO APIs)"}
               >
-                <FlaskConical size={14} />
-                {demoMode ? "Demo ON" : "Demo"}
+                <FlaskConical size={16} />
+                {demoMode ? "DEMO ON" : "DEMO OFF"}
               </button>
             )}
 
@@ -310,11 +310,17 @@ export default function Navbar({
 }
 
 export function DemoModeBanner() {
-  const { demoMode } = useDemoMode();
+  const { demoMode, toggleDemoMode } = useDemoMode();
   if (!demoMode) return null;
   return (
-    <div className="bg-purple-600 text-white text-center py-2 px-4 text-sm font-bold fixed top-16 left-0 right-0 z-[999] shadow-lg">
-      DEMO MODE ACTIVE — Bookings will not reach TBO. Wallet deductions are real.
+    <div className="bg-purple-600 text-white text-center py-2 px-4 text-sm font-bold fixed top-16 left-0 right-0 z-[999] shadow-lg flex items-center justify-center gap-4">
+      <span>DEMO MODE — Bookings will not reach TBO. Wallet deductions are real.</span>
+      <button
+        onClick={toggleDemoMode}
+        className="bg-white/20 hover:bg-white/30 px-3 py-1 rounded-lg text-xs font-bold cursor-pointer transition-colors"
+      >
+        Turn Off
+      </button>
     </div>
   );
 }
