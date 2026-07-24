@@ -84,7 +84,7 @@ bash scripts/preflight-check.sh
 
 ## Required-First-Read — CRITICAL
 
-BEFORE using ANY database-related MCP tool (Neon, Supabase, or others), you MUST:
+BEFORE using ANY database-related MCP tool, you MUST:
 1. Read `Governance/docs/governance/DB-PLATFORM.md` — identifies the active DB platform
 2. Read `Governance/docs/governance/Cckr-SESSION-LOG.md` — current state and pending items
 3. Read `AGENTS.md` — governance rules and blocked actions
@@ -93,7 +93,7 @@ BEFORE using ANY database-related MCP tool (Neon, Supabase, or others), you MUST
 
 ---
 
-## Pre-Flight Check (18 checks — MANDATORY)
+## Pre-Flight Check (up to 18 checks — MANDATORY)
 
 **Before starting ANY significant work:**
 
