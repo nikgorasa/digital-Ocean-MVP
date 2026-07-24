@@ -78,6 +78,27 @@ const ALL_AIRPORTS: City[] = [
 
 const POPULAR_IATA = ["BOM", "DEL", "DXB", "BKK", "SIN", "LHR"];
 const POPULAR_HOTEL_CITIES = ["Goa", "Mumbai", "Dubai", "Bangkok", "Singapore", "Delhi"];
+
+const FALLBACK_HOTEL_CITIES: City[] = [
+  { code: "15648", name: "Goa", state: "Goa", source: "fallback", country_code: "IN", flag: "🇮🇳" },
+  { code: "13484", name: "Mumbai", state: "Maharashtra", source: "fallback", country_code: "IN", flag: "🇮🇳" },
+  { code: "13482", name: "Delhi", state: "Delhi", source: "fallback", country_code: "IN", flag: "🇮🇳" },
+  { code: "14565", name: "Bangalore", state: "Karnataka", source: "fallback", country_code: "IN", flag: "🇮🇳" },
+  { code: "14564", name: "Chennai", state: "Tamil Nadu", source: "fallback", country_code: "IN", flag: "🇮🇳" },
+  { code: "15664", name: "Hyderabad", state: "Telangana", source: "fallback", country_code: "IN", flag: "🇮🇳" },
+  { code: "15197", name: "Jaipur", state: "Rajasthan", source: "fallback", country_code: "IN", flag: "🇮🇳" },
+  { code: "13543", name: "Kolkata", state: "West Bengal", source: "fallback", country_code: "IN", flag: "🇮🇳" },
+  { code: "13084", name: "Dubai", state: "Dubai", source: "fallback", country_code: "AE", flag: "🇦🇪" },
+  { code: "13098", name: "Bangkok", state: "Bangkok", source: "fallback", country_code: "TH", flag: "🇹🇭" },
+  { code: "13103", name: "Singapore", state: "Singapore", source: "fallback", country_code: "SG", flag: "🇸🇬" },
+  { code: "13113", name: "London", state: "England", source: "fallback", country_code: "GB", flag: "🇬🇧" },
+  { code: "13116", name: "New York", state: "New York", source: "fallback", country_code: "US", flag: "🇺🇸" },
+  { code: "13121", name: "Paris", state: "Ile-de-France", source: "fallback", country_code: "FR", flag: "🇫🇷" },
+  { code: "13128", name: "Tokyo", state: "Tokyo", source: "fallback", country_code: "JP", flag: "🇯🇵" },
+  { code: "13110", name: "Bali", state: "Bali", source: "fallback", country_code: "ID", flag: "🇮🇩" },
+  { code: "13107", name: "Colombo", state: "Western", source: "fallback", country_code: "LK", flag: "🇱🇰" },
+  { code: "13108", name: "Male", state: "Male", source: "fallback", country_code: "MV", flag: "🇲🇻" },
+];
 const RECENT_KEY = "gorasa_recent_airports";
 const MAX_RECENT = 5;
 
@@ -186,14 +207,16 @@ export default function CitySearchDropdown({
   }, [onChange, mode, dbAirports, hotelCities]);
 
   const query = search.toLowerCase().trim();
-  let dataSource = mode === "hotel" ? hotelCities : (dbAirports.length ? dbAirports : ALL_AIRPORTS);
+  let dataSource = mode === "hotel"
+    ? (hotelCities.length > 0 ? hotelCities : FALLBACK_HOTEL_CITIES)
+    : (dbAirports.length ? dbAirports : ALL_AIRPORTS);
 
   // Apply scope filtering for hotel mode
-  if (mode === "hotel" && scope !== "all" && hotelCities.length > 0) {
+  if (mode === "hotel" && scope !== "all") {
     if (scope === "domestic") {
-      dataSource = hotelCities.filter(c => c.country_code === "IN");
+      dataSource = dataSource.filter(c => c.country_code === "IN");
     } else {
-      dataSource = hotelCities.filter(c => c.country_code !== "IN");
+      dataSource = dataSource.filter(c => c.country_code !== "IN");
     }
   }
 
@@ -306,18 +329,16 @@ export default function CitySearchDropdown({
               {filteredAirports.length === 0 && query && !dbLoading && !hotelLoading && (
                 <div className="px-3 py-4 text-center">
                   <p className="text-xs text-slate-400">{mode === "hotel" ? "No cities found" : "No airports found"} for &ldquo;{search}&rdquo;</p>
-                </div>
-              )}
-              {filteredAirports.length === 0 && query && hotelLoading && (
-                <div className="px-3 py-4 text-center">
-                  <p className="text-xs text-slate-400">Loading cities...</p>
+                  {mode === "hotel" && hotelCities.length === 0 && (
+                    <p className="text-[10px] text-slate-300 mt-1">Showing cached destinations</p>
+                  )}
                 </div>
               )}
               {query && filteredAirports.map((city, i) => renderItem(city, i))}
               {!query && (
                 <>
                   {mode === "hotel" && hotelLoading && <div className="px-3 py-4 text-center"><p className="text-xs text-slate-400">Loading cities...</p></div>}
-                  {mode === "hotel" && !hotelLoading && hotelCities.length === 0 && <div className="px-3 py-4 text-center"><p className="text-xs text-slate-400">Type to search cities</p></div>}
+                  {mode === "hotel" && !hotelLoading && hotelCities.length === 0 && <div className="px-3 py-4 text-center"><p className="text-[10px] text-slate-300">Using cached destinations &mdash; live data loading in background</p></div>}
                   {recent.length > 0 && (
                     <div className="px-1">
                       <p className="px-3 py-1 text-[10px] font-bold uppercase tracking-wider text-slate-400">Recently Searched</p>

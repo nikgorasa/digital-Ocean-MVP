@@ -2,7 +2,7 @@
 
 > **Purpose:** Single source of truth for all configuration.
 > **Read this BEFORE any deployment.
-> **Last updated:** 2026-06-25
+> **Last updated:** 2026-07-24
 
 ---
 

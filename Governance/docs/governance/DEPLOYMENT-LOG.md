@@ -40,3 +40,5 @@
 | 2026-06-17 | DEV | ✅ Live | https://cckr.vercel.app | Initial CockroachDB standalone deployment |
 | 2026-07-24 | DEV | ✅ Live | https://cckr.vercel.app | Search Epics 1-6 — global cities, pricing fixes, flight retry, UX (559d954) |
 | 2026-07-24 | PROD | ✅ Live | https://project-yidb6.vercel.app | Search Epics 1-6 — same as DEV (559d954) |
+| 2026-07-24 | DEV+PROD | ✅ Live | Both | Search UX — status messages, price display, domestic/intl tabs, progressive filters (4d99cdf) |
+| 2026-07-24 | DEV+PROD | ✅ Live | Both | Global cities fix — parallel fetch, countryCode pass (bb2d5e9) |

@@ -1,7 +1,7 @@
 # GoRASA CockroachDB Standalone — SESSION-LOG
 
 > **Purpose:** Living document tracking all sessions, changes, deployments, and learnings.
-> **Last updated:** 2026-07-24 (Session 41 — Search UX Research & EPIC Planning)
+> **Last updated:** 2026-07-24 (Session 42 — Search UX Implementation)
 
 ---
 
@@ -339,6 +339,8 @@ Each environment connects to a **different CockroachDB cluster**. Zero shared da
 
 | Date | Environment | Status | URL | Notes |
 |------|---|---|---|---|
+| 2026-07-24 | DEV+PROD | ✅ Live | Both | Search UX — status messages, price display, domestic/intl tabs, progressive filters (4d99cdf) |
+| 2026-07-24 | DEV+PROD | ✅ Live | Both | Global cities fix — parallel fetch, countryCode pass (bb2d5e9) |
 | 2026-07-24 | DEV | ✅ Live | cckr.vercel.app | TBO certification complete (8/8), multi-room, pricing fixes (Session 38) |
 | 2026-07-23 | DEV + PROD | ✅ Live | cckr.vercel.app | CORP flow fixes, retry logic, voucher fix (Session 37) |
 | 2026-07-23 | DEV + PROD | ✅ Live | cckr.vercel.app | Flight book crash fix, E2E CLI verification (Session 36) |
@@ -2041,6 +2043,101 @@ EPIC 2 removes the India-only restriction. Previously, users could only search h
 **No code changes this session.** Research and planning only.
 
 **Governance docs updated:** Cckr-SESSION-LOG.md, CHANGE-LOG.md (CRDB-GOV-010), LEARNING-FROM-MISTAKES.md (Issue 017)
+
+---
+
+
+## Session 42 — Search UX Implementation (2026-07-24)
+
+**Commits:** `4d99cdf`, `bb2d5e9`
+
+**Objective:** Implement all 4 tasks from Session 41's Search UX research brief — status messages, price display, domestic/international tabs, and progressive filters.
+
+### Task 1: Status Messages (useSearchTimer hook)
+
+**File:** `src/hooks/useSearchTimer.ts` (NEW)
+
+- Created `useSearchTimer` hook with time-aware status messages:
+  - 0–2s: "Searching..."
+  - 2–5s: "Checking rates across providers..."
+  - 5–10s: "Still searching… we're finding the best deals"
+  - 10s+: "Hang tight… this search is thorough"
+- Messages cycle to keep users engaged during long TBO API calls
+- Replaced generic spinners in hotels and flights pages
+
+### Task 2: Price Display on Hotel Cards
+
+**Files:** `src/app/hotels/page.tsx`, `src/components/HotelBookingModal.tsx`
+
+- Hotel cards now show per-night price AND total price
+- Added "Taxes included" badge below price
+- Modal uses `room.totalFare / nights` as ground truth (consistent with card)
+- Removed hardcoded `₹` symbol — uses `formatCurrency()` for international support
+
+### Task 3: Domestic/International Tabs
+
+**Files:** `src/app/hotels/page.tsx`, `src/components/CitySearchDropdown.tsx`
+
+- Added `scope` prop to `CitySearchDropdown` (`"domestic"` | `"international"` | `"all"`)
+- Hotels page has Domestic/International tab toggle
+- Default tab: Domestic (Indian users think domestic-first — Baymard/MakeMyTrip research)
+- City list filters based on selected tab (domestic = India only, international = all others)
+- `hotelCountryCode` derived from city's `country_code` field
+
+### Task 4: Progressive Filter Disclosure
+
+**Files:** `src/components/FilterPanel.tsx`, `src/app/hotels/page.tsx`, `src/app/flights/page.tsx`
+
+- Primary filters (price range, star rating, guest rating) always visible
+- Secondary filters (amenities, neighborhood, baggage, meal type) hidden under "More filters" button
+- `motion` animation for smooth expand/collapse transition
+- Filter count badge shows total active filters
+- "Clear all filters" button for easy reset
+
+### Empty Filter States
+
+**Files:** `src/app/hotels/page.tsx`, `src/app/flights/page.tsx`
+
+- Hotels: "No hotels match your filters" with filter-clear CTA
+- Flights: "No flights match your filters" with filter-clear CTA
+- Empty states only appear when filters are active (not during loading)
+
+### Research Brief Created
+
+- `Research-Brief-Travel-Portal-Search-UX.md` (1,085 lines)
+- Baymard Institute, NNGroup, Booking.com, MakeMyTrip, Google Flights research
+- 3 problem areas identified, 3 EPICs created, 3-phase roadmap
+
+### GitHub Issues
+
+- \#297: SEARCH-UX-EPIC-1 (Cold Start & Loading States)
+- \#298: SEARCH-UX-EPIC-2 (Domestic/International Separation)
+- \#299: SEARCH-UX-EPIC-3 (Display Clutter Reduction)
+
+### Files Changed
+
+- `src/hooks/useSearchTimer.ts` — NEW: time-aware status messages
+- `src/app/hotels/page.tsx` — price display, domestic/intl tabs, empty filter states
+- `src/app/flights/page.tsx` — empty filter states
+- `src/components/CitySearchDropdown.tsx` — scope prop for domestic/intl
+- `src/components/HotelBookingModal.tsx` — price display consistency
+- `src/components/FilterPanel.tsx` — progressive disclosure
+- `Research-Brief-Travel-Portal-Search-UX.md` — NEW: UX research brief
+- `Governance/docs/governance/Cckr-SESSION-LOG.md` — This entry
+- `Governance/docs/governance/CHANGE-LOG.md` — CRDB-GOV-011
+- `Governance/docs/governance/DEPLOYMENT-LOG.md` — Deployment entry
+
+### Deployed
+
+- DEV: https://cckr.vercel.app ✅
+- PROD: https://project-yidb6.vercel.app ✅
+
+### Verification
+
+- TypeScript: 0 errors
+- Build: compiled successfully
+- API config check: 6/6 passed
+- Governance check: all behavioral checks passed
 
 ---
 
