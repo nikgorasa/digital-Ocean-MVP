@@ -506,6 +506,8 @@ export async function searchHotels(params: {
     TokenId: tokenId,
   };
 
+  console.log("[TBO Hotel] Search request:", JSON.stringify({ ...searchReq, TokenId: searchReq.TokenId?.slice(0, 10) + "..." }));
+
   // Run search + image fetch in parallel — images must be loaded before toDisplay
   const [res] = await Promise.all([
     api.searchHotels(searchReq, { requestId }),
@@ -513,6 +515,7 @@ export async function searchHotels(params: {
   ]);
 
   const traceId = res.TraceId || "";
+  console.log("[TBO Hotel] Response status:", JSON.stringify(res.Status), "HotelResult count:", res.HotelResult?.length || 0);
   if (res.Status?.Code !== 200 || !res.HotelResult?.length) {
     throw new Error(`Hotel search failed: ${res.Status?.Description || "No hotels found"}`);
   }
