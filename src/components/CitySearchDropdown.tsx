@@ -119,6 +119,7 @@ export default function CitySearchDropdown({
   const [search, setSearch] = useState("");
   const [recentSearches, setRecentSearches] = useState<City[]>([]);
   const [hotelCities, setHotelCities] = useState<City[]>([]);
+  const [hotelLoading, setHotelLoading] = useState(false);
   const [dbAirports, setDbAirports] = useState<City[]>([]);
   const [dbLoading, setDbLoading] = useState(false);
   const [selectedIndex, setSelectedIndex] = useState(-1);
@@ -151,10 +152,12 @@ export default function CitySearchDropdown({
 
   useEffect(() => {
     if (mode !== "hotel") return;
+    setHotelLoading(true);
     fetch("/api/cities/tbo")
       .then(r => r.json())
       .then(data => setHotelCities(data.cities || []))
-      .catch(() => setHotelCities([]));
+      .catch(() => setHotelCities([]))
+      .finally(() => setHotelLoading(false));
   }, [mode]);
 
   useEffect(() => {
@@ -288,22 +291,33 @@ export default function CitySearchDropdown({
                 placeholder={mode === "flight" ? "Search by city, airport, or code..." : "Search city..."}
                 className="w-full text-sm outline-none placeholder:text-slate-400"
               />
-              {mode === "flight" && dbLoading && (
+              {(mode === "flight" && dbLoading) && (
+                <div className="absolute right-3 top-1/2 -translate-y-1/2">
+                  <div className="w-3.5 h-3.5 border-2 border-emerald-200 border-t-emerald-500 rounded-full animate-spin" />
+                </div>
+              )}
+              {mode === "hotel" && hotelLoading && (
                 <div className="absolute right-3 top-1/2 -translate-y-1/2">
                   <div className="w-3.5 h-3.5 border-2 border-emerald-200 border-t-emerald-500 rounded-full animate-spin" />
                 </div>
               )}
             </div>
             <div className="py-1 overflow-y-auto flex-1 overscroll-contain">
-              {filteredAirports.length === 0 && query && !dbLoading && (
+              {filteredAirports.length === 0 && query && !dbLoading && !hotelLoading && (
                 <div className="px-3 py-4 text-center">
                   <p className="text-xs text-slate-400">{mode === "hotel" ? "No cities found" : "No airports found"} for &ldquo;{search}&rdquo;</p>
+                </div>
+              )}
+              {filteredAirports.length === 0 && query && hotelLoading && (
+                <div className="px-3 py-4 text-center">
+                  <p className="text-xs text-slate-400">Loading cities...</p>
                 </div>
               )}
               {query && filteredAirports.map((city, i) => renderItem(city, i))}
               {!query && (
                 <>
-                  {mode === "hotel" && hotelCities.length === 0 && <div className="px-3 py-4 text-center"><p className="text-xs text-slate-400">Type to search cities</p></div>}
+                  {mode === "hotel" && hotelLoading && <div className="px-3 py-4 text-center"><p className="text-xs text-slate-400">Loading cities...</p></div>}
+                  {mode === "hotel" && !hotelLoading && hotelCities.length === 0 && <div className="px-3 py-4 text-center"><p className="text-xs text-slate-400">Type to search cities</p></div>}
                   {recent.length > 0 && (
                     <div className="px-1">
                       <p className="px-3 py-1 text-[10px] font-bold uppercase tracking-wider text-slate-400">Recently Searched</p>

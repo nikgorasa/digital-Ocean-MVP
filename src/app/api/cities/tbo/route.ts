@@ -88,15 +88,15 @@ async function fetchTBOCities(countryCode: string, iataMap?: Record<string, stri
   const parsed = tboCities.map(c => {
     const parts = (c.Name || "").split(",").map(s => s.trim());
     const name = parts[0];
-    const countryCode = c.CountryCode || "";
+    const cc = c.CountryCode || countryCode;
     return {
       code: c.Code,
       name,
       state: parts[1] || "",
       source: "tbo" as const,
       iata_code: map[name.toLowerCase()] || undefined,
-      country_code: countryCode,
-      flag: COUNTRY_FLAGS[countryCode] || undefined,
+      country_code: cc,
+      flag: COUNTRY_FLAGS[cc] || undefined,
     };
   });
 

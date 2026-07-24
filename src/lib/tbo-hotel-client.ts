@@ -487,7 +487,7 @@ export async function searchHotels(params: {
 
   await validateCredentials();
   const requestId = `search_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
-  const countryCode = params.countryCode || params.guestNationality || "IN";
+  const countryCode = params.countryCode || "IN";
 
   const resolvedCodes = await resolveHotelCodes(params.city, params.hotelCodes, params.cityCode, requestId, countryCode);
 
