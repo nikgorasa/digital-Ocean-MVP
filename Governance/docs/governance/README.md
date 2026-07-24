@@ -1,7 +1,7 @@
 # GoRASA CockroachDB Standalone — Governance
 
 > Single source of truth for all governance documentation.
-> **Last updated:** 2026-06-19
+> **Last updated:** 2026-07-24
 
 ---
 
@@ -29,6 +29,14 @@ Each connects to a **different CockroachDB cluster**. Zero shared data.
 | DB-CHANGES.md | DB schema and data changes | When DB changes |
 | DEPLOYMENT-LOG.md | Deployment history | When deploying |
 | LEARNING-FROM-MISTAKES.md | Issue deep-dives (>30min debugging) | After significant issues |
+| DB-PLATFORM.md | Active DB platform identification | When platform changes |
+| CONTEXT-AWARE-GOVERNANCE.md | Task-type routing, check mapping | When task routing changes |
+| SPRINT-PLAN.md | Sprint priorities, open issues | When sprint scope changes |
+| PRODUCT-PRICING.md | Pricing model, cost structures | When pricing changes |
+| CORPORATE-FLOW.md | Corporate booking flow state | When corporate flow changes |
+| EPIC-AIRPORT-DATA.md | Airport data epic status | When airport epic progresses |
+| BREVO-MCP-INTEGRATION.md | Brevo email integration status | When email integration changes |
+| README.md | This file | When structure changes |
 
 ---
 
