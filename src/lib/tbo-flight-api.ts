@@ -16,20 +16,31 @@ import type {
   TBOFlightTicketResponse,
   TBOFlightBookingDetailRequest,
   TBOFlightBookingDetailResponse,
+  TBOFlightGetCancellationChargesRequest,
+  TBOFlightGetCancellationChargesResponse,
+  TBOFlightSendChangeRequest,
+  TBOFlightSendChangeResponse,
+  TBOFlightGetChangeRequestStatusRequest,
+  TBOFlightGetChangeRequestStatusResponse,
+  TBOFlightReleasePNRRequest,
+  TBOFlightReleasePNRResponse,
 } from "./tbo-flight-types";
 import { logApiCall } from "./api-logger";
+import { fetchWithRetry } from "./fetch-with-retry";
 
 const AUTH_URL = "http://Sharedapi.tektravels.com/SharedData.svc/rest/Authenticate";
 const API_BASE = "http://api.tektravels.com/BookingEngineService_Air/AirService.svc/rest";
 
-async function post<T>(url: string, body: unknown): Promise<T> {
+async function post<T>(url: string, body: unknown, maxRetries = 1): Promise<T> {
   const start = Date.now();
   const endpointShort = url.split('/').pop() || url;
-  const res = await fetch(url, {
+
+  const res = await fetchWithRetry(url, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(body),
-  });
+  }, maxRetries, 1000);
+
   const responseTime = Date.now() - start;
   console.log(`[TBO-API] ${endpointShort}: ${responseTime}ms (HTTP ${res.status})`);
 
@@ -47,6 +58,10 @@ async function post<T>(url: string, body: unknown): Promise<T> {
   }
 
   const data = await res.json();
+  // Log full response shape for book/ticket to debug TBO response issues
+  if (endpointShort === 'Book' || endpointShort === 'Ticket') {
+    console.log(`[TBO-API] ${endpointShort} raw response:`, JSON.stringify(data).slice(0, 4000));
+  }
   logApiCall({
     provider: 'tbo_flight',
     endpoint: url.replace(API_BASE, '').replace(AUTH_URL, '/Authenticate'),
@@ -81,13 +96,31 @@ export function getSSR(req: TBOFlightSSRRequest): Promise<TBOFlightSSRResponse> 
 }
 
 export function bookFlight(req: TBOFlightBookRequest): Promise<TBOFlightBookResponse> {
-  return post<TBOFlightBookResponse>(`${API_BASE}/Book`, req);
+  return post<TBOFlightBookResponse>(`${API_BASE}/Book`, req, 2);
 }
 
 export function ticketFlight(req: TBOFlightTicketNonLCCRequest | TBOFlightTicketLCCRequest): Promise<TBOFlightTicketResponse> {
-  return post<TBOFlightTicketResponse>(`${API_BASE}/Ticket`, req);
+  return post<TBOFlightTicketResponse>(`${API_BASE}/Ticket`, req, 2);
 }
 
 export function getBookingDetail(req: TBOFlightBookingDetailRequest): Promise<TBOFlightBookingDetailResponse> {
   return post<TBOFlightBookingDetailResponse>(`${API_BASE}/GetBookingDetail`, req);
+}
+
+// Flight Cancellation APIs
+
+export function getCancellationCharges(req: TBOFlightGetCancellationChargesRequest): Promise<TBOFlightGetCancellationChargesResponse> {
+  return post<TBOFlightGetCancellationChargesResponse>(`${API_BASE}/GetCancellationCharges`, req);
+}
+
+export function sendChangeRequest(req: TBOFlightSendChangeRequest): Promise<TBOFlightSendChangeResponse> {
+  return post<TBOFlightSendChangeResponse>(`${API_BASE}/SendChangeRequest`, req);
+}
+
+export function getChangeRequestStatus(req: TBOFlightGetChangeRequestStatusRequest): Promise<TBOFlightGetChangeRequestStatusResponse> {
+  return post<TBOFlightGetChangeRequestStatusResponse>(`${API_BASE}/GetChangeRequestStatus`, req);
+}
+
+export function releasePNR(req: TBOFlightReleasePNRRequest): Promise<TBOFlightReleasePNRResponse> {
+  return post<TBOFlightReleasePNRResponse>(`${API_BASE}/ReleasePNRRequest`, req);
 }

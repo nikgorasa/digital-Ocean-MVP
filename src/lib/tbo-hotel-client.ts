@@ -250,7 +250,7 @@ async function getHotelCodesFromCache(cityCode: string): Promise<string | null> 
   try {
     const dbEntry = await cacheGet<Array<{ HotelCode: string; HotelName: string; HotelRating: string; Address?: string; CityName?: string; CountryCode?: string }>>("HotelCodeList", cityCode);
     if (dbEntry && dbEntry.length > 0) {
-      const codeStr = dbEntry.slice(0, 50).map(c => c.HotelCode).join(",");
+      const codeStr = dbEntry.slice(0, 200).map(c => c.HotelCode).join(",");
       _hotelCodesCache[cacheKey] = codeStr;
       for (const h of dbEntry) {
         _hotelDetailsCache[h.HotelCode] = {
@@ -417,7 +417,7 @@ async function resolveHotelCodes(city?: string, hotelCodes?: string, cityCode?: 
 
   const res = await api.getHotelCodeList(resolvedCode, { requestId });
   if (res.Status?.Code === 200 && res.Hotels?.length > 0) {
-    const codeStr = res.Hotels.slice(0, 50).map(c => c.HotelCode).join(",");
+    const codeStr = res.Hotels.slice(0, 200).map(c => c.HotelCode).join(",");
     _hotelCodesCache[cacheKey] = codeStr;
     for (const h of res.Hotels) {
       _hotelDetailsCache[h.HotelCode] = {
@@ -431,7 +431,7 @@ async function resolveHotelCodes(city?: string, hotelCodes?: string, cityCode?: 
       };
     }
     try { await cacheSet("HotelCodeList", res.Hotels, resolvedCode); } catch {}
-    console.log(`Resolved ${res.Hotels.length} hotel codes for city code ${resolvedCode} (showing first 50)`);
+    console.log(`Resolved ${res.Hotels.length} hotel codes for city code ${resolvedCode} (showing first 200)`);
     return codeStr;
   }
 
@@ -441,7 +441,7 @@ async function resolveHotelCodes(city?: string, hotelCodes?: string, cityCode?: 
       console.log(`Retrying with looked-up city code ${lookedUp} for "${city}"`);
       const retryRes = await api.getHotelCodeList(lookedUp, { requestId });
       if (retryRes.Status?.Code === 200 && retryRes.Hotels?.length > 0) {
-        const codeStr = retryRes.Hotels.slice(0, 50).map(c => c.HotelCode).join(",");
+        const codeStr = retryRes.Hotels.slice(0, 200).map(c => c.HotelCode).join(",");
         _hotelCodesCache[`code:${lookedUp}`] = codeStr;
         for (const h of retryRes.Hotels) {
           _hotelDetailsCache[h.HotelCode] = {
@@ -594,7 +594,7 @@ export async function bookHotel(params: {
   const clientRef = `gorasa_${Date.now()}`;
   const req: TBOHotelBookRequest = {
     BookingCode: params.bookingCode,
-    IsVoucherBooking: false,
+    IsVoucherBooking: true,
     GuestNationality: params.guestNationality,
     RequestedBookingMode: HOTEL_BOOKING_MODE,
     NetAmount: params.netAmount,
@@ -704,8 +704,9 @@ export async function generateVoucher(params: {
   bookingId: number;
 }): Promise<TBOHotelGenerateVoucherOutput> {
   await validateCredentials();
-  const req: TBOHotelGenerateVoucherRequest = {
+  const req = {
     EndUserIp: getEndUserIp(),
+    TokenId: await ensureToken(),
     BookingId: params.bookingId,
   };
   const res = await api.generateVoucher(req);

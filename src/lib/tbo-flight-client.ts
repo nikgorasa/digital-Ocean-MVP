@@ -14,6 +14,9 @@ import type {
   TBOFlightResult,
   TBOFlightSegment,
   TBOFlightTicketOutput,
+  TBOFlightGetCancellationChargesRequest,
+  TBOFlightSendChangeRequest,
+  TBOFlightGetChangeRequestStatusRequest,
 } from "./tbo-flight-types";
 import * as api from "./tbo-flight-api";
 import { readConfig } from "./config-service";
@@ -415,14 +418,40 @@ export async function bookFlight(params: {
     Passengers: params.passengers,
   };
   const res = await api.bookFlight(req);
-  if (res.Response?.ResponseStatus !== 1) {
-    throw new Error(`Flight book failed: ${res.Response?.Error?.ErrorMessage || res.Response?.ResponseStatus}`);
+  const rawJson = JSON.stringify(res);
+  console.log("[TBO-BOOK] Raw response (first 5000 chars):", rawJson.slice(0, 5000));
+  console.log("[TBO-BOOK] Top-level keys:", Object.keys(res));
+  console.log("[TBO-BOOK] res.Response keys:", res.Response ? Object.keys(res.Response) : "null/undefined");
+  
+  // TBO Book response has ResponseStatus at TOP level (sibling of Response), not inside Response.
+  // Structure: { ResponseStatus: 1, Response: { PNR, BookingId, FlightItinerary: {...} } }
+  // BUT some responses put ResponseStatus inside Response. Handle both.
+  const outerResponseStatus = (res as any).ResponseStatus;
+  const innerResponseStatus = res.Response?.ResponseStatus;
+  const responseStatus = outerResponseStatus ?? innerResponseStatus;
+  
+  if (responseStatus !== 1) {
+    const errMsg = (res as any).Error?.ErrorMessage || res.Response?.Error?.ErrorMessage || responseStatus;
+    throw new Error(`Flight book failed: ${errMsg}`);
   }
+  
+  // FlightItinerary may be at different nesting levels depending on TBO response version
+  const itinerary = res.Response?.FlightItinerary
+    || (res.Response as any)?.Response?.FlightItinerary
+    || (res as any).FlightItinerary;
+  
+  if (!itinerary) {
+    console.error("[TBO-BOOK] FlightItinerary not found at any nesting level.");
+    console.error("[TBO-BOOK] res.Response.Response:", (res.Response as any)?.Response ? Object.keys((res.Response as any).Response) : "N/A");
+    console.error("[TBO-BOOK] res keys:", Object.keys(res));
+    throw new Error("Flight book succeeded (ResponseStatus=1) but FlightItinerary not found in response.");
+  }
+  
   return {
-    bookingId: res.Response.FlightItinerary.BookingId,
-    pnr: res.Response.FlightItinerary.PNR,
-    isPriceChanged: res.Response.IsPriceChanged,
-    isTimeChanged: res.Response.IsTimeChanged || false,
+    bookingId: itinerary.BookingId,
+    pnr: itinerary.PNR,
+    isPriceChanged: (res.Response?.IsPriceChanged ?? (res as any).IsPriceChanged) || false,
+    isTimeChanged: (res.Response?.IsTimeChanged ?? (res as any).IsTimeChanged) || false,
   };
 }
 
@@ -545,4 +574,102 @@ export async function getBookingDetail(params: {
     }
   }
   return results;
+}
+
+// Flight Cancellation Functions
+
+export async function getCancellationCharges(params: {
+  bookingId: string;
+  EndUserIp?: string;
+}): Promise<{
+  refundAmount: number;
+  cancellationCharge: number;
+  currency: string;
+  remarks: string;
+}> {
+  await validateCredentials();
+  const tokenId = await ensureToken();
+  const req: TBOFlightGetCancellationChargesRequest = {
+    EndUserIp: params.EndUserIp || getEndUserIp(),
+    TokenId: tokenId,
+    RequestType: 1, // FullCancellation
+    BookingId: Number(params.bookingId),
+  };
+  const res = await api.getCancellationCharges(req);
+  if (res.Response?.ResponseStatus !== 1) {
+    throw new Error(`GetCancellationCharges failed: ${res.Response?.Error?.ErrorMessage || res.Response?.ResponseStatus}`);
+  }
+  return {
+    refundAmount: res.Response.RefundAmount,
+    cancellationCharge: res.Response.CancellationCharge,
+    currency: res.Response.Currency,
+    remarks: res.Response.Remarks,
+  };
+}
+
+export async function cancelFlight(params: {
+  bookingId: string;
+  remarks?: string;
+  EndUserIp?: string;
+}): Promise<{
+  changeRequestId: number;
+  status: number;
+  remarks: string;
+}> {
+  await validateCredentials();
+  const tokenId = await ensureToken();
+  const req: TBOFlightSendChangeRequest = {
+    EndUserIp: params.EndUserIp || getEndUserIp(),
+    TokenId: tokenId,
+    BookingId: Number(params.bookingId),
+    RequestType: 1, // FullCancellation
+    CancellationType: 3, // Others
+    Remarks: params.remarks || "Customer requested cancellation",
+  };
+  console.log("[TBO-FLIGHT-CANCEL] Request:", JSON.stringify(req));
+  const res = await api.sendChangeRequest(req);
+  console.log("[TBO-FLIGHT-CANCEL] Response:", JSON.stringify(res));
+  
+  // Check for various response formats
+  if (!res) {
+    throw new Error("Flight cancel failed: Empty response from TBO");
+  }
+  
+  if (res.Response?.ResponseStatus !== 1) {
+    const errorMsg = res.Response?.Error?.ErrorMessage || 
+                     res.Response?.TicketCRInfo?.Remarks ||
+                     res.Response?.ResponseStatus ||
+                     "Unknown error";
+    throw new Error(`Flight cancel failed: ${errorMsg}`);
+  }
+  
+  return {
+    changeRequestId: res.Response.TicketCRInfo?.ChangeRequestId || 0,
+    status: res.Response.TicketCRInfo?.Status || 0,
+    remarks: res.Response.TicketCRInfo?.Remarks || "",
+  };
+}
+
+export async function getCancelStatus(params: {
+  changeRequestId: number;
+  EndUserIp?: string;
+}): Promise<{
+  status: number;
+  remarks: string;
+}> {
+  await validateCredentials();
+  const tokenId = await ensureToken();
+  const req: TBOFlightGetChangeRequestStatusRequest = {
+    EndUserIp: params.EndUserIp || getEndUserIp(),
+    TokenId: tokenId,
+    ChangeRequestId: params.changeRequestId,
+  };
+  const res = await api.getChangeRequestStatus(req);
+  if (res.Response?.ResponseStatus !== 1) {
+    throw new Error(`GetChangeRequestStatus failed: ${res.Response?.Error?.ErrorMessage || res.Response?.ResponseStatus}`);
+  }
+  return {
+    status: res.Response.Status,
+    remarks: res.Response.Remarks,
+  };
 }

@@ -42,7 +42,7 @@ export async function GET(
     const doc = generateInvoicePDF({
       invoiceNumber: invoice.number,
       issuedAt: invoice.issuedAt.toISOString().split("T")[0],
-      dueDate: invoice.dueDate.toISOString().split("T")[0],
+      dueDate: invoice.dueDate ? invoice.dueDate.toISOString().split("T")[0] : "PAID",
       status: invoice.status,
       companyName: (invoice as any).company?.name || "N/A",
       bookingItem: (invoice as any).booking?.itemName || "N/A",

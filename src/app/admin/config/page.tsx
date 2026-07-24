@@ -462,12 +462,11 @@ export default function ConfigPage() {
                 <span className="text-xs text-slate-400">{staticData.countries.length > 0 && `${staticData.countries.length} countries`}</span>
               </div>
               {staticData.countries.length > 0 && (
-                <div className="max-h-48 overflow-y-auto bg-slate-50 rounded-xl p-3">
+                <div className="max-h-96 overflow-y-auto bg-slate-50 rounded-xl p-3">
                   <div className="grid grid-cols-4 gap-1 text-xs">
-                    {staticData.countries.slice(0, 50).map((c: any, i: number) => (
+                    {staticData.countries.map((c: any, i: number) => (
                       <div key={i} className="px-2 py-1 rounded hover:bg-white cursor-pointer" onClick={() => setCountryFilter(c.Code)}><span className="font-mono text-slate-400 mr-1">{c.Code}</span> {c.Name}</div>
                     ))}
-                    {staticData.countries.length > 50 && <div className="px-2 py-1 text-slate-400">... +{staticData.countries.length - 50} more</div>}
                   </div>
                 </div>
               )}
@@ -484,15 +483,14 @@ export default function ConfigPage() {
                 <span className="text-xs text-slate-400">{staticData.cities.length > 0 && `${staticData.cities.length} cities for ${countryFilter}`}</span>
               </div>
               {staticData.cities.length > 0 && (
-                <div className="max-h-48 overflow-y-auto bg-slate-50 rounded-xl p-3">
+                <div className="max-h-96 overflow-y-auto bg-slate-50 rounded-xl p-3">
                   <div className="grid grid-cols-3 gap-1 text-xs">
-                    {staticData.cities.slice(0, 60).map((c: any, i: number) => (
+                    {staticData.cities.map((c: any, i: number) => (
                       <div key={i} className="px-2 py-1 rounded hover:bg-white cursor-pointer flex justify-between" onClick={() => setCityFilter(String(c.CityCode || c.Code))}>
                         <span>{c.CityName || c.Name}</span>
                         <span className="font-mono text-slate-400">{c.CityCode || c.Code}</span>
                       </div>
                     ))}
-                    {staticData.cities.length > 60 && <div className="px-2 py-1 text-slate-400">... +{staticData.cities.length - 60} more</div>}
                   </div>
                 </div>
               )}
@@ -513,12 +511,11 @@ export default function ConfigPage() {
                   <table className="w-full text-xs">
                     <thead><tr className="text-slate-400"><th className="text-left py-1">Code</th><th className="text-left py-1">Name</th><th className="text-left py-1">Rating</th><th className="text-left py-1">Address</th></tr></thead>
                     <tbody>
-                      {staticData.hotels.slice(0, 50).map((h: any, i: number) => (
+                      {staticData.hotels.map((h: any, i: number) => (
                         <tr key={i} className="border-t border-slate-200 hover:bg-white"><td className="py-1.5 font-mono">{h.HotelCode}</td><td className="py-1.5">{h.HotelName}</td><td className="py-1.5">{h.HotelRating}</td><td className="py-1.5 truncate max-w-xs">{h.Address}</td></tr>
                       ))}
                     </tbody>
                   </table>
-                  {staticData.hotels.length > 50 && <p className="text-xs text-slate-400 mt-2">... +{staticData.hotels.length - 50} more</p>}
                 </div>
               )}
             </div>

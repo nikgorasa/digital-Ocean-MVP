@@ -17,16 +17,20 @@ interface UseFiltersReturn<T> {
   activeFilterCount: number;
 }
 
-export function useHotelFilters(): UseFiltersReturn<HotelFilters> {
-  const [filters, setFilters] = useState<HotelFilters>({ ...DEFAULT_HOTEL_FILTERS });
+export function useHotelFilters(initialRange?: [number, number]): UseFiltersReturn<HotelFilters> {
+  const defaultFilters: HotelFilters = {
+    ...DEFAULT_HOTEL_FILTERS,
+    priceRange: initialRange || DEFAULT_HOTEL_FILTERS.priceRange,
+  };
+  const [filters, setFilters] = useState<HotelFilters>({ ...defaultFilters });
 
   const updateFilter = useCallback(<K extends keyof HotelFilters>(key: K, value: HotelFilters[K]) => {
     setFilters((prev) => ({ ...prev, [key]: value }));
   }, []);
 
   const resetFilters = useCallback(() => {
-    setFilters({ ...DEFAULT_HOTEL_FILTERS });
-  }, []);
+    setFilters({ ...defaultFilters });
+  }, [initialRange?.[0], initialRange?.[1]]);
 
   const hasActiveFilters = useMemo(() => {
     return (

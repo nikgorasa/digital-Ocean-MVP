@@ -4,37 +4,113 @@ import { getCurrentUser } from "@/lib/auth-helpers";
 import { z } from "zod";
 import { sendEmail, emailTemplates } from "@/lib/email";
 import { cancelBooking } from "@/lib/tbo-hotel-client";
+import { cancelFlight, getCancellationCharges } from "@/lib/tbo-flight-client";
 
 const cancellationSchema = z.object({
   bookingId: z.string().min(1, "bookingId is required"),
   reason: z.string().min(1, "reason is required"),
 });
 
-function calculateMockRefund(bookingPrice: number, bookedAt: Date): {
-  refundAmount: number;
-  cancellationFee: number;
-  refundPercentage: number;
-} {
-  const now = new Date();
-  const hoursSinceBooking = (now.getTime() - bookedAt.getTime()) / (1000 * 60 * 60);
+// GET: Fetch cancellation charges before confirming
+export async function GET(request: NextRequest) {
+  try {
+    const user = await getCurrentUser();
+    if (!user) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
 
-  let refundPercentage: number;
-  if (hoursSinceBooking <= 24) {
-    refundPercentage = 100;
-  } else if (hoursSinceBooking <= 48) {
-    refundPercentage = 75;
-  } else if (hoursSinceBooking <= 168) {
-    refundPercentage = 50;
-  } else {
-    refundPercentage = 25;
+    const { searchParams } = new URL(request.url);
+    const bookingId = searchParams.get("bookingId");
+
+    if (!bookingId) {
+      return NextResponse.json({ error: "bookingId required" }, { status: 400 });
+    }
+
+    const booking = await prisma.booking.findUnique({
+      where: { id: bookingId },
+      select: {
+        id: true,
+        userId: true,
+        type: true,
+        price: true,
+        status: true,
+        metadata: true,
+        supplierBookingRef: true,
+      },
+    });
+
+    if (!booking) {
+      return NextResponse.json({ error: "Booking not found" }, { status: 404 });
+    }
+
+    if (booking.userId !== user.id) {
+      return NextResponse.json({ error: "You can only view charges for your own bookings" }, { status: 403 });
+    }
+
+    if (booking.status !== "CONFIRMED") {
+      return NextResponse.json({ error: "Only confirmed bookings can be cancelled" }, { status: 400 });
+    }
+
+    const metadata = (booking.metadata as Record<string, unknown>) || {};
+
+    // Get real cancellation charges from TBO
+    if (booking.type === "FLIGHT" && booking.supplierBookingRef) {
+      try {
+        const charges = await getCancellationCharges({
+          bookingId: booking.supplierBookingRef,
+        });
+        return NextResponse.json({
+          bookingId: booking.id,
+          bookingPrice: booking.price,
+          refundAmount: charges.refundAmount,
+          cancellationCharge: charges.cancellationCharge,
+          currency: charges.currency,
+          remarks: charges.remarks,
+          source: "tbo",
+        });
+      } catch (e) {
+        console.error("[Cancellation Charges] Flight charges failed:", e);
+        return NextResponse.json({
+          bookingId: booking.id,
+          bookingPrice: booking.price,
+          error: "Unable to fetch cancellation charges from airline",
+          source: "error",
+        });
+      }
+    }
+
+    if (booking.type === "HOTEL" && metadata.tboBookingId) {
+      // For hotels, use the cancellation policies from search results if available
+      const cancelPolicies = metadata.cancelPolicies as string[] | undefined;
+      if (cancelPolicies && cancelPolicies.length > 0) {
+        return NextResponse.json({
+          bookingId: booking.id,
+          bookingPrice: booking.price,
+          cancelPolicies,
+          source: "search",
+        });
+      }
+      // If no policies stored, return basic info
+      return NextResponse.json({
+        bookingId: booking.id,
+        bookingPrice: booking.price,
+        source: "basic",
+        note: "Cancellation charges will be determined by the hotel",
+      });
+    }
+
+    return NextResponse.json({
+      bookingId: booking.id,
+      bookingPrice: booking.price,
+      source: "basic",
+    });
+  } catch (error) {
+    console.error("Cancellation charges error:", error);
+    return NextResponse.json({ error: "Failed to fetch cancellation charges" }, { status: 500 });
   }
-
-  const refundAmount = Math.round(bookingPrice * (refundPercentage / 100));
-  const cancellationFee = bookingPrice - refundAmount;
-
-  return { refundAmount, cancellationFee, refundPercentage };
 }
 
+// POST: Process cancellation
 export async function POST(request: NextRequest) {
   try {
     const user = await getCurrentUser();
@@ -71,24 +147,77 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Only confirmed bookings can be cancelled" }, { status: 400 });
     }
 
-    const { refundAmount, cancellationFee, refundPercentage } = calculateMockRefund(
-      booking.price,
-      new Date(booking.bookedAt),
-    );
+    const metadata = (booking.metadata as Record<string, unknown>) || {};
+    let refundAmount = booking.price;
+    let cancellationFee = 0;
+    let tboCancelled = false;
+    let tboChangeRequestId: number | undefined;
+
+    // Call TBO cancel API and get real charges
+    if (booking.type === "FLIGHT" && booking.supplierBookingRef) {
+      try {
+        // Get real cancellation charges
+        const charges = await getCancellationCharges({
+          bookingId: booking.supplierBookingRef,
+        });
+        refundAmount = charges.refundAmount;
+        cancellationFee = charges.cancellationCharge;
+
+        // Cancel with TBO
+        const cancelResult = await cancelFlight({
+          bookingId: booking.supplierBookingRef,
+          remarks: reason,
+        });
+        tboCancelled = true;
+        tboChangeRequestId = cancelResult.changeRequestId;
+        console.log(`[TBO Cancel] Flight ${bookingId} cancelled, changeRequestId: ${tboChangeRequestId}`);
+      } catch (e) {
+        console.error(`[TBO Cancel] Flight cancel failed for ${bookingId}:`, e);
+        // Continue with local cancellation even if TBO fails
+      }
+    }
+
+    if (booking.type === "HOTEL" && metadata.tboBookingId) {
+      try {
+        const cancelResult = await cancelBooking({
+          bookingId: metadata.tboBookingId as number,
+          remarks: reason,
+        });
+        tboCancelled = true;
+        tboChangeRequestId = cancelResult.changeRequestId;
+        console.log(`[TBO Cancel] Hotel ${bookingId} cancelled, changeRequestId: ${tboChangeRequestId}`);
+      } catch (e) {
+        console.error(`[TBO Cancel] Hotel cancel failed for ${bookingId}:`, e);
+      }
+    }
+
+    // Calculate refund percentage
+    const refundPercentage = booking.price > 0
+      ? Math.round((refundAmount / booking.price) * 100)
+      : 0;
 
     const cancellation = await prisma.cancellationRequest.create({
       data: {
         bookingId,
         userId: user.id,
         reason,
-        status: "COMPLETED",
-        processedBy: "SYSTEM",
+        status: tboCancelled ? "COMPLETED" : "PENDING",
+        processedBy: tboCancelled ? "TBO" : "SYSTEM",
       },
     });
 
     await prisma.booking.update({
       where: { id: bookingId },
-      data: { status: "CANCELLED", paymentStatus: "REFUNDED" },
+      data: {
+        status: "CANCELLED",
+        paymentStatus: "REFUNDED",
+        metadata: {
+          ...metadata,
+          cancellationFee,
+          refundAmount,
+          tboChangeRequestId,
+        },
+      },
     });
 
     // Corporate refund: credit back to company wallet
@@ -135,32 +264,13 @@ export async function POST(request: NextRequest) {
       console.error("[Email] Failed to send cancellation email:", e);
     }
 
-    // Call TBO cancel API if this is a TBO hotel booking
-    let tboCancelResult: { changeRequestId?: number; changeRequestStatus?: number } | null = null;
-    if (booking.type === "HOTEL" && booking.metadata && typeof booking.metadata === "object") {
-      const metadata = booking.metadata as Record<string, unknown>;
-      const tboBookingId = metadata.tboBookingId;
-      if (tboBookingId && typeof tboBookingId === "number") {
-        try {
-          tboCancelResult = await cancelBooking({
-            bookingId: tboBookingId,
-            remarks: reason,
-          });
-          console.log(`[TBO Cancel] Success for booking ${bookingId}, changeRequestId: ${tboCancelResult.changeRequestId}`);
-        } catch (e) {
-          console.error(`[TBO Cancel] Failed for booking ${bookingId}:`, e);
-          tboCancelResult = null;
-        }
-      }
-    }
-
     return NextResponse.json({
       ...cancellation,
       refundAmount,
       cancellationFee,
       refundPercentage,
-      tboCancelled: !!tboCancelResult,
-      tboChangeRequestId: tboCancelResult?.changeRequestId,
+      tboCancelled,
+      tboChangeRequestId,
     }, { status: 201 });
   } catch (error) {
     console.error("Cancellation error:", error);

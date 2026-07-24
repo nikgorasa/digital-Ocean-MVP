@@ -8,6 +8,9 @@ import {
   getBookingDetail,
   getSSR,
   setEndUserIp,
+  getCancellationCharges,
+  cancelFlight,
+  getCancelStatus,
 } from "@/lib/tbo-flight-client";
 
 export async function POST(req: NextRequest) {
@@ -106,6 +109,46 @@ export async function POST(req: NextRequest) {
           return NextResponse.json({ error: "bookingIds required" }, { status: 400 });
         }
         const result = await getBookingDetail({ bookingIds: p.bookingIds });
+        return NextResponse.json(result);
+      }
+
+      case "cancellation-charges": {
+        const p = body.params || body;
+        if (!p.bookingId) {
+          return NextResponse.json({ error: "bookingId required" }, { status: 400 });
+        }
+        const result = await getCancellationCharges({ bookingId: p.bookingId });
+        return NextResponse.json(result);
+      }
+
+      case "cancel": {
+        const p = body.params || body;
+        if (!p.bookingId) {
+          return NextResponse.json({ error: "bookingId required" }, { status: 400 });
+        }
+        console.log("[TBO-API] Cancel request for bookingId:", p.bookingId);
+        try {
+          const result = await cancelFlight({
+            bookingId: p.bookingId,
+            remarks: p.remarks || "Customer requested cancellation",
+          });
+          console.log("[TBO-API] Cancel result:", JSON.stringify(result));
+          return NextResponse.json(result);
+        } catch (e) {
+          console.error("[TBO-API] Cancel error:", e);
+          return NextResponse.json(
+            { error: e instanceof Error ? e.message : "Cancel failed" },
+            { status: 500 }
+          );
+        }
+      }
+
+      case "cancel-status": {
+        const p = body.params || body;
+        if (!p.changeRequestId) {
+          return NextResponse.json({ error: "changeRequestId required" }, { status: 400 });
+        }
+        const result = await getCancelStatus({ changeRequestId: p.changeRequestId });
         return NextResponse.json(result);
       }
 

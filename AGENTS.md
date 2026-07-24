@@ -178,6 +178,40 @@ The `CitySearchDropdown` component has a `mode` prop that controls data source:
 **ALWAYS** use `mode="flight"` on flight pages (`/flights`).
 **ALWAYS** use `mode="hotel"` or default on hotel pages (`/hotels`).
 
+### Rule 9: TBO Response Type Handling (CRITICAL)
+TBO API returns **numbers** for all IDs (BookingId, HotelCode, etc.), not strings.
+
+**ALWAYS** convert to string before passing to Zod schemas:
+```typescript
+supplierBookingRef: String(bookData.bookingId) // TBO returns number
+```
+
+**NEVER** assume TBO returns strings for numeric fields.
+**ALWAYS** verify actual API response types match TypeScript/Zod types at runtime.
+
+### Rule 10: Checkout Route Purity (CRITICAL)
+The checkout route (`/api/checkout`) must remain lightweight:
+- Verify booking exists
+- Verify company has funds
+- Deduct wallet
+- Create invoice
+
+**NEVER** add TBO API calls (getFareQuote, preBook, etc.) to the checkout route.
+**NEVER** add external API imports to checkout — they have side effects that break the route.
+Price is locked at booking time. If price verification is needed, do it in the booking modal BEFORE checkout.
+
+### Rule 11: Retry Logic for External APIs
+ALL external API calls (TBO, payment gateways) must have retry logic:
+- **Critical paths** (Book, Ticket, GenerateVoucher): 3 retries with exponential backoff (1s, 2s, 4s)
+- **Non-critical paths** (Search, static data): 1-2 retries
+- **NEVER** retry on 4xx errors (client errors) — only on 5xx and network errors
+- Use `src/lib/fetch-with-retry.ts` utility
+
+### Rule 12: CSS + Animation Conflict Prevention
+**NEVER** combine CSS `active:scale` with `motion/react` `whileTap` transforms on the same element — they conflict and break click targets.
+**ALWAYS** use only one animation system per element: either Tailwind CSS transitions OR motion/react animations.
+**ALWAYS** test interactive elements on multiple browsers (Chrome, Firefox, Safari, Vivaldi, Opera) before deploying.
+
 ---
 
 ## Key Files
@@ -195,6 +229,7 @@ The `CitySearchDropdown` component has a `mode` prop that controls data source:
 | `Governance/scripts/Cckr-api-config-check.sh` | API config validation (6 checks) |
 | `Governance/scripts/Cckr-governance-check.sh` | Context-aware governance (18 checks, task routing) |
 | `Governance/docs/static-data/TBO-STATIC-DATA-REFERENCE.md` | TBO API endpoint reference |
+| `src/lib/fetch-with-retry.ts` | Retry utility with exponential backoff for external APIs |
 | `scripts/seed-airports.ts` | Airport data download + DB upsert (OurAirports → City table) |
 | `src/app/api/cities/airports/route.ts` | Airport search API endpoint (DB-backed) |
 

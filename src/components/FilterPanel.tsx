@@ -117,7 +117,7 @@ export default function FilterPanel({
         <input
           type="number"
           value={range[1]}
-          onChange={(e) => onRangeChange([range[0], parseInt(e.target.value) || 100000])}
+          onChange={(e) => onRangeChange([range[0], parseInt(e.target.value) || range[1]])}
           className="w-24 px-3 py-1.5 bg-slate-100 rounded-lg text-sm border-0 focus:ring-2 focus:ring-orange-500"
           placeholder="Max"
         />

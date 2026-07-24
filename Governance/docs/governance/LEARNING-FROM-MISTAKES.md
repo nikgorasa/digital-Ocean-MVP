@@ -91,3 +91,113 @@
   3. When a value is computed upstream (TBO client), pass it through — don't recompute it downstream (component).
   4. Always verify that Room Fare + Taxes & Fees = Total on ALL screens before shipping.
   5. Use concrete numbers to verify formulas: ₹2,069 + ₹215 = ₹2,284 ✓
+
+### Issue 008 — TBO Price Re-Validation Broke Checkout Flow
+
+- **Date:** 2026-07-23
+- **Duration:** ~1 hour
+- **Severity:** Critical
+- **Symptoms:** All bookings (both hotel and flight) failed at checkout with "Something went wrong" error. The checkout route was completely broken.
+- **Root Cause:** Added `getFareQuote` and `preBook` imports to `src/app/api/checkout/route.ts` for price re-validation before charging. The imports themselves caused runtime issues — TBO client modules have side effects (env var reads, connection setup) that fail when imported in the checkout context.
+- **Resolution:** Removed the TBO imports and price re-validation logic entirely from the checkout route.
+- **Prevention:**
+  1. NEVER add TBO API calls to critical paths (checkout) without thorough end-to-end testing.
+  2. The checkout route must remain lightweight — verify booking exists, verify company has funds, deduct wallet, create invoice. No external API calls.
+  3. If price re-validation is needed, do it in the booking modal BEFORE the user clicks "Confirm", not in the checkout route.
+  4. Always test the full booking flow (search → book → checkout → confirmation) after modifying the checkout route.
+
+### Issue 009 — supplierBookingRef Type Mismatch (TBO Returns Number, Zod Expects String)
+
+- **Date:** 2026-07-23
+- **Duration:** ~30 min
+- **Severity:** High
+- **Symptoms:** Flight bookings were saved to DB without `supplierBookingRef`. At checkout, the validation `if (!booking.supplierBookingRef)` failed, showing "booking was not confirmed with supplier" error. The TBO Book API succeeded (returned BookingId), but the value wasn't persisted.
+- **Root Cause:** TBO returns `bookingId` as a `number` (e.g., `2165345`), but the Zod schema for the bookings API expects `supplierBookingRef` as a `string`. When Zod received a number for a string field, it rejected the parse silently, and the field was omitted from the saved booking.
+- **Resolution:** Added `String(bookData.bookingId)` conversion before passing to the bookings API.
+- **Prevention:**
+  1. ALWAYS verify API response types match TypeScript/Zod types at runtime, not just in type definitions.
+  2. TBO API returns numbers for all IDs (BookingId, HotelCode, etc.). Always convert to string with `String()` before passing to Zod schemas.
+  3. Add a type-checking utility or Zod transform that coerces numbers to strings automatically.
+  4. When mapping TBO response fields, explicitly document the type conversion: `supplierBookingRef: String(bookData.bookingId) // TBO returns number`.
+
+### Issue 010 — Unnecessary Voucher Generation Step
+
+- **Date:** 2026-07-23
+- **Duration:** ~20 min
+- **Severity:** Medium
+- **Symptoms:** After every hotel booking, the UI showed "Voucher Failed" message to users. The `generateVoucher` API call always failed in the TBO test environment with "Booking under cancellation can only be vouchered".
+- **Root Cause:** Added automatic `generateVoucher` call after every hotel booking as a mandatory step. Didn't understand that (a) voucher generation is optional in TBO's flow, and (b) the test environment automatically cancels bookings after a short period, making voucher generation impossible.
+- **Resolution:** Removed automatic voucher call after booking. Kept the manual "Generate Voucher" button with a friendly message explaining test environment limitations.
+- **Prevention:**
+  1. Don't add mandatory post-booking steps that depend on external API behavior.
+  2. Voucher generation is optional — `IsVoucherBooking: true` in the Book request already handles the voucher in production.
+  3. Test environment limitations should be documented, not worked around with mandatory calls.
+  4. If a step always fails in test env, it should be manual (button), not automatic.
+
+### Issue 011 — active:scale CSS Breaking Click Targets in Vivaldi/Opera
+
+- **Date:** 2026-07-23
+- **Duration:** ~15 min
+- **Severity:** Medium
+- **Symptoms:** "Book Now" button was not clickable in Vivaldi/Opera browsers on Linux. The button appeared visually but clicking had no effect.
+- **Root Cause:** Added `active:scale-[0.98]` Tailwind class to booking buttons. Combined with `motion/react` transforms (`whileHover`, `whileTap`), the `active:scale` CSS caused the click target to shift during the active state, making the button unclickable in certain browsers.
+- **Resolution:** Removed `active:scale-[0.98]` from all booking buttons (HotelBookingModal and FlightBookingModal).
+- **Prevention:**
+  1. Test interactive elements on multiple browsers (Chrome, Firefox, Safari, Vivaldi, Opera) before deploying.
+  2. Don't combine CSS `active:scale` with `motion/react` `whileTap` transforms — they conflict.
+  3. Use only one animation system per element: either Tailwind CSS transitions OR motion/react animations, not both.
+  4. If using motion/react for hover/tap, remove all CSS `active:`, `hover:`, `transition:` classes from the same element.
+
+### Issue 012 — No Retry Logic for External API Calls
+
+- **Date:** 2026-07-23
+- **Duration:** ~10 min
+- **Severity:** Medium
+- **Symptoms:** Transient TBO API failures (network timeouts, 500 errors) caused entire booking flows to fail completely. Users had to restart from search.
+- **Root Cause:** All TBO API calls were single-attempt with no retry logic. External APIs are inherently unreliable — network issues, rate limits, and temporary outages are expected.
+- **Resolution:** Created `src/lib/fetch-with-retry.ts` utility with exponential backoff (3 retries, 1s/2s/4s delays). Applied to critical TBO endpoints: Book, Ticket, GenerateVoucher.
+- **Prevention:**
+  1. ALL external API calls should have retry logic with exponential backoff.
+  2. Critical paths (booking, payment) need 3 retries with increasing delays.
+  3. Non-critical paths (search, static data) can have 1-2 retries.
+  4. Never retry on 4xx errors (client errors) — only retry on 5xx (server) and network errors.
+  5. Log each retry attempt for debugging.
+
+### Issue 013 — Flight Price Multiplied by Passenger Count
+
+- **Date:** 2026-07-24
+- **Duration:** ~20 min
+- **Severity:** High
+- **Symptoms:** Flight prices displayed 4x too high for family searches (4 passengers). ₹10,100 flight showed as ₹40,400.
+- **Root Cause:** `PublishedFare` from TBO is the TOTAL fare for all passengers combined. Code multiplied by `totalPassengers` in 4 locations in flights/page.tsx, treating it as per-pax fare.
+- **Resolution:** Removed `* totalPassengers` from all 4 locations. `PublishedFare` used directly as total.
+- **Prevention:**
+  1. TBO `PublishedFare` is ALWAYS the total for all passengers — never multiply by passenger count.
+  2. When displaying per-pax fare, DIVIDE by passenger count: `perPax = PublishedFare / totalPassengers`.
+  3. Verify pricing with single-pax AND multi-pax searches before shipping.
+
+### Issue 014 — Hotel Search Field Name Mismatch
+
+- **Date:** 2026-07-24
+- **Duration:** ~15 min
+- **Severity:** Medium
+- **Symptoms:** Hotel search with children returned errors or wrong results. TBO API rejected the request.
+- **Root Cause:** Code sent `AdultCount` and `ChildCount` as field names, but TBO API expects `Adults` and `Children`. Field names were assumed, not verified against TBO documentation.
+- **Resolution:** Changed field names in hotels/page.tsx from `AdultCount`→`Adults`, `ChildCount`→`Children`.
+- **Prevention:**
+  1. Always verify TBO API field names against the official documentation.
+  2. TBO uses `Adults`, `Children`, `Rooms` — not `AdultCount`, `ChildCount`, `RoomCount`.
+  3. Add a type definition that maps exactly to TBO's request schema.
+
+### Issue 015 — Hotel Room Fare Not Per-Night When dayRates Empty
+
+- **Date:** 2026-07-24
+- **Duration:** ~30 min
+- **Severity:** High
+- **Symptoms:** Hotel room prices showed total stay price as per-night price. A 3-night ₹6,000 stay showed as ₹6,000/night instead of ₹2,000/night.
+- **Root Cause:** When TBO returns empty `dayRates` array, `roomFare` was set to `totalFare` directly without dividing by number of nights. The `dayRates` array normally contains per-night breakdowns, but when empty, the total must be divided.
+- **Resolution:** When `dayRates` is empty: `roomFare = totalFare / nights`, `roomTax = totalTax / nights`. Always per-night.
+- **Prevention:**
+  1. Room fare must ALWAYS be per-night, regardless of whether `dayRates` is present.
+  2. When `dayRates` is empty, divide totalFare by nights count.
+  3. Verify: `roomFare * nights + totalTax ≈ totalFare` (within rounding).

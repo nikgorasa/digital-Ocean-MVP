@@ -260,7 +260,7 @@ model Invoice {
   taxAmount       Float     @default(0)
   totalAmount     Float
   status          String    @default("PENDING")
-  dueDate         DateTime
+  dueDate         DateTime?
   paidAt          DateTime?
   paidAmount      Float?
   paymentRef      String?

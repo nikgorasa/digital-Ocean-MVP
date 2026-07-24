@@ -296,7 +296,7 @@ export async function getBookingDetail(req: TBOHotelBookingDetailRequest): Promi
   return bookingPost<TBOHotelBookingDetailResponse>(`${ctx.baseUrl}/Getbookingdetail/`, req, ctx);
 }
 
-export async function generateVoucher(req: TBOHotelGenerateVoucherRequest): Promise<TBOHotelGenerateVoucherResponse> {
+export async function generateVoucher(req: TBOHotelGenerateVoucherRequest & { TokenId?: string }): Promise<TBOHotelGenerateVoucherResponse> {
   const ctx = await getBookingActionContext();
   return bookingPost<TBOHotelGenerateVoucherResponse>(`${ctx.baseUrl}/GenerateVoucher/`, req, ctx);
 }

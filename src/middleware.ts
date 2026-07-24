@@ -20,7 +20,6 @@ const PUBLIC_API_ROUTES = [
   "/api/users/demo",
   "/api/tbo-hotels",
   "/api/tbo",
-  "/api/tbo-flights",
   "/api/cities/airports",
 ];
 

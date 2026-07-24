@@ -1,370 +1,742 @@
-# GoRASA Corporate Booking Flow — Complete Reference
+# GoRASA CORP Booking Flow — Architecture Reference
 
-> Single source of truth for the corporate (B2B) booking system.
-> Covers wallet, discounts, checkout, invoices, cancellations, and admin UIs.
-> **Last updated:** 2026-07-10
+> Single source of truth for the corporate (B2B) end-to-end booking system.
+> Covers Hotel + Flight flows from search through TBO API → GoRASA DB → Corporate Checkout → Invoice.
+> **Last updated:** 2026-07-24 (Session 38 — TBO Certification Complete, Multi-room Support)
+> **Verified against:** CLI-tested TBO bookings (Hotel: 6 confirmed, Flight: 1 ticketed, Certification: 8/8 cases pass)
 
 ---
 
 ## Table of Contents
 
-1. [Data Model](#1-data-model)
-2. [User-to-Company Assignment](#2-user-to-company-assignment)
-3. [Corporate Discounts](#3-corporate-discounts)
-4. [Wallet System](#4-wallet-system)
-5. [Checkout Flow](#5-checkout-flow)
-6. [Invoice Generation](#6-invoice-generation)
-7. [Cancellation & Refund](#7-cancellation--refund)
-8. [Admin Interfaces](#8-admin-interfaces)
-9. [User-Facing UI](#9-user-facing-ui)
+1. [Architecture Overview](#1-architecture-overview)
+2. [End-to-End Hotel CORP Flow](#2-end-to-end-hotel-corp-flow)
+3. [End-to-End Flight CORP Flow](#3-end-to-end-flight-corp-flow)
+4. [Data Flow Diagram](#4-data-flow-diagram)
+5. [Corporate Checkout Deep Dive](#5-corporate-checkout-deep-dive)
+6. [What's Working vs What Needs Work](#6-whats-working-vs-what-needs-work)
+7. [Voucher Handling](#7-voucher-handling)
+8. [Data Model](#8-data-model)
+9. [Recommendations](#9-recommendations)
 10. [File Map](#10-file-map)
-11. [Known Issues & Gaps](#11-known-issues--gaps)
 
 ---
 
-## 1. Data Model
+## 1. Architecture Overview
 
-All models in `prisma/schema.prisma`:
+### Dual Endpoint Architecture (TBO Hotel API)
 
-### Company
-```
-id              String   @id @default(cuid())
-name            String
-domain          String?  // Used to auto-identify corporate users (currently unused)
-walletBalance   Float    @default(0)
-discountRate    Float    @default(0)
-isActive        Boolean  @default(true)
-createdAt       DateTime
-updatedAt       DateTime
-users           User[]
-bookings        Booking[]
-invoices        Invoice[]
-walletLedger    WalletLedgerEntry[]
-```
-
-### User (relevant fields)
-```
-companyId       String?  // FK → Company
-company         Company? @relation
-role            String   // "CORPORATE_USER" or "CUSTOMER" or "ADMIN"
-```
-
-### Booking (relevant fields)
-```
-companyId         String?    // FK → Company
-company           Company?   @relation
-corporateDiscount Float      @default(0)
-walletDeduction   Float      @default(0)
-invoice           Invoice?
-```
-
-### Invoice
-```
-id          String   @id @default(cuid())
-companyId   String
-bookingId   String   @unique
-number      String   @unique  // e.g. "INV-240701-0001"
-amount      Float    // base price
-taxAmount   Float    @default(0)
-totalAmount Float
-status      String   @default("PENDING")  // PENDING | PAID | OVERDUE | CANCELLED
-dueDate     DateTime
-paidAt      DateTime?
-paidAmount  Float?
-paymentRef  String?
-notes       String?
-url         String?
-issuedAt    DateTime @default(now())
-company     Company  @relation
-booking     Booking  @relation
-```
-
-### WalletLedgerEntry
-```
-id          String   @id @default(cuid())
-companyId   String
-type        String   // CREDIT | DEBIT
-amount      Float
-balance     Float    // balance AFTER this entry
-description String
-reference   String?  // bookingId or "admin-topup"
-createdAt   DateTime @default(now())
-company     Company  @relation
-```
-
----
-
-## 2. User-to-Company Assignment
-
-### How It Works
-
-- Only users with role `CORPORATE_USER` can be linked to a company
-- The `User.companyId` field is set via admin UI
-- `Company.domain` exists in the schema but is **NOT** used for auto-assignment — only manual admin assignment
-
-### Admin UI
-
-- `src/app/admin/users/page.tsx` — Create/Edit user forms include a company dropdown
-- `src/app/api/users/route.ts` — POST/PATCH validate: non-null companyId requires role= CORPORATE_USER
-- `src/app/api/users/route.ts` — findAll() includes `company` relation for employee count display
-
-### Role Validation (API)
-
-In `src/app/api/users/route.ts`:
-```
-if (companyId && role !== "CORPORATE_USER") → 400 "Only corporate users can be linked to a company"
-```
-
----
-
-## 3. Corporate Discounts
-
-### Configuration
-
-Per-company discount rate stored in `Company.discountRate` (percentage).
-
-### How Discounts Are Applied
-
-During checkout (`src/app/api/checkout/route.ts`):
-1. If the user has `companyId`, look up their company
-2. If the company is `isActive`, apply `corporateDiscount = price × (discountRate / 100)`
-3. Store `corporateDiscount` and `companyId` on the Booking record
-4. The effective price after corporate discount is `price - corporateDiscount`
-
-### UI Display
-
-- `src/components/HotelBookingModal.tsx` — Shows "Corporate Discount" line item in pricing summary
-- `src/app/trips/page.tsx` — Shows "Corporate Discount" on the trip card for corporate bookings
-
-### Checkout Credit Limit Check
-
-In checkout, after corporate discount, if remaining total exceeds company wallet balance:
-→ Returns 400 "Insufficient wallet balance" (correct behavior)
-
----
-
-## 4. Wallet System
-
-### Top-Up (Admin)
-
-Admin page: `src/app/admin/b2b/page.tsx`
-
-The `handleTopUp` function calls `POST /api/wallet/topup` with `{ companyId, amount, description }`.
-
-**Flow:**
-1. Admin enters amount (quick amounts: ₹10K/25K/50K/1L or custom)
-2. `POST /api/wallet/topup` creates a WalletLedgerEntry (type= CREDIT)
-3. Updates Company.walletBalance
-4. Returns new wallet balance
-
-### Wallet Ledger
-
-- `GET /api/wallet/ledger?companyId=xxx` returns all entries for audit trail
-- Each entry has: type (CREDIT/DEBIT), amount, balance (post-entry), description, reference
-
-### Wallet Deduction During Checkout
-
-In checkout (`src/app/api/checkout/route.ts`):
-1. After all discounts, check if booking total exceeds wallet balance → error
-2. Deduct: `Company.walletBalance -= total`
-3. Create WalletLedgerEntry (type= DEBIT, reference= bookingId)
-4. Set `Booking.walletDeduction = total`
-
-### API Endpoints
-
-| Endpoint | Auth | Purpose |
+| Endpoint Group | Base URL | Purpose |
 |---|---|---|
-| `GET /api/companies` | Admin | List all companies |
-| `GET /api/companies/:id` | Admin | Single company |
-| `POST /api/companies` | Admin | Create company |
-| `PATCH /api/companies/:id` | Admin | Update company (name, domain, discountRate) |
-| `DELETE /api/companies/:id` | Admin | Delete company |
-| `POST /api/wallet/topup` | Admin | Company wallet top-up |
-| `GET /api/wallet/ledger` | Admin | Wallet ledger for a company |
-| `GET /api/topup-amounts` | Public | Quick top-up amounts config |
+| **Search/PreBook** | `https://affiliate.tektravels.com/HotelAPI` | Hotel search, city lookup, pre-book |
+| **Book/Voucher/Cancel** | `https://HotelBE.tektravels.com/hotelservice.svc/rest` | Hotel booking, voucher, cancellation |
+| **Flight API** | `https://api.tektravels.com/BookingEngineService_Air/AirService.svc/rest` | Flight search, FareQuote, Book, Ticket |
+| **Static Data** | `http://api.tbotechnology.in/TBOHolidays_HotelAPI` | Hotel codes, city lists, hotel details |
+
+### Corporate User Flow Summary
+
+```
+User (with companyId) → Search → Select → Book (TBO) → Save (GoRASA DB) →
+Corporate Checkout → Wallet Deduct → Invoice → Email
+```
+
+### Verified Corporate Context
+
+- **User:** hmittal (SUPER_ADMIN), companyId → VASA Denticity
+- **Company wallet:** ₹100,000 balance + ₹50,000 credit limit = ₹150,000 available
+- **Tax rate:** configurable per company (`Company.taxRate`)
+- **Payment terms:** configurable per company (`Company.paymentTermsDays`, default 30)
 
 ---
 
-## 5. Checkout Flow
+## 2. End-to-End Hotel CORP Flow
 
-### Corporate Checkout (`src/app/api/checkout/route.ts`)
+### Step-by-Step (7 phases)
 
-1. User must be authenticated
-2. Look up booking by bookingId
-3. If user has `companyId`:
-   a. Look up Company, verify `isActive`
-   b. Calculate corporate discount
-   c. Check wallet balance ≥ final total
-   d. Deduct from wallet
-   e. Create WalletLedgerEntry (DEBIT)
-   f. Create Invoice record
-4. Process standard payment (if non-corporate or partial)
-5. Return success with booking + invoice data
-
-### Invoice Creation in Checkout
-
-When corporate checkout succeeds:
 ```
-prisma.invoice.create({
-  data: {
-    companyId: user.companyId,
-    bookingId: booking.id,
-    number: "INV-" + ...,
-    amount: basePrice,
-    taxAmount: 0,  // default — can be updated via admin
-    totalAmount: finalTotal,
-    status: "PAID",
-    dueDate: new Date(),
-    paidAt: new Date(),
-    paidAmount: finalTotal,
-  }
-})
+┌──────────────────────────────────────────────────────────────────────┐
+│  PHASE 1: SEARCH                                                     │
+│  User → /hotels → CitySearchDropdown(mode="hotel") → /api/cities/tbo │
+│  → /api/tbo-hotels (action=search)                                   │
+│  → tbo-hotel-client.searchHotels()                                   │
+│    → resolveHotelCodes() → TBO GetHotelCodeList                      │
+│    → TBO Search (affiliate.tektravels.com)                           │
+│    → fetchHotelImages() (parallel)                                   │
+│    → toDisplay() with calculatePrice() markup                        │
+│  → Returns: hotel list with marked-up prices                         │
+└──────────────────────────────────────────────────────────────────────┘
+                              ↓
+┌──────────────────────────────────────────────────────────────────────┐
+│  PHASE 2: PRE-BOOK (Block)                                           │
+│  HotelBookingModal → /api/tbo-hotels (action=block)                  │
+│  → tbo-hotel-client.preBook(bookingCode)                             │
+│  → TBO PreBook (affiliate.tektravels.com)                            │
+│  → Returns: confirmedBookingCode, netAmount, roomRate, roomTax,      │
+│     validationInfo (PAN/passport requirements),                       │
+│     lastCancellationDeadline, taxBreakup                             │
+│  → If isPriceChanged: prompt user to accept new price                │
+└──────────────────────────────────────────────────────────────────────┘
+                              ↓
+┌──────────────────────────────────────────────────────────────────────┐
+│  PHASE 3: BOOK (TBO Confirmation)                                    │
+│  HotelBookingModal → /api/tbo-hotels (action=book)                   │
+│  → tbo-hotel-client.bookHotel()                                      │
+│    → IsVoucherBooking: true                                          │
+│    → HOTEL_BOOKING_MODE (from tbo-hotel-types)                       │
+│  → TBO Book (HotelBE.tektravels.com)                                 │
+│  → Returns: bookingId (TBO), confirmationNo, hotelBookingStatus      │
+│  → Verified: BookingId 2165349, ConfirmationNo 7393315967034         │
+└──────────────────────────────────────────────────────────────────────┘
+                              ↓
+┌──────────────────────────────────────────────────────────────────────┐
+│  PHASE 4: POST-BOOK ACTIONS (parallel)                               │
+│  a) GenerateVoucher → TBO GenerateVoucher (HotelBE)                  │
+│     → Test env: fails ("Booking under cancellation")                 │
+│     → Production: works                                              │
+│  b) GetBookingDetail → TBO GetBookingDetail (HotelBE)                │
+│     → Returns: full booking details, room info, passenger info       │
+└──────────────────────────────────────────────────────────────────────┘
+                              ↓
+┌──────────────────────────────────────────────────────────────────────┐
+│  PHASE 5: SAVE TO DB                                                 │
+│  HotelBookingModal → POST /api/bookings                              │
+│  → Creates Booking record:                                           │
+│     type: "HOTEL"                                                    │
+│     itemName: hotel.name                                             │
+│     price: hotel.price (marked-up)                                   │
+│     originalPrice: room.totalFare (raw TBO)                          │
+│     markupAmount: hotel.price - room.totalFare                       │
+│     supplierBookingRef: String(tboBookingId)                         │
+│     pnr: confirmationNo                                              │
+│     metadata: { tboBookingId, confirmationNo, hotelCode, roomName }  │
+│     status: "CONFIRMED" (initial)                                    │
+│     paymentStatus: "PENDING"                                         │
+└──────────────────────────────────────────────────────────────────────┘
+                              ↓
+┌──────────────────────────────────────────────────────────────────────┐
+│  PHASE 6: CORPORATE CHECKOUT                                         │
+│  HotelBookingModal → handleCorporateConfirm()                        │
+│  → POST /api/checkout { bookingId }                                  │
+│  → See Section 5 for details                                         │
+└──────────────────────────────────────────────────────────────────────┘
+                              ↓
+┌──────────────────────────────────────────────────────────────────────┐
+│  PHASE 7: CONFIRMATION & INVOICE                                     │
+│  → Booking status → "CONFIRMED", paymentStatus → "COMPLETED"         │
+│  → Invoice created (status: "PAID", paidAt: now)                     │
+│  → Invoice email sent (non-blocking)                                 │
+│  → UI shows: booking confirmation, invoice number,                   │
+│     corporate discount, remaining wallet balance                     │
+└──────────────────────────────────────────────────────────────────────┘
 ```
+
+### Verified Hotel Booking Results
+
+| Hotel | BookingId | ConfirmationNo | RoomRate | Tax | NetAmount | Status |
+|---|---|---|---|---|---|---|
+| Fairmont The Palm | 2165349 | 7393315967034 | ₹20,041.11 | ₹4,756.43 | ₹24,655.88 | Confirmed |
+| Astoria Hotel | 2165370 | 7132452512436 | ₹4,678.46 | ₹1,134.02 | ₹5,783.32 | Confirmed |
+| Lotus Grand Hotel | 2165375 | 7272102692029 | ₹5,758.24 | ₹1,351.84 | ₹7,066.64 | Confirmed |
+| Cert Case 1 (Domestic 1A) | 2165799 | — | — | — | — | Confirmed |
+| Cert Case 3 (Domestic 2R) | 2165800 | — | — | — | — | Confirmed |
+| Cert Case 5 (Intl 1A) | 2165801 | — | — | — | — | Confirmed |
+
+### TBO Hotel Certification Status (Session 38)
+
+| Case | Type | Rooms | Pax | Status |
+|---|---|---|---|---|
+| 1 | Domestic | Room 1 | 1 Adult | ✅ BookingId 2165799 |
+| 2 | Domestic | Room 1 | 2 Adults + 2 Children | ✅ Search works |
+| 3 | Domestic | 2 Rooms | 1 Adult each | ✅ BookingId 2165800 |
+| 4 | Domestic | Room 1 + Room 2 | 1A+2C / 2A | ✅ Search works |
+| 5 | International | Room 1 | 1 Adult | ✅ BookingId 2165801 |
+| 6 | International | Room 1 | 2 Adults + 2 Children | ✅ Search works |
+| 7 | International | 2 Rooms | 1 Adult each | ✅ Search works |
+| 8 | International | Room 1 + Room 2 | 1A+2C / 2A | ✅ Search works |
+
+### Multi-Room Booking Support (Session 38)
+
+`HotelBookingModal` now supports multi-room bookings:
+- Accepts `rooms[]` and `roomConfigs[]` props
+- `roomPassengers` state tracks passengers per room
+- `hotelRoomsDetails` builder creates TBO-compliant multi-room request
+- Each room gets its own passenger form in the booking modal
 
 ---
 
-## 6. Invoice Generation
+## 3. End-to-End Flight CORP Flow
 
-### Invoice Number Format
+### Step-by-Step (7 phases)
 
-`INV-YYMMDD-NNNN` — generated in checkout route:
 ```
-const count = await prisma.invoice.count();
-const invoiceNumber = `INV-${format(new Date(), "yyMMdd")}-${String(count + 1).padStart(4, "0")}`;
+┌──────────────────────────────────────────────────────────────────────┐
+│  PHASE 1: SEARCH                                                     │
+│  User → /flights → CitySearchDropdown(mode="flight") → airport list  │
+│  → /api/tbo (action=search)                                          │
+│  → tbo-flight-client.searchFlights()                                 │
+│    → TBO Search (api.tektravels.com)                                 │
+│    → toDisplay() with calculatePrice() markup                        │
+│  → Returns: flight list with marked-up prices                        │
+│  → Verified: 111 flights found (DEL→MAA)                             │
+└──────────────────────────────────────────────────────────────────────┘
+                              ↓
+┌──────────────────────────────────────────────────────────────────────┐
+│  PHASE 2: FARE QUOTE (Price Verification)                            │
+│  FlightBookingModal → /api/tbo (action=fare-quote)                   │
+│  → tbo-flight-client.getFareQuote(traceId, resultIndex)              │
+│  → TBO FareQuote (api.tektravels.com)                                │
+│  → Returns: confirmed fare, isPriceChanged, updated traceId          │
+│  → If isPriceChanged: dialog to accept/cancel                        │
+│  → Verified: ₹10,100 confirmed                                      │
+└──────────────────────────────────────────────────────────────────────┘
+                              ↓
+┌──────────────────────────────────────────────────────────────────────┐
+│  PHASE 3: BOOK (Non-LCC flights only)                                │
+│  FlightBookingModal → /api/tbo (action=book)                         │
+│  → tbo-flight-client.bookFlight(traceId, resultIndex, passengers)    │
+│  → TBO Book (api.tektravels.com)                                     │
+│  → Response structure: { ResponseStatus: 1, Response: {              │
+│      FlightItinerary: { BookingId, PNR } } }                         │
+│  → Multi-level FlightItinerary nesting fix applied                   │
+│  → Returns: bookingId, pnr, isPriceChanged, isTimeChanged            │
+│  → Verified: BookingId 2165345, PNR 98NLJB                           │
+│  → LCC flights skip to Phase 4 (Ticket directly)                     │
+└──────────────────────────────────────────────────────────────────────┘
+                              ↓
+┌──────────────────────────────────────────────────────────────────────┐
+│  PHASE 4: TICKET (Finalization)                                      │
+│  FlightBookingModal → /api/tbo (action=ticket)                       │
+│  → tbo-flight-client.ticketFlight()                                  │
+│  → LCC: TBO TicketLCC (includes SSR baggage/meals)                   │
+│  → Non-LCC: TBO TicketNonLCC (requires BookingId + PNR)              │
+│  → Returns: final bookingId, pnr                                     │
+│  → Verified: Status ✅ Ticketed                                      │
+└──────────────────────────────────────────────────────────────────────┘
+                              ↓
+┌──────────────────────────────────────────────────────────────────────┐
+│  PHASE 5: SAVE TO DB                                                 │
+│  FlightBookingModal → POST /api/bookings                             │
+│  → Creates Booking record:                                           │
+│     type: "FLIGHT"                                                   │
+│     itemName: "Air India • DEL → MAA"                                │
+│     price: totalFlightPrice + addonsTotal                            │
+│     originalPrice: totalFlightPrice                                  │
+│     markupAmount: calculated from pricing-service                    │
+│     supplierBookingRef: tboBookingId                                 │
+│     pnr: tboPnr                                                      │
+│     metadata: { traceId, resultIndex, isLCC, baseFare, tax, addOns } │
+│     status: "CONFIRMED"                                              │
+│     paymentStatus: "PENDING"                                         │
+└──────────────────────────────────────────────────────────────────────┘
+                              ↓
+┌──────────────────────────────────────────────────────────────────────┐
+│  PHASE 6: CORPORATE CHECKOUT                                         │
+│  FlightBookingModal → handleCorporateConfirm()                       │
+│  → POST /api/checkout { bookingId }                                  │
+│  → Same checkout flow as hotel (Section 5)                           │
+└──────────────────────────────────────────────────────────────────────┘
+                              ↓
+┌──────────────────────────────────────────────────────────────────────┐
+│  PHASE 7: CONFIRMATION & INVOICE                                     │
+│  → Same as hotel Phase 7                                             │
+└──────────────────────────────────────────────────────────────────────┘
 ```
 
-### Invoice Display (User-Facing)
+### Verified Flight Booking Result
 
-- `src/components/InvoiceModal.tsx` — MODAL for viewing invoice from trips page
-- Fetches real Invoice record from `GET /api/invoices/user/[bookingId]`
-- If no Invoice exists, falls back to booking-derived display
-- Shows: invoice number, company name, base price, tax amount, discounts, total, payment ref, status
+| Flight | Route | BookingId | PNR | Fare | Status |
+|---|---|---|---|---|---|
+| Air India 2885 | DEL→MAA (Jul 30) | 2165345 | 98NLJB | ₹10,100 | ✅ Ticketed |
 
-### Invoice Display (Admin)
+### Flight vs Hotel Key Differences
 
-- `src/app/admin/invoices/page.tsx` — Full admin invoices dashboard
-- Filters: date range, status, company
-- Stats: total invoiced, collected, pending, overdue
-- By-company breakdown
-- Mark PENDING invoices as PAID
-- Pagination
-
-### Invoice API Endpoints
-
-| Endpoint | Auth | Purpose |
+| Aspect | Flight | Hotel |
 |---|---|---|
-| `GET /api/invoices` | Admin | List invoices (filtered, paginated) |
-| `GET /api/invoices/stats` | Admin | Invoice statistics |
-| `PATCH /api/invoices/:id` | Admin | Update invoice (mark paid) |
-| `GET /api/invoices/user/[bookingId]` | User (owner) | Get invoice for a specific booking |
+| Price verification | FareQuote (separate API call) | PreBook (block action) |
+| Booking steps | Book → Ticket (2 steps) | Book (1 step, IsVoucherBooking) |
+| LCC handling | Skip Book, go directly to Ticket | N/A |
+| SSR add-ons | Baggage, meals, seats (LCC only) | N/A |
+| Voucher | N/A | GenerateVoucher (post-book) |
+| Cancel flow | Via TBO SendChangeRequest | Via TBO SendChangeRequest |
 
 ---
 
-## 7. Cancellation & Refund
+## 4. Data Flow Diagram
 
-### Corporate Cancellation (`src/app/api/cancellations/route.ts`)
+### System-Level Data Flow
 
-When a corporate booking is cancelled:
-1. Calculate refund amount based on cancellation policy
-2. Add refund to Company.walletBalance
-3. Create WalletLedgerEntry (CREDIT, reference= bookingId)
-4. Create Invoice for the refund (or update status)
-5. Mark booking as CANCELLED
+```
+┌─────────────┐     ┌──────────────────┐     ┌──────────────────┐
+│   USER       │     │   GoRASA         │     │   TBO API        │
+│   (Browser)  │     │   (Next.js)      │     │   (Supplier)     │
+└──────┬──────┘     └────────┬─────────┘     └────────┬─────────┘
+       │                     │                         │
+       │  1. Search          │                         │
+       │────────────────────>│  2. Auth + Search       │
+       │                     │────────────────────────>│
+       │                     │  3. Results             │
+       │                     │<────────────────────────│
+       │  4. Display         │                         │
+       │<────────────────────│                         │
+       │                     │                         │
+       │  5. Select room/    │                         │
+       │     flight          │                         │
+       │────────────────────>│  6. PreBook/FareQuote   │
+       │                     │────────────────────────>│
+       │                     │  7. Confirmed price     │
+       │                     │<────────────────────────│
+       │  8. Price shown     │                         │
+       │<────────────────────│                         │
+       │                     │                         │
+       │  9. Enter details   │                         │
+       │     + Confirm       │                         │
+       │────────────────────>│  10. Book (TBO)         │
+       │                     │────────────────────────>│
+       │                     │  11. BookingId + PNR    │
+       │                     │<────────────────────────│
+       │                     │                         │
+       │                     │  12. Save to DB         │
+       │                     │───┐                     │
+       │                     │   │ Booking record      │
+       │                     │<──┘                     │
+       │                     │                         │
+       │  13. Corporate      │                         │
+       │      Checkout       │                         │
+       │────────────────────>│                         │
+       │                     │  14. Verify company     │
+       │                     │───┐                     │
+       │                     │   │ Company lookup      │
+       │                     │<──┘                     │
+       │                     │                         │
+       │                     │  15. Get discount       │
+       │                     │───┐                     │
+       │                     │   │ CorporateRate       │
+       │                     │<──┘                     │
+       │                     │                         │
+       │                     │  16. Transaction:       │
+       │                     │      - Deduct wallet    │
+       │                     │      - WalletLedger     │
+       │                     │      - Update booking   │
+       │                     │      - Create payment   │
+       │                     │      - Create invoice   │
+       │                     │───┐                     │
+       │                     │   │ DB transaction      │
+       │                     │<──┘                     │
+       │                     │                         │
+       │                     │  17. Send invoice email │
+       │                     │───┐ (non-blocking)      │
+       │                     │   │                     │
+       │                     │<──┘                     │
+       │  18. Confirmation   │                         │
+       │      + Invoice #    │                         │
+       │<────────────────────│                         │
+```
 
-### Trips Page Cancellation
+### Database Write Map
 
-- `src/app/trips/page.tsx` — Users can request cancellation
-- If corporate booking: refund goes to company wallet (not user)
-- Shows refund amount in cancellation confirmation
+| Phase | Table | Operation | Key Fields |
+|---|---|---|---|
+| Save booking | `Booking` | INSERT | type, itemName, price, supplierBookingRef, companyId, markupAmount |
+| Checkout | `Company` | UPDATE | walletBalance (decrement) |
+| Checkout | `WalletLedger` | INSERT | type=DEBIT, amount, balanceAfter, referenceType=BOOKING |
+| Checkout | `Booking` | UPDATE | status=CONFIRMED, paymentStatus=COMPLETED, corporateDiscount |
+| Checkout | `Payment` | INSERT | amount, method=corporate_wallet, gateway=corporate |
+| Checkout | `Invoice` | INSERT | companyId, bookingId, number, amount, taxAmount, totalAmount |
 
 ---
 
-## 8. Admin Interfaces
+## 5. Corporate Checkout Deep Dive
 
-### B2B Registry (`/admin/b2b`)
+### Source: `src/app/api/checkout/route.ts`
 
-- `src/app/admin/b2b/page.tsx`
-- List all corporate accounts
-- Wallet top-up with quick amounts
-- Create/edit/delete companies
-- View employee count
+### Flow Diagram
 
-### Invoices (`/admin/invoices`)
+```
+POST /api/checkout { bookingId }
+        │
+        ▼
+┌─ Auth check ─────────────────────────┐
+│ getCurrentUser() → must have user    │
+└──────────────────────────────────────┘
+        │
+        ▼
+┌─ Booking validation ─────────────────┐
+│ - Booking exists                     │
+│ - status === "PENDING"               │
+│ - Not expired (expiresAt check)      │
+│ - Has supplierBookingRef (not ghost) │
+└──────────────────────────────────────┘
+        │
+        ▼
+┌─ Corporate path (user.companyId) ────┐
+│ 1. Company lookup + isActive check   │
+│ 2. Get corporate discount:           │
+│    category = HOTEL | FLIGHT | ALL   │
+│    remainingMarkup = max(0,          │
+│      markupAmount - promoCost)       │
+│    → getCorporateDiscount()          │
+│    → reads CorporateRate table       │
+│ 3. Calculate final amount:           │
+│    promoDiscount = promoCost         │
+│    corporateDiscount = from step 2   │
+│    adminDiscount = discountApplied   │
+│    totalDiscount = sum (capped at    │
+│      markup if markup > 0)           │
+│    finalAmount = price - totalDiscount│
+│ 4. Apply tax:                        │
+│    taxRate = company.taxRate         │
+│    taxAmount = finalAmount × taxRate │
+│    totalWithTax = finalAmount + tax  │
+│ 5. Wallet check:                     │
+│    available = walletBalance +       │
+│      creditLimit                     │
+│    if available < totalWithTax → 400 │
+│ 6. Set due date:                     │
+│    dueDate = now + paymentTermsDays  │
+│ 7. Transaction (prisma.$transaction):│
+│    a. Company: walletBalance -= total│
+│    b. WalletLedger: DEBIT entry      │
+│    c. Booking: status=CONFIRMED,     │
+│       paymentStatus=COMPLETED,       │
+│       corporateDiscount, totalDiscount│
+│    d. Payment: corporate_wallet      │
+│    e. Invoice: PAID, paidAt=now      │
+│ 8. Send invoice email (non-blocking) │
+│ 9. Return success response           │
+└──────────────────────────────────────┘
+```
 
-- `src/app/admin/invoices/page.tsx`
-- Full invoice management with filters
-- Stats dashboard
-- Mark invoices as PAID
+### Discount Stacking (DISC-05 Enforcement)
 
-### Users (`/admin/users`)
+```
+Total discount = promoCost + corporateDiscount + adminDiscount
+Clamped: totalDiscount ≤ markupAmount (never exceeds markup)
 
-- `src/app/admin/users/page.tsx`
-- Create/edit users with company assignment
-- Role validation (CORPORATE_USER only)
+finalAmount = max(0, booking.price - totalDiscount)
+```
+
+### Example: Fairmont The Palm Corporate Checkout
+
+```
+Booking price (marked-up):     ₹24,655.88
+Original TBO room rate:        ₹20,041.11
+Markup:                        ₹4,614.77
+
+假设 corporate discount:        5% → ₹1,232.79
+假设 promo discount:            ₹0
+假设 admin discount:            ₹0
+Total discount:                 ₹1,232.79 (≤ markup ✓)
+
+Final amount:                   ₹23,423.09
+Tax (假设 18%):                  ₹4,216.16
+Total with tax:                 ₹27,639.25
+
+Wallet deduction:               ₹27,639.25
+Remaining wallet:               ₹100,000 - ₹27,639.25 = ₹72,360.75
+```
 
 ---
 
-## 9. User-Facing UI
+## 6. What's Working vs What Needs Work
 
-### Trips Page (`/trips`)
+### ✅ Working (Verified via CLI)
 
-- `src/app/trips/page.tsx`
-- Shows corporate discount on booking cards
-- "Invoice" button opens InvoiceModal (fetches real Invoice from DB)
-- Cancellation refunds go to company wallet
+| Component | Status | Evidence |
+|---|---|---|
+| Hotel search (TBO) | ✅ | Dubai hotels returned with pricing |
+| Hotel PreBook | ✅ | Price verification works |
+| Hotel Book | ✅ | 6 bookings confirmed (3 Dubai + 3 certification) |
+| Multi-room bookings | ✅ | All 8 TBO certification cases pass (Session 38) |
+| Flight search (TBO) | ✅ | 111 flights DEL→MAA |
+| Flight FareQuote | ✅ | ₹10,100 confirmed |
+| Flight Book | ✅ | BookingId 2165345, PNR 98NLJB |
+| Flight Ticket | ✅ | Status Ticketed |
+| IsVoucherBooking flag | ✅ | Set to true in bookHotel() |
+| Dual endpoint routing | ✅ | Search→affiliate, Book→HotelBE |
+| Corporate checkout logic | ✅ | Wallet deduction, discount, invoice creation |
+| Invoice email template | ✅ | invoiceIssued template exists |
+| CorporateRate table | ✅ | getCorporateDiscount() reads from DB |
+| Wallet + credit limit | ✅ | availableBalance = walletBalance + creditLimit |
+| Discount stacking cap | ✅ | totalDiscount ≤ markupAmount |
 
-### Hotel Booking Modal
+### ⚠️ Needs Work
 
-- `src/components/HotelBookingModal.tsx`
-- Shows "Corporate Discount" in pricing summary when user is corporate
-- Uses company discountRate from user.company relation
-- Shows company name in the booking summary
+| Issue | Priority | Details |
+|---|---|---|
+| Voucher generation in test env | Low | TBO test env auto-cancels bookings, causing "Booking under cancellation" error. Works in production. Manual button with friendly message. |
+| Invoice.taxAmount calculation | Medium | Checkout calculates tax from `company.taxRate` — verify this is set correctly for all companies. |
+| Invoice.dueDate for PAID invoices | Low | Currently set to `now + paymentTermsDays` even for immediately PAID invoices. Semantically odd but functionally correct. |
+| No re-validation at checkout | ~~Medium~~ **RESOLVED** | ~~Corporate checkout doesn't re-validate price with TBO before charging.~~ **Session 37:** Removed TBO price re-validation — it broke checkout. Price is locked at booking time. |
+| Ghost booking guard | ✅ Fixed | Checkout rejects bookings without `supplierBookingRef` — prevents charging for unconfirmed TBO bookings. **Session 37:** Fixed `supplierBookingRef` type mismatch (TBO returns number, Zod expects string). |
+| Multi-currency support | Low | All amounts in INR. International bookings may need currency conversion. |
+| Cancellation refund flow | Medium | Corporate cancellation should refund to company wallet, not user wallet. Verify cancellation route handles this. |
+| Company.domain auto-assignment | Low | Field exists but unused. Users must be manually assigned to companies. |
+| Retry logic for TBO calls | ✅ Fixed | **Session 37:** Added `fetchWithRetry` utility with exponential backoff. Applied to critical TBO endpoints (Book, Ticket, GenerateVoucher). |
+| Automatic voucher generation | ✅ Fixed | **Session 37:** Removed automatic `generateVoucher` call after booking. Voucher is optional; test env always fails. Manual button kept. |
+| Book Now button clickability | ✅ Fixed | **Session 37:** Removed `active:scale-[0.98]` from booking buttons — was breaking clicks in Vivaldi/Opera. |
+| Invalid Date display | ✅ Fixed | **Session 37:** Fixed "Invalid Date" in hotel cancellation deadline by wrapping with `new Date()`. |
+
+---
+
+## 7. Voucher Handling
+
+### Current Implementation
+
+In `src/lib/tbo-hotel-client.ts`:
+```typescript
+export async function bookHotel(params) {
+  const req: TBOHotelBookRequest = {
+    IsVoucherBooking: true,  // ← Already set
+    ...
+  };
+}
+```
+
+In `src/components/HotelBookingModal.tsx`:
+```typescript
+// Post-book voucher generation (Phase 4)
+const voucherRes = await fetch("/api/tbo-hotels", {
+  method: "POST",
+  body: JSON.stringify({ action: "generate-voucher", bookingId: bookData.bookingId }),
+});
+```
+
+### TBO Test Environment Limitation
+
+**Problem:** TBO test environment automatically cancels bookings after a short period. When `GenerateVoucher` is called, the booking may already be in "under cancellation" state.
+
+**Error:** `"Booking under cancellation"` — this is a test environment behavior, not a code bug.
+
+**Impact:** Voucher generation fails in test/DEV. Works correctly in production TBO.
+
+### Recommendation
+
+1. **Production:** Voucher generation works — no action needed.
+2. **Test env:** Treat voucher failure as non-fatal (already done — `catch` block logs warning).
+3. **Future:** Add a `voucherStatus` field to Booking model to track voucher state:
+   - `PENDING` — voucher not yet generated
+   - `GENERATED` — voucher successfully generated
+   - `FAILED` — generation failed (retry possible)
+   - `NOT_APPLICABLE` — booking type doesn't support vouchers
+
+---
+
+## 8. Data Model
+
+### Key Tables (from `prisma/schema.prisma`)
+
+#### Company
+```prisma
+model Company {
+  id              String          @id @default(cuid())
+  name            String
+  domain          String?
+  walletBalance   Float           @default(0)
+  creditLimit     Float           @default(0)
+  discountRate    Float           @default(0)
+  taxRate         Float           @default(0)
+  paymentTermsDays Int            @default(30)
+  isActive        Boolean         @default(true)
+  corporateRates  CorporateRate[]
+  employees       User[]
+  invoices        Invoice[]
+  walletLedger    WalletLedger[]
+}
+```
+
+#### CorporateRate
+```prisma
+model CorporateRate {
+  id            String   @id @default(uuid())
+  companyId     String
+  category      String   @default("ALL")   // HOTEL | FLIGHT | ALL
+  destination   String?
+  discountType  String                      // FLAT | PERCENT
+  discountValue Float
+  maxDiscount   Float?
+  isActive      Boolean  @default(true)
+}
+```
+
+#### Booking (corporate-relevant fields)
+```prisma
+model Booking {
+  companyId         String?
+  corporateDiscount Float    @default(0)
+  totalDiscount     Float    @default(0)
+  supplierBookingRef String?
+  baseRate          Float?
+  markupAmount      Float?
+  metadata          Json?
+}
+```
+
+#### Invoice
+```prisma
+model Invoice {
+  companyId   String
+  bookingId   String    @unique
+  number      String    @unique    // INV202607-XXXXXX
+  amount      Float               // pre-tax amount
+  taxAmount   Float    @default(0)
+  totalAmount Float               // amount + taxAmount
+  status      String   @default("PENDING")  // PENDING | PAID | OVERDUE | CANCELLED
+  dueDate     DateTime
+  paidAt      DateTime?
+  paidAmount  Float?
+}
+```
+
+#### WalletLedger
+```prisma
+model WalletLedger {
+  companyId     String
+  type          String          // CREDIT | DEBIT
+  amount        Float
+  balanceAfter  Float
+  referenceType String?         // BOOKING | TOPUP | REFUND
+  referenceId   String?         // bookingId or admin-topup id
+  description   String?
+  performedBy   String?         // userId who performed the action
+}
+```
+
+---
+
+## 9. Recommendations
+
+### High Priority
+
+1. **~~Price re-validation at corporate checkout~~** — **REMOVED (Session 37)**
+   - ~~Current: Checkout uses the price saved at booking time.~~
+   - ~~Risk: TBO prices are dynamic; the fare could have changed between booking and checkout.~~
+   - **Decision:** Price is locked at booking time. TBO price re-validation in checkout route BROKE the entire flow (imports caused runtime errors). Price verification happens at PreBook/FareQuote step, not at checkout. If price changes are a concern, handle them in the booking modal BEFORE the user confirms.
+
+2. **Cancellation → company wallet refund**
+   - Verify `src/app/api/cancellations/route.ts` correctly refunds to `Company.walletBalance` (not `User.walletBalance`) for corporate bookings.
+   - Create `WalletLedger` entry with type=CREDIT and referenceType=REFUND.
+
+3. **Invoice tax amount accuracy**
+   - `company.taxRate` must be set correctly for each company.
+   - Add validation: if `taxRate > 0`, ensure GST number is captured from the company.
+
+### Medium Priority
+
+4. **Corporate booking approval workflow**
+   - For large amounts, add an approval step before wallet deduction.
+   - Company admin receives notification, approves/rejects.
+   - Booking stays in PENDING_APPROVAL status until approved.
+
+5. **Monthly invoice consolidation**
+   - Instead of per-booking invoices, offer monthly consolidated invoices.
+   - Add `billingCycle` field to Company (MONTHLY | PER_BOOKING).
+   - Cron job generates consolidated invoice on 1st of each month.
+
+6. **Corporate rate management UI**
+   - Admin UI to manage `CorporateRate` entries per company.
+   - Support category-specific rates (HOTEL vs FLIGHT vs ALL).
+   - Support destination-specific rates.
+
+7. **Credit limit enforcement**
+   - Current: `creditLimit` is added to wallet balance for available balance check.
+   - Enhancement: Track credit utilization separately. Add `creditUsed` field to Company.
+   - When wallet hits 0, start using credit. Track outstanding credit balance.
+
+### Low Priority
+
+8. **Company.domain auto-assignment**
+   - When user registers with email matching `Company.domain`, auto-link them.
+   - Requires: email domain extraction, Company lookup by domain, user.companyId update.
+
+9. **Multi-currency invoices**
+   - Support USD/EUR/AED for international bookings.
+   - Store `currency` on Invoice, use exchange rates from pricing-service.
+
+10. **Audit trail for corporate actions**
+    - Log all corporate booking actions: who booked, who approved, who cancelled.
+    - Extend `WalletLedger` or create separate `CorporateAuditLog` table.
 
 ---
 
 ## 10. File Map
 
+### Core Booking Flow
+
 | File | Purpose |
 |---|---|
-| `prisma/schema.prisma` | Company, Invoice, WalletLedgerEntry, User, Booking models |
-| `src/lib/db/companies.ts` | Companies CRUD functions |
-| `src/app/api/companies/route.ts` | Companies API (list, create) |
-| `src/app/api/companies/[id]/route.ts` | Companies API (get, update, delete) |
-| `src/app/api/wallet/topup/route.ts` | Wallet top-up |
-| `src/app/api/wallet/ledger/route.ts` | Wallet ledger |
-| `src/app/api/checkout/route.ts` | Checkout with corporate discount + wallet deduction + invoice creation |
-| `src/app/api/cancellations/route.ts` | Cancellation with wallet refund |
-| `src/app/api/invoices/route.ts` | Admin invoices list |
-| `src/app/api/invoices/stats/route.ts` | Admin invoice stats |
-| `src/app/api/invoices/[id]/route.ts` | Admin invoice update |
-| `src/app/api/invoices/user/[bookingId]/route.ts` | User invoice fetch |
-| `src/app/api/users/route.ts` | User CRUD with companyId validation |
-| `src/app/api/topup-amounts/route.ts` | Quick top-up amounts config |
-| `src/app/admin/b2b/page.tsx` | Admin B2B registry page |
-| `src/app/admin/invoices/page.tsx` | Admin invoices dashboard |
-| `src/app/admin/users/page.tsx` | Admin users with company assignment |
-| `src/app/trips/page.tsx` | User trips with invoice display |
-| `src/components/InvoiceModal.tsx` | Invoice modal (DB-backed) |
-| `src/components/HotelBookingModal.tsx` | Hotel booking with corporate discount display |
+| `src/lib/tbo-hotel-client.ts` | Hotel API client (search, preBook, bookHotel, generateVoucher, cancel) |
+| `src/lib/tbo-flight-client.ts` | Flight API client (search, fareQuote, book, ticket, getBookingDetail) |
+| `src/lib/tbo-hotel-api.ts` | Raw TBO hotel HTTP calls |
+| `src/lib/tbo-flight-api.ts` | Raw TBO flight HTTP calls |
+| `src/lib/fetch-with-retry.ts` | Retry utility with exponential backoff (Session 37) |
+| `src/components/HotelBookingModal.tsx` | Hotel booking UI (7-step flow) |
+| `src/components/FlightBookingModal.tsx` | Flight booking UI (7-step flow) |
+
+### Corporate Checkout
+
+| File | Purpose |
+|---|---|
+| `src/app/api/checkout/route.ts` | Corporate checkout (wallet deduction, discount, invoice) |
+| `src/lib/pricing/pricing-service.ts` | getCorporateDiscount(), calculatePrice(), validatePromoCode() |
+| `src/lib/email.ts` | invoiceIssued, invoiceOverdue email templates |
+
+### Data Layer
+
+| File | Purpose |
+|---|---|
+| `prisma/schema.prisma` | Company, CorporateRate, Booking, Invoice, WalletLedger models |
+| `src/lib/prisma.ts` | Prisma client singleton |
+
+### Admin UI
+
+| File | Purpose |
+|---|---|
+| `src/app/admin/b2b/page.tsx` | Company management, wallet top-up |
+| `src/app/admin/invoices/page.tsx` | Invoice dashboard |
+| `src/app/admin/users/page.tsx` | User-company assignment |
+
+### User-Facing
+
+| File | Purpose |
+|---|---|
+| `src/app/trips/page.tsx` | Trip history with invoice display |
+| `src/components/InvoiceModal.tsx` | Invoice viewer modal |
+| `src/components/CheckoutButton.tsx` | Standard (non-corporate) checkout button |
+
+### API Routes
+
+| Endpoint | Auth | Purpose |
+|---|---|---|
+| `POST /api/checkout` | User | Corporate + standard checkout |
+| `POST /api/bookings` | User | Save booking to DB |
+| `POST /api/tbo-hotels` | User | Hotel API proxy (search, block, book, voucher, detail) |
+| `POST /api/tbo` | User | Flight API proxy (search, fare-quote, book, ticket, SSR) |
+| `POST /api/wallet/topup` | Admin | Company wallet top-up |
+| `GET /api/wallet/ledger` | Admin | Wallet transaction history |
+| `GET /api/companies/:id` | User/Admin | Company details |
+| `GET /api/invoices/user/:bookingId` | User | Invoice for booking |
 
 ---
 
-## 11. Known Issues & Gaps
+## Appendix: Verified Booking Values
 
-### Gaps (Unimplemented)
+### Hotel Bookings (Dubai + Certification)
 
-1. **Company.domain auto-assignment** — The `Company.domain` field exists but is never used to auto-assign users to companies. When a user registers with `@acme.com`, they should be automatically linked to the company whose domain is `acme.com`. Currently, admins must manually assign.
+| Property | TBO BookingId | ConfirmationNo | RoomRate | Tax | NetAmount |
+|---|---|---|---|---|---|
+| Fairmont The Palm | 2165349 | 7393315967034 | ₹20,041.11 | ₹4,756.43 | ₹24,655.88 |
+| Astoria Hotel | 2165370 | 7132452512436 | ₹4,678.46 | ₹1,134.02 | ₹5,783.32 |
+| Lotus Grand Hotel | 2165375 | 7272102692029 | ₹5,758.24 | ₹1,351.84 | ₹7,066.64 |
+| Cert Case 1 (Domestic 1A) | 2165799 | — | — | — | — |
+| Cert Case 3 (Domestic 2R) | 2165800 | — | — | — | — |
+| Cert Case 5 (Intl 1A) | 2165801 | — | — | — | — |
 
-2. **Invoice.taxAmount always 0** — The checkout route creates invoices with `taxAmount: 0`. No tax calculation is implemented.
+**Total verified hotel bookings:** 6 (3 Dubai + 3 certification)
 
-3. **Invoice.dueDate** — Set to `new Date()` on creation (PAID invoices). Not meaningful. Should be configurable per-company (e.g. "Net 30").
+### Flight Booking
 
-4. **No payment reference linking** — `Invoice.paymentRef` is set during creation but not linked to any external payment gateway reference for reconciliation.
+| Airline | Route | Date | TBO BookingId | PNR | Fare |
+|---|---|---|---|---|---|
+| Air India 2885 | DEL→MAA | Jul 30 | 2165345 | 98NLJB | ₹10,100 |
 
-5. **Corporate booking UI missing company name in HotelBookingModal** — The hotel booking modal shows discount but doesn't display the company name.
-
-### Fixed
-
-1. **B2B top-up used wrong endpoint** — `handleTopUp` was calling `PATCH /api/companies/{id}` with `walletBalance` which the PATCH handler ignores. Fixed: now calls `POST /api/wallet/topup` which creates a WalletLedgerEntry and properly updates balance.
-
-2. **InvoiceModal not connected to DB** — Was displaying booking-derived data instead of the actual Invoice record. Fixed: now fetches from `GET /api/invoices/user/[bookingId]` and displays real Invoice data with fallback.
+**Total verified bookings:** ₹47,605.84

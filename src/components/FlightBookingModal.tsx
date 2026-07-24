@@ -3,6 +3,7 @@
 import React, { useState, useRef } from "react";
 import { motion } from "motion/react";
 import { formatCurrency } from "@/lib";
+import { fetchWithRetry } from "@/lib/fetch-with-retry";
 import { useEscapeKey } from "@/hooks/useEscapeKey";
 import { parseFareType, parseFareInclusions, getFareTypeColor, formatFareType, type FareType } from "@/lib/fare-utils";
 import {
@@ -91,12 +92,13 @@ interface FlightBookingModalProps {
   children: number;
   infants: number;
   traceId?: string;
+  childAges?: number[];
 }
 
 type BookingStep = "form" | "addons" | "saving" | "checkout" | "done" | "error";
 
 export default function FlightBookingModal({
-  isOpen, onClose, flights, user, date, passengerCount, adults, children, infants, traceId,
+  isOpen, onClose, flights, user, date, passengerCount, adults, children, infants, traceId, childAges,
 }: FlightBookingModalProps) {
   const flight = flights[0];
   const totalFlightPrice = flights.reduce((s, f) => s + f.price, 0);
@@ -172,7 +174,7 @@ export default function FlightBookingModal({
 
   const [otherPassengers, setOtherPassengers] = useState<PassengerData[]>([]);
 
-  if (isInternational && otherPaxCount > 0 && otherPassengers.length !== otherPaxCount) {
+  if (otherPaxCount > 0 && otherPassengers.length !== otherPaxCount) {
     const newPassengers: PassengerData[] = [];
     for (let i = 0; i < otherPaxCount; i++) {
       newPassengers.push(otherPassengers[i] || {
@@ -191,24 +193,45 @@ export default function FlightBookingModal({
     resolve: (accept: boolean) => void;
   } | null>(null);
 
-  // SSR Add-ons state
+  // SSR Add-ons state (per-passenger)
   const [ssrLoading, setSsrLoading] = useState(false);
   const [ssrBaggage, setSsrBaggage] = useState<SSRBaggage[]>([]);
   const [ssrMeals, setSsrMeals] = useState<SSRMeal[]>([]);
   const [ssrSeats, setSsrSeats] = useState<SSRSeat[]>([]);
-  const [selectedBaggage, setSelectedBaggage] = useState<string>("");
-  const [selectedMeals, setSelectedMeals] = useState<string[]>([]);
-  const [selectedSeat, setSelectedSeat] = useState<string>("");
+  const [ssrSelections, setSsrSelections] = useState<Record<number, { baggage: string; meals: string[]; seat: string }>>({});
+  const [activeSsrPax, setActiveSsrPax] = useState(0);
 
-  const baggageFee = ssrBaggage.find(b => b.Code === selectedBaggage)?.Price || 0;
-  const mealsFee = ssrMeals.filter(m => selectedMeals.includes(m.Code)).reduce((s, m) => s + m.Price, 0);
-  const seatFee = ssrSeats.find(s => s.Code === selectedSeat)?.Price || 0;
-  const addonsTotal = baggageFee + mealsFee + seatFee;
+  // Build passenger labels for SSR tabs
+  const paxLabels: string[] = [];
+  for (let i = 0; i < adults; i++) paxLabels.push(`Adult ${i + 1}`);
+  for (let i = 0; i < children; i++) paxLabels.push(`Child ${i + 1}`);
+  for (let i = 0; i < infants; i++) paxLabels.push(`Infant ${i + 1}`);
+
+  const currentSsrSelection = ssrSelections[activeSsrPax] || { baggage: "", meals: [], seat: "" };
+  const updateSsrSelection = (field: "baggage" | "meals" | "seat", value: string | string[]) => {
+    setSsrSelections(prev => ({
+      ...prev,
+      [activeSsrPax]: {
+        ...(prev[activeSsrPax] || { baggage: "", meals: [], seat: "" }),
+        [field]: value,
+      },
+    }));
+  };
+
+  const currentTraceIdRef = useRef(traceId);
+  const [addressCity, setAddressCity] = useState("");
+
+  const addonsTotal = Object.values(ssrSelections).reduce((sum, sel) => {
+    const bFee = ssrBaggage.find(b => b.Code === sel.baggage)?.Price || 0;
+    const mFee = ssrMeals.filter(m => sel.meals.includes(m.Code)).reduce((s, m) => s + m.Price, 0);
+    const sFee = ssrSeats.find(s => s.Code === sel.seat)?.Price || 0;
+    return sum + bFee + mFee + sFee;
+  }, 0);
 
   const finalPrice = totalFlightPrice - discountApplied;
   const totalPayable = finalPrice + addonsTotal;
 
-  const otherPassengersValid = !isInternational || otherPaxCount === 0 || otherPassengers.every(
+  const otherPassengersValid = otherPaxCount === 0 || otherPassengers.every(
     (p, i) => {
       if (!p.firstName.trim() || !p.lastName.trim()) return false;
       if (i < otherAdultCount) {
@@ -220,8 +243,10 @@ export default function FlightBookingModal({
 
   const passportValid = !passportRequired || (passportNo.trim() && passportExpiry);
 
+  const panRequired = !isInternational;
+  const panValid = !panRequired || pan.trim().length === 10;
   const isValid = firstName.trim() && lastName.trim() && phone.trim().length >= 7 && email.trim()
-    && otherPassengersValid && passportValid;
+    && otherPassengersValid && passportValid && panValid;
 
   useEscapeKey(() => {
     if (step === "form" && dirtyRef.current) {
@@ -243,14 +268,14 @@ export default function FlightBookingModal({
     setPromoCode("");
     setPromoError("");
     setPromoClamped(false);
-    setSelectedBaggage("");
-    setSelectedMeals([]);
-    setSelectedSeat("");
+    setSsrSelections({});
+    setActiveSsrPax(0);
     setSsrBaggage([]);
     setSsrMeals([]);
     setSsrSeats([]);
     setFormErrors({});
     setOtherPassengers([]);
+    setAddressCity("");
     dirtyRef.current = false;
   };
 
@@ -262,7 +287,7 @@ export default function FlightBookingModal({
       case "lastName": return !value.trim() ? "Last name is required" : "";
       case "phone": return value.trim().length < 7 ? "Phone must be at least 7 digits" : "";
       case "email": return !value.trim() ? "Email is required" : "";
-      case "pan": return value && !/^[A-Z]{5}[0-9]{4}[A-Z]$/.test(value) ? "Invalid PAN format" : "";
+      case "pan": return !value.trim() ? "PAN is required for domestic flights" : (value && !/^[A-Z]{5}[0-9]{4}[A-Z]$/.test(value) ? "Invalid PAN format (ABCDE1234F)" : "");
       default: return "";
     }
   };
@@ -323,9 +348,10 @@ export default function FlightBookingModal({
       const res = await fetch("/api/tbo", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ action: "ssr", params: { traceId, resultIndex: flight.id } }),
+        body: JSON.stringify({ action: "ssr", params: { traceId: currentTraceIdRef.current, resultIndex: flight.id } }),
       });
       const data = await res.json();
+      if (data.traceId) currentTraceIdRef.current = data.traceId;
       setSsrBaggage(data.baggage || []);
       setSsrMeals(data.meals || []);
       setSsrSeats(data.seats || []);
@@ -339,7 +365,11 @@ export default function FlightBookingModal({
   };
 
   const toggleMeal = (code: string) => {
-    setSelectedMeals(prev => prev.includes(code) ? prev.filter(c => c !== code) : [...prev, code]);
+    updateSsrSelection("meals",
+      currentSsrSelection.meals.includes(code)
+        ? currentSsrSelection.meals.filter(c => c !== code)
+        : [...currentSsrSelection.meals, code]
+    );
   };
 
   const handleBook = async () => {
@@ -347,28 +377,56 @@ export default function FlightBookingModal({
     setStep("saving");
 
     try {
-      const addOns: Record<string, unknown> = {};
-      if (selectedBaggage) {
-        const b = ssrBaggage.find(x => x.Code === selectedBaggage);
-        if (b) addOns.baggage = { code: b.Code, weight: b.Weight, price: b.Price };
-      }
-      if (selectedMeals.length > 0) {
-        addOns.meals = selectedMeals.map(code => {
-          const m = ssrMeals.find(x => x.Code === code);
-          return { code, description: m?.Description, price: m?.Price || 0 };
-        });
-      }
-      if (selectedSeat) {
-        const s = ssrSeats.find(x => x.Code === selectedSeat);
-        if (s) addOns.seat = { code: s.Code, seatNo: `${s.RowNo}${s.SeatNo}`, type: s.SeatType, price: s.Price };
-      }
+      // Build per-passenger add-ons
+      const perPaxAddOns: Record<string, unknown>[] = [];
+      Object.entries(ssrSelections).forEach(([paxIdx, sel]) => {
+        const paxAddOns: Record<string, unknown> = { paxId: parseInt(paxIdx) + 1 };
+        if (sel.baggage) {
+          const b = ssrBaggage.find(x => x.Code === sel.baggage);
+          if (b) paxAddOns.baggage = { code: b.Code, weight: b.Weight, price: b.Price };
+        }
+        if (sel.meals.length > 0) {
+          paxAddOns.meals = sel.meals.map(code => {
+            const m = ssrMeals.find(x => x.Code === code);
+            return { code, description: m?.Description, price: m?.Price || 0 };
+          });
+        }
+        if (sel.seat) {
+          const s = ssrSeats.find(x => x.Code === sel.seat);
+          if (s) paxAddOns.seat = { code: s.Code, seatNo: `${s.RowNo}${s.SeatNo}`, type: s.SeatType, price: s.Price };
+        }
+        if (Object.keys(paxAddOns).length > 1) perPaxAddOns.push(paxAddOns);
+      });
+      const addOns: Record<string, unknown> = perPaxAddOns.length > 0 ? { perPassenger: perPaxAddOns } : {};
 
       const nationalityCode = nationality === "Indian" ? "IN" : nationality.slice(0, 2).toUpperCase();
+      const defaultCity = addressCity.trim() || "Mumbai";
+
+      // Helper: compute DOB from age relative to departure date
+      const computeDOBFromAge = (age: number): string => {
+        const dep = date ? new Date(date) : new Date();
+        dep.setFullYear(dep.getFullYear() - age);
+        return dep.toISOString().slice(0, 10);
+      };
 
       const buildPassenger = (paxId: number, paxType: number, isLead: boolean) => {
         const paxFirstName = isLead ? firstName.trim() : (otherPassengers[paxId - 2]?.firstName || `Guest ${paxId}`);
         const paxLastName = isLead ? lastName.trim() : (otherPassengers[paxId - 2]?.lastName || "Traveler");
-        const paxDob = isLead ? (dateOfBirth || "1990-01-01") : (otherPassengers[paxId - 2]?.dateOfBirth || "1990-01-01");
+        let paxDob = isLead ? (dateOfBirth || computeDOBFromAge(25)) : (otherPassengers[paxId - 2]?.dateOfBirth || "");
+        // Issue 7: Fix default DOBs for children and infants
+        if (!paxDob) {
+          if (paxType === 2) {
+            // Child: use childAges if available
+            const childIdx = paxId - adults - 1;
+            const childAge = childAges?.[childIdx] ?? 5;
+            paxDob = computeDOBFromAge(childAge);
+          } else if (paxType === 3) {
+            // Infant: default to 1 year before departure
+            paxDob = computeDOBFromAge(1);
+          } else {
+            paxDob = computeDOBFromAge(25);
+          }
+        }
         const paxGender = isLead ? gender : (otherPassengers[paxId - 2]?.gender || "M");
         const paxNationality = isLead ? nationality : (otherPassengers[paxId - 2]?.nationality || "Indian");
         const paxNatCode = paxNationality === "Indian" ? "IN" : paxNationality.slice(0, 2).toUpperCase();
@@ -383,8 +441,8 @@ export default function FlightBookingModal({
           PaxType: paxType,
           DateOfBirth: paxDob,
           Gender: paxGender === "F" ? 2 : 1,
-          AddressLine1: "",
-          City: "",
+          AddressLine1: defaultCity,
+          City: defaultCity,
           CountryCode: nationalityCode,
           CountryName: nationality,
           ContactNo: isLead ? (phone || "") : "",
@@ -393,6 +451,7 @@ export default function FlightBookingModal({
           Nationality: paxNatCode,
           PassportNo: paxPassportNo,
           PassportExpiry: paxPassportExpiry,
+          PassportIssueCountryCode: paxPassportNo ? nationalityCode : undefined,
           Fare: {
             BaseFare: flight.baseFare || 0,
             Tax: flight.tax || 0,
@@ -413,19 +472,21 @@ export default function FlightBookingModal({
 
       let tboBookingId: string | null = null;
       let tboPnr: string | null = null;
+      let currentTraceId = currentTraceIdRef.current;
 
-      if (traceId) {
+      if (currentTraceId) {
         // Step 1: FareQuote — validate real-time price
         try {
-          const fqRes = await fetch("/api/tbo", {
+          const fqRes = await fetchWithRetry("/api/tbo", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
               action: "fare-quote",
-              params: { traceId, resultIndex: flight.id },
+              params: { traceId: currentTraceId, resultIndex: flight.id },
             }),
           });
           const fqData = await fqRes.json();
+          if (fqData.traceId) currentTraceId = fqData.traceId;
           if (fqData.isPriceChanged) {
             const userAccepted = await new Promise<boolean>(resolve => {
               setPriceChangeDialog({
@@ -450,25 +511,31 @@ export default function FlightBookingModal({
         // Step 2: Book via TBO — creates a reservation (skip for LCC flights)
         if (!flight.isLCC) {
           try {
-            const bookRes = await fetch("/api/tbo", {
+            const bookRes = await fetchWithRetry("/api/tbo", {
               method: "POST",
               headers: { "Content-Type": "application/json" },
               body: JSON.stringify({
                 action: "book",
-                params: { traceId, resultIndex: flight.id, passengers },
+                params: { traceId: currentTraceId, resultIndex: flight.id, passengers },
               }),
             });
             const bookData = await bookRes.json();
+            if (bookData.traceId) currentTraceId = bookData.traceId;
             if (bookData.bookingId) {
-              tboBookingId = bookData.bookingId;
+              tboBookingId = String(bookData.bookingId);
               tboPnr = bookData.pnr || null;
               if (bookData.isTimeChanged) {
                 setIsTimeChanged(true);
               }
             } else {
-              setErrorMessage("Flight booking failed at the airline. Please try again.");
-              setStep("error");
-              return;
+              const errMsg = bookData.error || "";
+              if (errMsg.toLowerCase().includes("lcc") || errMsg.toLowerCase().includes("ticket directly")) {
+                console.log("TBO says this is LCC, skipping to Ticket step");
+              } else {
+                setErrorMessage("Flight booking failed at the airline. Please try again.");
+                setStep("error");
+                return;
+              }
             }
           } catch (e) {
             console.error("TBO book failed:", e);
@@ -481,13 +548,13 @@ export default function FlightBookingModal({
         // Step 3: Ticket — finalize the booking (for LCC, this replaces Book)
         {
           try {
-            const ticketRes = await fetch("/api/tbo", {
+            const ticketRes = await fetchWithRetry("/api/tbo", {
               method: "POST",
               headers: { "Content-Type": "application/json" },
               body: JSON.stringify({
                 action: "ticket",
                 params: {
-                  traceId,
+                  traceId: currentTraceId,
                   resultIndex: flight.id,
                   passengers,
                   bookingId: tboBookingId,
@@ -501,7 +568,7 @@ export default function FlightBookingModal({
             });
             const ticketData = await ticketRes.json();
             if (ticketData.results?.[0]?.bookingId) {
-              tboBookingId = ticketData.results[0].bookingId;
+              tboBookingId = String(ticketData.results[0].bookingId);
               tboPnr = ticketData.results[0].pnr || tboPnr;
             }
           } catch (e) {
@@ -537,11 +604,11 @@ export default function FlightBookingModal({
           paxCount: passengerCount,
           travelDates: date || "TBD",
           leadGuestPan: isInternational ? undefined : (pan || undefined),
-          supplierBookingRef: tboBookingId || undefined,
+          supplierBookingRef: tboBookingId ? String(tboBookingId) : undefined,
           baseRate: totalBaseRate || undefined,
           markupAmount: totalMarkupAmount || undefined,
           metadata: {
-            traceId: traceId || undefined,
+            traceId: currentTraceId || undefined,
             resultIndex: flight.id,
             isLCC: flight.isLCC,
             isRefundable: flight.isRefundable,
@@ -741,7 +808,7 @@ export default function FlightBookingModal({
               {promoError && <p className="text-xs text-red-500 mt-1">{promoError}</p>}
               {promoClamped && (
                 <p className="text-xs text-amber-600 mt-1">
-                  Discount capped at ₹{discountApplied} (maximum discount for this booking)
+                  Discount capped at {formatCurrency(discountApplied)} (maximum discount for this booking)
                 </p>
               )}
               {couponCodeUsed && discountApplied > 0 && (
@@ -804,9 +871,12 @@ export default function FlightBookingModal({
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <FormPan
                   id="flight-pan"
+                  label={isInternational ? "PAN Card Number" : "PAN Card Number *"}
                   value={pan}
                   onChange={(e) => { setPan(e.target.value); markDirty(); }}
-                  hidden={isInternational}
+                  hidden={false}
+                  onBlur={(e) => handleFieldBlur("pan", e.target.value)}
+                  error={formErrors.pan}
                 />
                 <FormInput
                   id="flight-nationality"
@@ -816,6 +886,14 @@ export default function FlightBookingModal({
                   autoComplete="country-name"
                 />
               </div>
+              <FormInput
+                id="flight-city"
+                label="City (for airline records)"
+                value={addressCity}
+                onChange={(e) => { setAddressCity(e.target.value); markDirty(); }}
+                placeholder="Mumbai"
+                autoComplete="address-level2"
+              />
               <FormPassport
                 id="flight-passport"
                 passportNo={passportNo}
@@ -828,8 +906,8 @@ export default function FlightBookingModal({
               />
             </FormSection>
 
-            {/* Additional Passengers — International only */}
-            {isInternational && otherPaxCount > 0 && (
+            {/* Additional Passengers */}
+            {otherPaxCount > 0 && (
               <FormSection icon={User} title={`Additional Passengers (${otherPaxCount})`}>
                 {otherPassengers.map((pax, idx) => {
                   const paxLabel = idx < otherAdultCount
@@ -919,41 +997,43 @@ export default function FlightBookingModal({
                         />
                         <div />
                       </div>
-                      <div className="grid grid-cols-2 gap-3 mt-3">
-                        <div>
-                          <label className="text-[11px] font-bold uppercase tracking-widest text-slate-500 mb-1.5 block">
-                            Passport No <span className="text-red-500">*</span>
-                          </label>
-                          <input
-                            value={pax.passportNo}
-                            onChange={(e) => {
-                              const updated = [...otherPassengers];
-                              updated[idx] = { ...updated[idx], passportNo: e.target.value.toUpperCase() };
-                              setOtherPassengers(updated);
-                              markDirty();
-                            }}
-                            placeholder="Passport No"
-                            maxLength={15}
-                            className="w-full px-3 py-3 bg-white border border-slate-200 rounded-xl text-sm uppercase focus:ring-2 focus:ring-brand-saffron focus:ring-offset-2 outline-none transition-all"
-                          />
+                      {isInternational && (
+                        <div className="grid grid-cols-2 gap-3 mt-3">
+                          <div>
+                            <label className="text-[11px] font-bold uppercase tracking-widest text-slate-500 mb-1.5 block">
+                              Passport No <span className="text-red-500">*</span>
+                            </label>
+                            <input
+                              value={pax.passportNo}
+                              onChange={(e) => {
+                                const updated = [...otherPassengers];
+                                updated[idx] = { ...updated[idx], passportNo: e.target.value.toUpperCase() };
+                                setOtherPassengers(updated);
+                                markDirty();
+                              }}
+                              placeholder="Passport No"
+                              maxLength={15}
+                              className="w-full px-3 py-3 bg-white border border-slate-200 rounded-xl text-sm uppercase focus:ring-2 focus:ring-brand-saffron focus:ring-offset-2 outline-none transition-all min-h-[44px]"
+                            />
+                          </div>
+                          <div>
+                            <label className="text-[11px] font-bold uppercase tracking-widest text-slate-500 mb-1.5 block">
+                              Passport Expiry <span className="text-red-500">*</span>
+                            </label>
+                            <input
+                              type="date"
+                              value={pax.passportExpiry}
+                              onChange={(e) => {
+                                const updated = [...otherPassengers];
+                                updated[idx] = { ...updated[idx], passportExpiry: e.target.value };
+                                setOtherPassengers(updated);
+                                markDirty();
+                              }}
+                              className="w-full px-3 py-3 bg-white border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-brand-saffron focus:ring-offset-2 outline-none transition-all min-h-[44px]"
+                            />
+                          </div>
                         </div>
-                        <div>
-                          <label className="text-[11px] font-bold uppercase tracking-widest text-slate-500 mb-1.5 block">
-                            Passport Expiry <span className="text-red-500">*</span>
-                          </label>
-                          <input
-                            type="date"
-                            value={pax.passportExpiry}
-                            onChange={(e) => {
-                              const updated = [...otherPassengers];
-                              updated[idx] = { ...updated[idx], passportExpiry: e.target.value };
-                              setOtherPassengers(updated);
-                              markDirty();
-                            }}
-                            className="w-full px-3 py-3 bg-white border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-brand-saffron focus:ring-offset-2 outline-none transition-all"
-                          />
-                        </div>
-                      </div>
+                      )}
                     </div>
                   );
                 })}
@@ -1030,6 +1110,32 @@ export default function FlightBookingModal({
         {/* ADD-ONS STEP */}
         {step === "addons" && (
           <div className="p-6 space-y-5">
+            {/* Per-passenger tabs for SSR add-ons */}
+            {passengerCount > 1 && !ssrLoading && (
+              <div>
+                <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400 mb-2">Select add-ons for</p>
+                <div className="flex gap-1 overflow-x-auto pb-1">
+                  {paxLabels.map((label, idx) => (
+                    <button
+                      key={idx}
+                      onClick={() => setActiveSsrPax(idx)}
+                      className={`px-3 py-2 rounded-lg text-xs font-medium whitespace-nowrap cursor-pointer transition-all min-h-[44px] ${
+                        activeSsrPax === idx
+                          ? "bg-brand-saffron text-white"
+                          : ssrSelections[idx] && (ssrSelections[idx].baggage || ssrSelections[idx].meals.length > 0 || ssrSelections[idx].seat)
+                            ? "bg-green-50 text-green-700 border border-green-200"
+                            : "bg-slate-100 text-slate-600 hover:bg-slate-200"
+                      }`}
+                    >
+                      {label}
+                      {ssrSelections[idx] && (ssrSelections[idx].baggage || ssrSelections[idx].meals.length > 0 || ssrSelections[idx].seat) && (
+                        <span className="ml-1">\u2713</span>
+                      )}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
             {ssrLoading ? (
               <div className="py-12 text-center">
                 <Loader2 size={32} className="mx-auto text-blue-600 mb-3 animate-spin" />
@@ -1042,23 +1148,43 @@ export default function FlightBookingModal({
                   <div>
                     <div className="flex items-center gap-2 mb-3">
                       <Luggage size={16} className="text-blue-500" />
-                      <h3 className="font-bold text-slate-900 text-sm">Extra Baggage</h3>
+                      <h3 className="font-bold text-slate-900 text-sm">Extra Baggage for {paxLabels[activeSsrPax]}</h3>
                     </div>
                     <p className="text-xs text-slate-500 mb-2">Included: {flight.baggage || "15 KG"} per passenger</p>
                     <div className="space-y-2">
+                      <label
+                        className={`flex items-center justify-between p-3 rounded-xl border cursor-pointer transition-all min-h-[44px] ${
+                          !currentSsrSelection.baggage ? "border-blue-500 bg-blue-50" : "border-slate-200 hover:border-slate-300"
+                        }`}
+                      >
+                        <div className="flex items-center gap-3">
+                          <input
+                            type="radio"
+                            name={`baggage-${activeSsrPax}`}
+                            checked={!currentSsrSelection.baggage}
+                            onChange={() => updateSsrSelection("baggage", "")}
+                            className="text-blue-600"
+                          />
+                          <div>
+                            <p className="text-sm font-medium text-slate-900">No extra baggage</p>
+                            <p className="text-xs text-slate-500">Use included allowance</p>
+                          </div>
+                        </div>
+                        <span className="text-sm font-bold text-green-600">Included</span>
+                      </label>
                       {ssrBaggage.map((b) => (
                         <label
                           key={b.Code}
-                          className={`flex items-center justify-between p-3 rounded-xl border cursor-pointer transition-all ${
-                            selectedBaggage === b.Code ? "border-blue-500 bg-blue-50" : "border-slate-200 hover:border-slate-300"
+                          className={`flex items-center justify-between p-3 rounded-xl border cursor-pointer transition-all min-h-[44px] ${
+                            currentSsrSelection.baggage === b.Code ? "border-blue-500 bg-blue-50" : "border-slate-200 hover:border-slate-300"
                           }`}
                         >
                           <div className="flex items-center gap-3">
                             <input
                               type="radio"
-                              name="baggage"
-                              checked={selectedBaggage === b.Code}
-                              onChange={() => setSelectedBaggage(b.Code === selectedBaggage ? "" : b.Code)}
+                              name={`baggage-${activeSsrPax}`}
+                              checked={currentSsrSelection.baggage === b.Code}
+                              onChange={() => updateSsrSelection("baggage", b.Code === currentSsrSelection.baggage ? "" : b.Code)}
                               className="text-blue-600"
                             />
                             <div>
@@ -1080,19 +1206,19 @@ export default function FlightBookingModal({
                   <div>
                     <div className="flex items-center gap-2 mb-3">
                       <Utensils size={16} className="text-orange-500" />
-                      <h3 className="font-bold text-slate-900 text-sm">Meals</h3>
+                      <h3 className="font-bold text-slate-900 text-sm">Meals for {paxLabels[activeSsrPax]}</h3>
                     </div>
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                       {ssrMeals.map((m) => (
                         <label
                           key={m.Code}
-                          className={`flex flex-col items-center p-3 rounded-xl border cursor-pointer transition-all ${
-                            selectedMeals.includes(m.Code) ? "border-orange-500 bg-orange-50" : "border-slate-200 hover:border-slate-300"
+                          className={`flex flex-col items-center p-3 rounded-xl border cursor-pointer transition-all min-h-[44px] ${
+                            currentSsrSelection.meals.includes(m.Code) ? "border-orange-500 bg-orange-50" : "border-slate-200 hover:border-slate-300"
                           }`}
                         >
                           <input
                             type="checkbox"
-                            checked={selectedMeals.includes(m.Code)}
+                            checked={currentSsrSelection.meals.includes(m.Code)}
                             onChange={() => toggleMeal(m.Code)}
                             className="text-orange-600 mb-1"
                           />
@@ -1109,21 +1235,21 @@ export default function FlightBookingModal({
                   <div>
                     <div className="flex items-center gap-2 mb-3">
                       <Armchair size={16} className="text-purple-500" />
-                      <h3 className="font-bold text-slate-900 text-sm">Seat Selection</h3>
+                      <h3 className="font-bold text-slate-900 text-sm">Seat Selection for {paxLabels[activeSsrPax]}</h3>
                     </div>
                     <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
                       {ssrSeats.map((s) => (
                         <label
                           key={s.Code}
-                          className={`flex flex-col items-center p-2 rounded-xl border cursor-pointer transition-all ${
-                            selectedSeat === s.Code ? "border-purple-500 bg-purple-50" : "border-slate-200 hover:border-slate-300"
+                          className={`flex flex-col items-center p-2 rounded-xl border cursor-pointer transition-all min-h-[44px] ${
+                            currentSsrSelection.seat === s.Code ? "border-purple-500 bg-purple-50" : "border-slate-200 hover:border-slate-300"
                           }`}
                         >
                           <input
                             type="radio"
-                            name="seat"
-                            checked={selectedSeat === s.Code}
-                            onChange={() => setSelectedSeat(s.Code === selectedSeat ? "" : s.Code)}
+                            name={`seat-${activeSsrPax}`}
+                            checked={currentSsrSelection.seat === s.Code}
+                            onChange={() => updateSsrSelection("seat", s.Code === currentSsrSelection.seat ? "" : s.Code)}
                             className="text-purple-600 mb-1"
                           />
                           <p className="text-xs font-bold text-slate-900">{s.RowNo}{s.SeatNo}</p>
@@ -1148,22 +1274,10 @@ export default function FlightBookingModal({
                       <span className="text-green-600">-{formatCurrency(discountApplied)}</span>
                     </div>
                   )}
-                  {baggageFee > 0 && (
+                  {addonsTotal > 0 && (
                     <div className="flex justify-between text-sm">
-                      <span className="text-slate-600">Extra Baggage</span>
-                      <span className="text-slate-900">+{formatCurrency(baggageFee)}</span>
-                    </div>
-                  )}
-                  {mealsFee > 0 && (
-                    <div className="flex justify-between text-sm">
-                      <span className="text-slate-600">Meals ({selectedMeals.length})</span>
-                      <span className="text-slate-900">+{formatCurrency(mealsFee)}</span>
-                    </div>
-                  )}
-                  {seatFee > 0 && (
-                    <div className="flex justify-between text-sm">
-                      <span className="text-slate-600">Seat</span>
-                      <span className="text-slate-900">+{formatCurrency(seatFee)}</span>
+                      <span className="text-slate-600">Add-ons ({Object.values(ssrSelections).filter(s => s.baggage || s.meals.length > 0 || s.seat).length} pax)</span>
+                      <span className="text-slate-900">+{formatCurrency(addonsTotal)}</span>
                     </div>
                   )}
                   <div className="border-t border-slate-200 pt-2 flex justify-between">
@@ -1244,22 +1358,10 @@ export default function FlightBookingModal({
                     <span className="text-green-600">-{formatCurrency(discountApplied)}</span>
                   </div>
                 )}
-                {baggageFee > 0 && (
+                {addonsTotal > 0 && (
                   <div className="flex justify-between text-sm">
-                    <span className="text-slate-600">Extra Baggage</span>
-                    <span className="text-slate-900">+{formatCurrency(baggageFee)}</span>
-                  </div>
-                )}
-                {mealsFee > 0 && (
-                  <div className="flex justify-between text-sm">
-                    <span className="text-slate-600">Meals ({selectedMeals.length})</span>
-                    <span className="text-slate-900">+{formatCurrency(mealsFee)}</span>
-                  </div>
-                )}
-                {seatFee > 0 && (
-                  <div className="flex justify-between text-sm">
-                    <span className="text-slate-600">Seat ({ssrSeats.find(s => s.Code === selectedSeat)?.SeatType})</span>
-                    <span className="text-slate-900">+{formatCurrency(seatFee)}</span>
+                    <span className="text-slate-600">Add-ons ({Object.values(ssrSelections).filter(s => s.baggage || s.meals.length > 0 || s.seat).length} pax)</span>
+                    <span className="text-slate-900">+{formatCurrency(addonsTotal)}</span>
                   </div>
                 )}
                 <div className="border-t border-slate-200 pt-2 flex justify-between items-center">

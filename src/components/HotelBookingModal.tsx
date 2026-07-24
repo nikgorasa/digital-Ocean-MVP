@@ -3,6 +3,7 @@
 import React, { useState, useRef, useEffect } from "react";
 import { motion } from "motion/react";
 import { formatCurrency } from "@/lib";
+import { fetchWithRetry } from "@/lib/fetch-with-retry";
 import { useEscapeKey } from "@/hooks/useEscapeKey";
 import { formatMealPlan } from "@/lib/format-meal-plan";
 import {
@@ -25,6 +26,7 @@ interface HotelBookingModalProps {
   onClose: () => void;
   hotel: TBODisplayHotel;
   room: TBODisplayRoom;
+  rooms?: TBODisplayRoom[];
   sessionId: string;
   traceId?: string;
   user: { id: string; email: string; name: string; companyId?: string } | null;
@@ -32,13 +34,14 @@ interface HotelBookingModalProps {
   checkIn: string;
   checkOut: string;
   guestCount: number;
+  roomConfigs?: { adults: number; children: number; childAges: number[] }[];
 }
 
 type BookingStep = "form" | "blocking" | "book-confirming" | "saving" | "checkout" | "done" | "error";
 
 export default function HotelBookingModal({
-  isOpen, onClose, hotel, room, sessionId, traceId, user, location,
-  checkIn, checkOut, guestCount,
+  isOpen, onClose, hotel, room, rooms, sessionId, traceId, user, location,
+  checkIn, checkOut, guestCount, roomConfigs,
 }: HotelBookingModalProps) {
   const [step, setStep] = useState<BookingStep>("form");
   const [firstName, setFirstName] = useState(user?.name?.split(" ")[0] || "");
@@ -89,6 +92,60 @@ export default function HotelBookingModal({
   const [validationInfo, setValidationInfo] = useState<{ PanMandatory?: boolean; PanPassport?: boolean; PassportMandatory?: boolean } | null>(null);
   const [lastCancellationDeadline, setLastCancellationDeadline] = useState<string | null>(null);
 
+  // Multi-room state: track which rooms are selected and passengers for each room
+  const allRooms = rooms || [room];
+  const isMultiRoom = allRooms.length > 1;
+  const [selectedRoomIndices, setSelectedRoomIndices] = useState<number[]>([0]);
+  const [roomPassengers, setRoomPassengers] = useState<Record<number, {
+    firstName: string;
+    lastName: string;
+    age: number;
+    email: string;
+    phone: string;
+    pan: string;
+    passportNo: string;
+    passportExpiry: string;
+  }[]>>({});
+
+  // Initialize room passengers when roomConfigs change (adults + children)
+  useEffect(() => {
+    if (roomConfigs && roomConfigs.length > 0) {
+      const initial: Record<number, typeof roomPassengers[0]> = {};
+      roomConfigs.forEach((config, idx) => {
+        const passengers: typeof roomPassengers[0] = [];
+        // Add adults
+        for (let i = 0; i < config.adults; i++) {
+          passengers.push({
+            firstName: i === 0 && user ? (user.name?.split(" ")[0] || "") : "",
+            lastName: i === 0 && user ? (user.name?.split(" ").slice(1).join(" ") || "") : "",
+            age: 25,
+            email: i === 0 && user ? user.email : "",
+            phone: "",
+            pan: "",
+            passportNo: "",
+            passportExpiry: "",
+          });
+        }
+        // Add children with their ages
+        for (let i = 0; i < config.children; i++) {
+          passengers.push({
+            firstName: "",
+            lastName: "",
+            age: config.childAges?.[i] || 5,
+            email: "",
+            phone: "",
+            pan: "",
+            passportNo: "",
+            passportExpiry: "",
+          });
+        }
+        initial[idx] = passengers;
+      });
+      setRoomPassengers(initial);
+      setSelectedRoomIndices(Array.from({ length: roomConfigs.length }, (_, i) => i));
+    }
+  }, [roomConfigs, user]);
+
   useEffect(() => {
     if (user?.companyId) {
       fetch(`/api/companies/${user.companyId}`)
@@ -106,14 +163,13 @@ export default function HotelBookingModal({
   const nights = Math.max(1, Math.ceil(
     (new Date(checkOut).getTime() - new Date(checkIn).getTime()) / 86400000
   ));
-  const baseAndTax = hotel.price; // Marked-up total (includes markup from pricing table)
-  const perNightRate = Math.round(hotel.price / nights); // Per-night including markup
-  const perNightRoomFare = room.roomFare; // Per-night raw TBO room fare
-  const perNightTaxes = perNightRate - perNightRoomFare; // Per-night taxes + markup
-  const totalRoomFare = perNightRoomFare * nights;
-  const totalTaxes = perNightTaxes * nights;
-  const finalPrice = baseAndTax - discountApplied;
-  const totalPayable = finalPrice;
+  const roomCount = roomConfigs?.length || 1;
+  // Total per room per night = base + tax. Use room.totalFare / nights as ground truth.
+  const perRoomPerNight = Math.round(room.totalFare / nights);
+  const perRoomTotal = perRoomPerNight * nights;
+  const rawTotal = perRoomTotal * roomCount;
+  const serviceFee = Math.max(0, hotel.price - rawTotal);
+  const totalPayable = hotel.price - discountApplied; // Total for all rooms
   const passportValid = !passportRequired || (passportNo.trim() && passportExpiry);
   const panValid = !panRequired || pan.trim().length > 0;
   const isValid = firstName.trim() && lastName.trim() && phone.trim().length >= 7 && email.trim() && passportValid && panValid;
@@ -221,7 +277,7 @@ export default function HotelBookingModal({
       let confirmationNo = "";
       let bookData: Record<string, any> | null = null;
 
-      const blockRes = await fetch("/api/tbo-hotels", {
+      const blockRes = await fetchWithRetry("/api/tbo-hotels", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
@@ -272,7 +328,32 @@ export default function HotelBookingModal({
           guestNationality: guestNationality,
           netAmount: blockData.netAmount || room.totalFare,
           traceId: traceId || undefined,
-          hotelRoomsDetails: [{
+          hotelRoomsDetails: isMultiRoom && roomPassengers[selectedRoomIndices[0]] ? selectedRoomIndices.map((roomIdx, i) => {
+            const passengers = roomPassengers[roomIdx] || [];
+            return {
+              passengers: passengers.map((p, paxIdx) => {
+                const roomConfig = roomConfigs?.[roomIdx];
+                const isChildPax = roomConfig ? paxIdx >= roomConfig.adults : false;
+                return {
+                title: isChildPax ? "Mstr" : "Mr",
+                firstName: p.firstName.trim() || (isChildPax ? `Child${paxIdx - (roomConfig?.adults || 0) + 1}` : `Guest${paxIdx + 1}`),
+                lastName: p.lastName.trim() || `Room${i + 1}`,
+                paxType: isChildPax ? 2 : 1,
+                leadPassenger: paxIdx === 0,
+                age: p.age,
+                email: p.email.trim() || email.trim(),
+                phone: p.phone.trim() || phone.trim(),
+                pan: p.pan.trim() ? p.pan.trim().toUpperCase() : (showPan && pan.trim() ? pan.trim().toUpperCase() : undefined),
+                passportNo: p.passportNo || (showPassport && passportNo ? passportNo : undefined),
+                passportExpiry: p.passportExpiry || (showPassport && passportExpiry ? passportExpiry : undefined),
+                addressLine1: addressLine1 || undefined,
+                city: addressCity || location,
+                countryCode: guestNationality,
+                nationality: guestNationality,
+              };
+            })
+            };
+          }) : [{
             passengers: [{
               title: "Mr",
               firstName: firstName.trim(),
@@ -293,7 +374,7 @@ export default function HotelBookingModal({
           }]
         };
 
-        const bookRes = await fetch("/api/tbo-hotels", {
+        const bookRes = await fetchWithRetry("/api/tbo-hotels", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify(bookReqPayload),
@@ -312,20 +393,7 @@ export default function HotelBookingModal({
         setTboBookingId(bookData.bookingId || null);
 
         if (bookData.bookingId) {
-          try {
-            const voucherRes = await fetch("/api/tbo-hotels", {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({ action: "generate-voucher", bookingId: bookData.bookingId }),
-            });
-            const voucherData = await voucherRes.json();
-            if (voucherData.voucherStatus) {
-              setVoucherStatus("Voucher Generated");
-            }
-          } catch (e) {
-            console.warn("GenerateVoucher failed:", e);
-          }
-
+          // Fetch booking detail only (voucher is optional, generated manually if needed)
           try {
             const detailRes = await fetch("/api/tbo-hotels", {
               method: "POST",
@@ -431,10 +499,10 @@ export default function HotelBookingModal({
       if (data.voucherStatus) {
         setVoucherStatus("Voucher Generated");
       } else {
-        setVoucherStatus("Voucher Failed");
+        setVoucherStatus("Voucher not available");
       }
     } catch {
-      setVoucherStatus("Voucher Failed");
+      setVoucherStatus("Voucher not available");
     } finally {
       setActionLoading(null);
     }
@@ -580,17 +648,15 @@ export default function HotelBookingModal({
               })()}
               <div className="pt-2 border-t border-slate-200 space-y-1">
                 <div className="flex justify-between text-sm">
-                  <span className="text-slate-600">Room Fare</span>
-                  <span className="text-slate-900">{formatCurrency(perNightRoomFare)}</span>
+                  <span className="text-slate-600">Room ({nights} night{nights > 1 ? "s" : ""}{roomCount > 1 ? `, ${roomCount} rooms` : ""})</span>
+                  <span className="text-slate-900">{formatCurrency(rawTotal)}</span>
                 </div>
-                <div className="flex justify-between text-sm">
-                  <span className="text-slate-600">Taxes & Fees</span>
-                  <span className="text-slate-900">{formatCurrency(perNightTaxes)}</span>
-                </div>
-                <div className="flex justify-between text-sm font-bold pt-1 border-t border-slate-100">
-                  <span className="text-slate-700">Per Night Total</span>
-                  <span className="text-slate-900">{formatCurrency(perNightRate)}</span>
-                </div>
+                {serviceFee > 0 && (
+                  <div className="flex justify-between text-sm text-slate-500">
+                    <span>Service Fee</span>
+                    <span>{formatCurrency(serviceFee)}</span>
+                  </div>
+                )}
                 {discountApplied > 0 && (
                   <div className="flex justify-between text-sm">
                     <span className="text-green-600">Discount ({couponCodeUsed})</span>
@@ -631,7 +697,7 @@ export default function HotelBookingModal({
               {promoError && <p className="text-xs text-red-500 mt-1">{promoError}</p>}
               {promoClamped && (
                 <p className="text-xs text-amber-600 mt-1">
-                  Discount capped at ₹{discountApplied} (maximum discount for this booking)
+                  Discount capped at {formatCurrency(discountApplied)} (maximum discount for this booking)
                 </p>
               )}
               {couponCodeUsed && discountApplied > 0 && (
@@ -699,6 +765,80 @@ export default function HotelBookingModal({
               </div>
               <p className="text-[10px] text-slate-400">Lead guest name for booking</p>
             </FormSection>
+
+            {/* Multi-room passenger details */}
+            {roomConfigs && roomConfigs.length > 1 && selectedRoomIndices.map((roomIdx, i) => {
+              const roomPass = roomPassengers[roomIdx] || [];
+              const config = roomConfigs?.[roomIdx];
+              if (!config) return null;
+              return (
+                <FormSection key={roomIdx} icon={User} title={`Room ${i + 1} - ${config.adults} Adult${config.adults > 1 ? "s" : ""}${config.children > 0 ? `, ${config.children} Child${config.children > 1 ? "ren" : ""}` : ""}`}>
+                  {roomPass.map((pax, paxIdx) => {
+                    const isChild = config && paxIdx >= config.adults;
+                    const paxLabel = isChild
+                      ? `Child ${paxIdx - config.adults + 1}`
+                      : paxIdx === 0 ? "Lead Guest (Adult 1)" : `Adult ${paxIdx + 1}`;
+                    return (
+                    <div key={paxIdx} className="mb-4 pb-4 border-b border-slate-100 last:border-0 last:mb-0 last:pb-0">
+                      <p className="text-xs font-bold text-slate-600 mb-2">
+                        {paxLabel}
+                        {isChild && <span className="ml-2 text-[10px] font-normal text-slate-400">Age {pax.age}</span>}
+                      </p>
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        <FormInput
+                          id={`room${roomIdx}-pax${paxIdx}-firstName`}
+                          label="First Name"
+                          required
+                          value={pax.firstName}
+                          onChange={(e) => {
+                            const updated = { ...roomPassengers };
+                            updated[roomIdx] = [...(updated[roomIdx] || [])];
+                            updated[roomIdx][paxIdx] = { ...updated[roomIdx][paxIdx], firstName: e.target.value };
+                            setRoomPassengers(updated);
+                            markDirty();
+                          }}
+                          placeholder="First Name"
+                        />
+                        <FormInput
+                          id={`room${roomIdx}-pax${paxIdx}-lastName`}
+                          label="Last Name"
+                          required
+                          value={pax.lastName}
+                          onChange={(e) => {
+                            const updated = { ...roomPassengers };
+                            updated[roomIdx] = [...(updated[roomIdx] || [])];
+                            updated[roomIdx][paxIdx] = { ...updated[roomIdx][paxIdx], lastName: e.target.value };
+                            setRoomPassengers(updated);
+                            markDirty();
+                          }}
+                          placeholder="Last Name"
+                        />
+                      </div>
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-3">
+                        <div>
+                          <label className="text-[10px] font-bold uppercase tracking-widest text-slate-400 mb-1.5 block">Age</label>
+                          <input
+                            type="number"
+                            min={1}
+                            max={120}
+                            value={pax.age}
+                            onChange={(e) => {
+                              const updated = { ...roomPassengers };
+                              updated[roomIdx] = [...(updated[roomIdx] || [])];
+                              updated[roomIdx][paxIdx] = { ...updated[roomIdx][paxIdx], age: Math.max(1, Math.min(120, parseInt(e.target.value) || 25)) };
+                              setRoomPassengers(updated);
+                              markDirty();
+                            }}
+                            className="w-full px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm"
+                          />
+                        </div>
+                        <div />
+                      </div>
+                    </div>
+                  );})}
+                </FormSection>
+              );
+            })}
 
             {/* Identity - PAN */}
             {showPan && (
@@ -880,17 +1020,12 @@ export default function HotelBookingModal({
 
               <div className="border-t border-slate-200 pt-3 space-y-2">
                 <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400">Price Breakup</p>
+                {roomCount > 1 && (
+                  <p className="text-[10px] text-slate-500 mb-1">Per room × {roomCount} rooms × {nights} night{nights > 1 ? "s" : ""}</p>
+                )}
                 <div className="flex justify-between text-sm">
-                  <span className="text-slate-600">Room Fare ({formatCurrency(perNightRoomFare)} × {nights} night{nights > 1 ? "s" : ""})</span>
-                  <span className="text-slate-900">{formatCurrency(totalRoomFare)}</span>
-                </div>
-                <div className="flex justify-between text-sm">
-                  <span className="text-slate-600">Taxes & Fees ({formatCurrency(perNightTaxes)} × {nights} night{nights > 1 ? "s" : ""})</span>
-                  <span className="text-slate-900">{formatCurrency(totalTaxes)}</span>
-                </div>
-                <div className="flex justify-between text-sm font-bold pt-1 border-t border-slate-100">
-                  <span className="text-slate-700">Total ({formatCurrency(perNightRate)} × {nights} night{nights > 1 ? "s" : ""})</span>
-                  <span className="text-slate-900">{formatCurrency(baseAndTax)}</span>
+                  <span className="text-slate-600">Room ({nights} night{nights > 1 ? "s" : ""}{roomCount > 1 ? `, ${roomCount} rooms` : ""})</span>
+                  <span className="text-slate-900">{formatCurrency(rawTotal)}</span>
                 </div>
                 {prebookTaxBreakup && prebookTaxBreakup.length > 0 && (
                   <div className="pl-3 space-y-0.5">
@@ -913,10 +1048,12 @@ export default function HotelBookingModal({
                     </div>
                   ) : null;
                 })()}
-                <div className="flex justify-between text-sm">
-                  <span className="text-slate-600">Subtotal</span>
-                  <span className="text-slate-900">{formatCurrency(baseAndTax)}</span>
-                </div>
+                {serviceFee > 0 && (
+                  <div className="flex justify-between text-sm">
+                    <span className="text-slate-600">Service Fee</span>
+                    <span className="text-slate-900">{formatCurrency(serviceFee)}</span>
+                  </div>
+                )}
                 {discountApplied > 0 && (
                   <div className="flex justify-between text-sm">
                     <span className="text-green-600">Promo ({couponCodeUsed})</span>
@@ -935,7 +1072,10 @@ export default function HotelBookingModal({
                 <div className="flex items-center gap-2">
                   <Clock size={14} className="text-green-600" />
                   <span className="text-xs font-bold text-green-800">
-                    Free cancellation until {new Date(lastCancellationDeadline).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit" })}
+                    {lastCancellationDeadline && !isNaN(new Date(lastCancellationDeadline).getTime())
+                      ? <>Free cancellation until {new Date(lastCancellationDeadline).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit" })}</>
+                      : <>Free cancellation available</>
+                    }
                   </span>
                 </div>
               </div>

@@ -7,7 +7,7 @@ import LoginModal from "@/components/LoginModal";
 import { useAuth } from "@/hooks/useAuth";
 
 import { motion, AnimatePresence } from "motion/react";
-import { formatCurrency, getCurrencyForCountry } from "@/lib";
+import { formatCurrency } from "@/lib";
 import { formatMealPlan } from "@/lib/format-meal-plan";
 import { getCancellationSummary } from "@/lib/format-cancel-policy";
 import { Building2, Search, MapPin, X, Star, Wifi, Coffee, Car, Loader2, ChevronDown, Bed, Users, Minus, Plus, User, SlidersHorizontal } from "lucide-react";
@@ -63,15 +63,15 @@ function todayStr() {
 }
 
 const STAR_LABELS: Record<string, string> = {
-  OneStar: "★",
-  TwoStar: "★★",
-  ThreeStar: "★★★",
-  FourStar: "★★★★",
-  FiveStar: "★★★★★",
+  OneStar: "★", TwoStar: "★★", ThreeStar: "★★★", FourStar: "★★★★", FiveStar: "★★★★★",
+  "1Star": "★", "2Star": "★★", "3Star": "★★★", "4Star": "★★★★", "5Star": "★★★★★",
+  "1": "★", "2": "★★", "3": "★★★", "4": "★★★★", "5": "★★★★★",
 };
 
 const STAR_MAP: Record<string, number> = {
   OneStar: 1, TwoStar: 2, ThreeStar: 3, FourStar: 4, FiveStar: 5,
+  "1Star": 1, "2Star": 2, "3Star": 3, "4Star": 4, "5Star": 5,
+  "1": 1, "2": 2, "3": 3, "4": 4, "5": 5,
 };
 
 interface RoomConfig {
@@ -87,7 +87,7 @@ function makeRoom(adults = 2, children = 0): RoomConfig {
 export default function HotelsPage() {
   const { user } = useAuth();
   const [showLogin, setShowLogin] = useState(false);
-  const [selectedCity, setSelectedCity] = useState<City>({ code: "15648", name: "Goa", state: "Goa", source: "fallback" });
+  const [selectedCity, setSelectedCity] = useState<City>({ code: "15648", name: "Goa", state: "Goa", source: "fallback", country_code: "IN" });
   const [hotelCountryCode, setHotelCountryCode] = useState("IN");
   const [checkIn, setCheckIn] = useState("");
   const [checkOut, setCheckOut] = useState("");
@@ -106,7 +106,13 @@ export default function HotelsPage() {
   const [searchTraceId, setSearchTraceId] = useState("");
   const [showBookingModal, setShowBookingModal] = useState(false);
   const [sortBy, setSortBy] = useState<HotelSortKey>("recommended");
-  const { filters, updateFilter, resetFilters, hasActiveFilters, activeFilterCount } = useHotelFilters();
+  const priceRange = useMemo<[number, number]>(() => {
+    if (results.length === 0) return [0, 500000];
+    const prices = results.map(h => h.price).filter(p => p > 0);
+    if (prices.length === 0) return [0, 500000];
+    return [Math.min(...prices), Math.max(...prices)];
+  }, [results]);
+  const { filters, updateFilter, resetFilters, hasActiveFilters, activeFilterCount } = useHotelFilters(priceRange);
   const [error, setError] = useState("");
   const [hotelNameFilter, setHotelNameFilter] = useState("");
 
@@ -163,8 +169,8 @@ export default function HotelsPage() {
 
     try {
       const RoomGuests = roomConfigs.map((r) => ({
-        AdultCount: r.adults,
-        ChildCount: r.children,
+        Adults: r.adults,
+        Children: r.children,
         ChildAge: r.childAges,
       }));
 
@@ -176,14 +182,14 @@ export default function HotelsPage() {
           params: {
             CheckInDate: checkIn,
             CheckOutDate: checkOut,
-            CountryName: hotelCountryCode === "IN" ? "India" : hotelCountryCode,
+            CountryName: hotelCountryCode,
             CityName: selectedCity.name,
             CityCode: selectedCity.code,
             IsNearBySearchAllowed: false,
             NoOfRooms: roomCount,
-            GuestNationality: hotelCountryCode,
+            GuestNationality: "IN",
             RoomGuests,
-            PreferredCurrency: getCurrencyForCountry(hotelCountryCode),
+            PreferredCurrency: "INR",
             ResultCount: 0,
             countryCode: hotelCountryCode,
             Filters: { StarRating: "All", OrderBy: "PriceAsc" },
@@ -274,10 +280,12 @@ export default function HotelsPage() {
               <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
                 <CitySearchDropdown
                   value={selectedCity.name}
-                  onChange={setSelectedCity}
+                  onChange={(city) => {
+                    setSelectedCity(city);
+                    if (city.country_code) setHotelCountryCode(city.country_code);
+                  }}
                   placeholder="Search cities..."
                   label="Location"
-                  countryCode={hotelCountryCode}
                 />
                 <div className="md:col-span-2">
                   <DateRangePicker
@@ -585,6 +593,13 @@ export default function HotelsPage() {
                   <span className="text-[10px] bg-blue-100 text-blue-700 px-2 py-0.5 rounded-full font-medium">Live Inventory</span>
                 </div>
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                  {filteredResults.length === 0 && results.length > 0 && (
+                    <div className="col-span-full text-center py-12">
+                      <Building2 size={40} className="mx-auto text-slate-300 mb-3" />
+                      <p className="text-slate-500 font-medium mb-1">No hotels match your filters</p>
+                      <button onClick={resetFilters} className="text-sm text-emerald-600 hover:text-emerald-700 font-medium cursor-pointer">Clear all filters</button>
+                    </div>
+                  )}
                   {filteredResults.map((hotel, i) => (
                     <motion.div
                       key={hotel.hotelCode}
@@ -648,8 +663,8 @@ export default function HotelsPage() {
                         <p className="text-xs text-slate-600/70 mt-2 line-clamp-2">{hotel.description}</p>
                         <div className="mt-3 pt-3 border-t border-slate-100 flex items-center justify-between">
                           <div>
-                            <p className="text-xl font-black font-mono text-brand-charcoal">{formatCurrency(Math.round(hotel.price / nights))}</p>
-                            <p className="text-[10px] text-slate-600/70">per night</p>
+                            <p className="text-xl font-black font-mono text-brand-charcoal">{formatCurrency(Math.round(hotel.price))}</p>
+                            <p className="text-[10px] text-slate-600/70">for {roomCount} {roomCount === 1 ? "room" : "rooms"}, {nights} {nights === 1 ? "night" : "nights"}</p>
                           </div>
                           <button className="px-4 py-2 bg-brand-antique-gold text-white rounded-xl text-xs font-bold hover:bg-brand-emerald transition-colors cursor-pointer">
                             View Rooms
@@ -835,8 +850,8 @@ export default function HotelsPage() {
                               )}
                             </div>
                             <div className="text-right">
-                              <p className="text-xl font-black font-mono text-brand-charcoal">{formatCurrency(Math.round(selectedHotel.price / nights))}</p>
-                              <p className="text-[10px] text-slate-600/70">per night</p>
+                              <p className="text-xl font-black font-mono text-brand-charcoal">{formatCurrency(Math.round((room.roomFare + room.roomTax) * nights))}</p>
+                              <p className="text-[10px] text-slate-600/70">{roomCount > 1 ? `per room · ${formatCurrency(Math.round((room.roomFare + room.roomTax) * nights * roomCount))} total` : `for ${nights} night${nights > 1 ? "s" : ""}`}</p>
                             </div>
                           </div>
                         </div>
@@ -849,18 +864,27 @@ export default function HotelsPage() {
                 {selectedRoom && (
                   <div className="mt-4 pt-4 border-t border-slate-200">
                     <div className="rounded-xl p-4 mb-4 bg-brand-ivory">
+                      {roomCount > 1 && (
+                        <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400 mb-2">Per Room</p>
+                      )}
                       <div className="flex justify-between items-center mb-2">
                         <span className="text-sm text-slate-600">Room Fare ({formatCurrency(selectedRoom.roomFare)} × {nights} night{nights > 1 ? "s" : ""})</span>
                         <span className="font-mono font-bold">{formatCurrency(selectedRoom.roomFare * nights)}</span>
                       </div>
                       <div className="flex justify-between items-center mb-2">
-                        <span className="text-sm text-slate-600">Taxes & Fees ({formatCurrency(Math.round(selectedHotel.price / nights) - selectedRoom.roomFare)} × {nights} night{nights > 1 ? "s" : ""})</span>
-                        <span className="font-mono font-bold">{formatCurrency(selectedHotel.price - selectedRoom.roomFare * nights)}</span>
+                        <span className="text-sm text-slate-600">Taxes & Fees ({formatCurrency(selectedRoom.roomTax)} × {nights} night{nights > 1 ? "s" : ""})</span>
+                        <span className="font-mono font-bold">{formatCurrency(selectedRoom.roomTax * nights)}</span>
                       </div>
                       <div className="flex justify-between items-center pt-2 border-t border-slate-200">
-                        <span className="font-bold text-brand-charcoal">Total ({formatCurrency(Math.round(selectedHotel.price / nights))} × {nights} night{nights > 1 ? "s" : ""})</span>
-                        <span className="font-mono font-black text-xl text-brand-antique-gold">{formatCurrency(selectedHotel.price)}</span>
+                        <span className="font-bold text-brand-charcoal">{roomCount > 1 ? `Per Room Total` : "Total"}</span>
+                        <span className="font-mono font-black text-xl text-brand-antique-gold">{formatCurrency((selectedRoom.roomFare + selectedRoom.roomTax) * nights)}</span>
                       </div>
+                      {roomCount > 1 && (
+                        <div className="flex justify-between items-center mt-2 pt-2 border-t border-slate-200">
+                          <span className="font-bold text-brand-charcoal">Total ({roomCount} rooms × {nights} night{nights > 1 ? "s" : ""})</span>
+                          <span className="font-mono font-black text-xl text-brand-antique-gold">{formatCurrency((selectedRoom.roomFare + selectedRoom.roomTax) * nights * roomCount)}</span>
+                        </div>
+                      )}
                     </div>
                     <button
                       onClick={() => {
@@ -889,6 +913,7 @@ export default function HotelsPage() {
           onClose={() => setShowBookingModal(false)}
           hotel={selectedHotel}
           room={selectedRoom}
+          rooms={hotelRooms.length > 0 ? hotelRooms : [selectedRoom]}
           sessionId={sessionId}
           traceId={searchTraceId}
           user={user}
@@ -896,6 +921,7 @@ export default function HotelsPage() {
           checkIn={checkIn}
           checkOut={checkOut}
           guestCount={totalGuests}
+          roomConfigs={roomConfigs}
         />
       )}
 

@@ -134,7 +134,7 @@ export const emailTemplates = {
     amount: number;
     taxAmount: number;
     totalAmount: number;
-    dueDate: string;
+    dueDate: string | null;
     currency?: string;
   }) => ({
     subject: `Invoice ${invoice.invoiceNumber} - GoRASA Travel`,
@@ -149,7 +149,8 @@ export const emailTemplates = {
           <p style="margin: 5px 0;"><strong>Amount:</strong> ${formatCurrency(invoice.amount, invoice.currency || 'INR')}</p>
           ${invoice.taxAmount > 0 ? `<p style="margin: 5px 0;"><strong>Tax:</strong> ${formatCurrency(invoice.taxAmount, invoice.currency || 'INR')}</p>` : ''}
           <p style="margin: 5px 0;"><strong>Total:</strong> ${formatCurrency(invoice.totalAmount, invoice.currency || 'INR')}</p>
-          <p style="margin: 5px 0;"><strong>Due Date:</strong> ${invoice.dueDate}</p>
+          <p style="margin: 5px 0;"><strong>Status:</strong> <span style="color: #059669; font-weight: bold;">PAID</span></p>
+          ${invoice.dueDate ? `<p style="margin: 5px 0;"><strong>Due Date:</strong> ${invoice.dueDate}</p>` : ''}
         </div>
         <p><a href="https://cckr.vercel.app/trips" style="background: #059669; color: white; padding: 12px 24px; text-decoration: none; border-radius: 8px; display: inline-block;">View Invoice</a></p>
         <p>Best regards,<br/>GoRASA Team</p>

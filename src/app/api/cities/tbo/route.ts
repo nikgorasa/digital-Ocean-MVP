@@ -102,15 +102,39 @@ async function fetchTBOCities(countryCode: string): Promise<CityResult[]> {
 }
 
 export async function GET(req: NextRequest) {
-  const countryCode = req.nextUrl.searchParams.get("countryCode") || "IN";
+  const countryCode = req.nextUrl.searchParams.get("countryCode");
 
   try {
-    const tboCities = await fetchTBOCities(countryCode);
-    if (tboCities.length > 0) {
-      return NextResponse.json({ source: "tbo", cities: tboCities, countryCode });
+    if (countryCode) {
+      // Single country mode (used by CitySearchDropdown with specific country)
+      const tboCities = await fetchTBOCities(countryCode);
+      if (tboCities.length > 0) {
+        return NextResponse.json({ source: "tbo", cities: tboCities, countryCode });
+      }
+    } else {
+      // Global mode — fetch all cached countries and merge
+      const ALL_COUNTRIES = ["IN","AE","TH","SG","MY","ID","VN","PH","LK","NP","MV","BH","QA","OM","KW","SA","GB","US","DE","FR","IT","ES","NL","CH","AT","BE","TR","ZA","AU","NZ","JP","KR","CN","TW","HK","MO"];
+      const allCities: CityResult[] = [];
+      const seenNames = new Set<string>();
+      for (const cc of ALL_COUNTRIES) {
+        try {
+          const cities = await fetchTBOCities(cc);
+          for (const c of cities) {
+            const key = `${c.name.toLowerCase()}:${c.code}`;
+            if (!seenNames.has(key)) {
+              seenNames.add(key);
+              allCities.push(c);
+            }
+          }
+        } catch {}
+      }
+      allCities.sort((a, b) => a.name.localeCompare(b.name));
+      if (allCities.length > 0) {
+        return NextResponse.json({ source: "tbo", cities: allCities });
+      }
     }
   } catch (e) {
-    console.warn(`TBO CityList failed for ${countryCode}:`, e);
+    console.warn(`TBO CityList failed for ${countryCode || "global"}:`, e);
   }
 
   return NextResponse.json({ source: "tbo_unavailable", cities: [], countryCode });

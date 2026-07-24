@@ -1,8 +1,8 @@
 # GoRASA — Go-Live Launch Plan
 
-**Version:** 1.1
-**Date:** 2026-07-03
-**Status:** Pre-Launch
+**Version:** 1.2
+**Date:** 2026-07-24
+**Status:** Pre-Launch (TBO Certification Complete)
 
 ---
 
@@ -14,11 +14,14 @@
 | **Security Issues** | 10/10 closed ✅ |
 | **Corporate Flow Issues** | 7/7 closed ✅ |
 | **Special Tariff Issues** | 3/3 closed ✅ |
+| **TBO Hotel Certification** | 8/8 cases pass ✅ |
+| **TBO Flight Certification** | Search, FareQuote, Book, Ticket ✅ |
+| **Multi-room Support** | Implemented ✅ |
 | **Cashfree Integration** | 0/2 (blocker) |
 | **TypeScript Errors** | 0 |
 | **Build Status** | Clean ✅ |
 | **Post-Task Checks** | 9/9 ✅ |
-| **Preflight Checks** | 13/13 ✅ |
+| **Preflight Checks** | 14/14 ✅ |
 | **DEV Live** | https://cckr.vercel.app ✅ |
 | **PROD Live** | https://project-yidb6.vercel.app ✅ |
 
@@ -34,7 +37,7 @@
 | P2 | **No error monitoring** — No Sentry, no Vercel error tracking. Production errors are invisible. | Cannot detect or debug production issues. | Needs setup |
 | P3 | **No custom domain** — PROD at `project-yidb6.vercel.app` looks unprofessional. | Brand trust, SEO, email deliverability all suffer. | Needs domain purchase |
 | P4 | **Google OAuth not configured** — Auth.ts has Google provider but credentials may be stale/missing. | Users expecting Google sign-in will see errors. | Needs verification |
-| P5 | **Corporate wallet deduction untested end-to-end** — Code is written but no E2E test has been run against real TBO API with a corporate user. | Corporate flow could silently fail in production. | Needs testing |
+| P5 | **Corporate wallet deduction untested end-to-end** — Code is written but no E2E test has been run against real TBO API with a corporate user. | Corporate flow could silently fail in production. | ✅ VERIFIED (Session 38) — Corporate flow working end-to-end, all 8 TBO certification cases pass |
 
 ### 2.2 HIGH — Must Fix Before Public Launch
 
@@ -44,7 +47,7 @@
 | P7 | **Email delivery untested** — SMTP configured but no end-to-end email test has been sent. | Booking confirmations, password resets could silently fail. | Needs verification |
 | P8 | **No user dashboard** — Users have no central place to see their bookings, spending, loyalty progress. | Poor UX for repeat users. | Not built |
 | P9 | **No SEO meta tags** — Zero Open Graph, no page titles, no structured data. | Google can't index properly, social shares look broken. | Not built |
-| P10 | **Price revalidation is mock** — `revalidatePrice()` in checkout returns random fluctuations, never actually checks with TBO. | Prices could change between booking and payment. | Needs real TBO integration |
+| P10 | **Price revalidation is mock** — `revalidatePrice()` in checkout returns random fluctuations, never actually checks with TBO. | Prices could change between booking and payment. | ✅ RESOLVED (Session 37) — Price locked at booking time. Re-validation removed from checkout (broke flow). Verified at PreBook/FareQuote step. |
 | P11 | **Demo login uses hardcoded passwords** — Passwords are visible in client-side code (`useAuth.tsx`). | Security risk if deployed as-is to production. | Needs removal for prod |
 
 ### 2.3 MEDIUM — Should Fix Within First Week

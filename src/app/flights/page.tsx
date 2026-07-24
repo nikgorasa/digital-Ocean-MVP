@@ -160,6 +160,7 @@ export default function FlightsPage() {
   const [searchTraceId, setSearchTraceId] = useState<string>("");
   const [searchError, setSearchError] = useState("");
   const [selectedFlight, setSelectedFlight] = useState<Flight | null>(null);
+  const [bookingFlight, setBookingFlight] = useState<Flight | null>(null);
   const [showBookingModal, setShowBookingModal] = useState(false);
   const [flightSelections, setFlightSelections] = useState<Map<string, Flight>>(new Map());
 
@@ -175,9 +176,9 @@ export default function FlightsPage() {
 
   const bookingFlights = useMemo(() => {
     if (isReturnTrip) return Array.from(flightSelections.values());
-    if (selectedFlight) return [selectedFlight];
+    if (bookingFlight) return [bookingFlight];
     return [];
-  }, [isReturnTrip, flightSelections, selectedFlight]);
+  }, [isReturnTrip, flightSelections, bookingFlight]);
 
   const toggleSelection = useCallback((flight: Flight) => {
     const key = flight.leg === "inbound" ? "inbound" : "outbound";
@@ -332,6 +333,8 @@ export default function FlightsPage() {
         isFreeMealAvailable: f.isFreeMealAvailable ?? false,
         validatingAirline: f.validatingAirline || "",
         gstAllowed: f.gstAllowed ?? false,
+        isDomestic: f.isDomestic ?? true,
+        isPassportRequiredAtBook: f.isPassportRequiredAtBook ?? false,
         baseRate: f.baseRate,
         markupAmount: f.markupAmount,
       }));
@@ -492,7 +495,7 @@ export default function FlightsPage() {
                 {flight.tier}
               </span>
             </div>
-            <p className="text-xl sm:text-2xl font-black font-mono text-brand-charcoal mt-1">{formatCurrency(flight.price * totalPassengers)}</p>
+            <p className="text-xl sm:text-2xl font-black font-mono text-brand-charcoal mt-1">{formatCurrency(flight.price)}</p>
             <p className="text-[10px] text-slate-600">total for {totalPassengers} pax</p>
           </div>
         </div>
@@ -570,7 +573,7 @@ export default function FlightsPage() {
                             </span>
                           </div>
                           <div className="flex items-center justify-between sm:justify-end gap-3 sm:gap-4 shrink-0">
-                            <p className="text-lg font-black font-mono text-brand-charcoal">{formatCurrency(fare.price * totalPassengers)}</p>
+                            <p className="text-lg font-black font-mono text-brand-charcoal">{formatCurrency(fare.price)}</p>
                             <button
                               onClick={(e) => {
                                 e.stopPropagation();
@@ -1069,6 +1072,13 @@ export default function FlightsPage() {
                 ) : (
                   <>
                     <p className="text-sm text-slate-600 mb-4">{groupedResults.length} flights found</p>
+                    {groupedResults.length === 0 && results.length > 0 && (
+                      <div className="text-center py-12">
+                        <Plane size={40} className="mx-auto text-slate-300 mb-3" />
+                        <p className="text-slate-500 font-medium mb-1">No flights match your filters</p>
+                        <button onClick={resetFilters} className="text-sm text-emerald-600 hover:text-emerald-700 font-medium cursor-pointer">Clear all filters</button>
+                      </div>
+                    )}
                     <div className="space-y-3">
                       {groupedResults.map((group, i) => renderFlightCard(group.representative, i, group.fares.length, group.key))}
                     </div>
@@ -1093,7 +1103,7 @@ export default function FlightsPage() {
                     <span className="text-[10px] font-bold uppercase text-slate-600">{leg}</span>
                     <span className="font-semibold text-brand-charcoal">{f.airline} {f.flightNumber}</span>
                     <span className="text-slate-600">{f.origin}→{f.destination}</span>
-                    <span className="font-mono font-bold text-brand-charcoal text-xs sm:text-sm">{formatCurrency(f.price * totalPassengers)}</span>
+                    <span className="font-mono font-bold text-brand-charcoal text-xs sm:text-sm">{formatCurrency(f.price)}</span>
                   </div>
                 ))}
               </div>
@@ -1105,7 +1115,7 @@ export default function FlightsPage() {
                     setShowBookingModal(true);
                   }
                 }}
-                className="px-4 sm:px-8 py-3 bg-brand-antique-gold text-white rounded-xl font-bold hover:bg-brand-emerald transition-colors cursor-pointer active:scale-[0.98]"
+                className="px-4 sm:px-8 py-3 bg-brand-antique-gold text-white rounded-xl font-bold hover:bg-brand-emerald transition-colors cursor-pointer"
               >
                 {user ? `Book ${flightSelections.size} Flights` : "Sign in to Book"}
               </button>
@@ -1115,15 +1125,11 @@ export default function FlightsPage() {
       </main>
 
       {/* Flight Detail Modal */}
-      <AnimatePresence>
         {selectedFlight && (
           <div className="fixed inset-0 z-[100] flex items-end sm:items-center sm:justify-center sm:p-4">
             <div className="absolute inset-0 bg-brand-charcoal/60 backdrop-blur-md" onClick={() => setSelectedFlight(null)} />
-            <motion.div
-              initial={{ opacity: 0, y: 40 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: 40 }}
-              className="relative bg-white w-full sm:max-w-md sm:rounded-3xl rounded-t-3xl shadow-2xl overflow-hidden p-5 sm:p-8 max-h-[92vh] sm:max-h-[90vh] overflow-y-auto"
+            <div
+              className="relative z-10 bg-white w-full sm:max-w-md sm:rounded-3xl rounded-t-3xl shadow-2xl overflow-hidden p-5 sm:p-8 max-h-[92vh] sm:max-h-[90vh] overflow-y-auto animate-in fade-in slide-in-from-bottom-4 duration-200"
             >
               <button onClick={() => setSelectedFlight(null)} className="absolute top-4 right-4 sm:top-6 sm:right-6 p-2 min-w-[44px] min-h-[44px] flex items-center justify-center text-slate-600 hover:text-brand-charcoal cursor-pointer rounded-xl hover:bg-slate-100 transition-colors">
                 <X size={20} />
@@ -1213,7 +1219,7 @@ export default function FlightsPage() {
                 <div className="pt-4 border-t border-slate-200">
                   <div className="flex justify-between items-center mb-4">
                     <div>
-                      <p className="text-3xl font-black font-mono text-brand-charcoal">{formatCurrency(selectedFlight.price * totalPassengers)}</p>
+                      <p className="text-3xl font-black font-mono text-brand-charcoal">{formatCurrency(selectedFlight.price)}</p>
                       <p className="text-xs text-slate-600">total for {totalPassengers} pax</p>
                     </div>
                   </div>
@@ -1222,25 +1228,29 @@ export default function FlightsPage() {
                       if (!user) {
                         setShowLogin(true);
                       } else {
+                        setBookingFlight(selectedFlight);
                         setShowBookingModal(true);
                       }
                     }}
-                    className="w-full py-3 bg-brand-antique-gold text-white rounded-xl font-bold hover:bg-brand-emerald transition-colors cursor-pointer active:scale-[0.98]"
+                    className="w-full py-3 bg-brand-antique-gold text-white rounded-xl font-bold hover:bg-brand-emerald transition-colors cursor-pointer"
                   >
                     {user ? "Book Now" : "Sign in to Book"}
                   </button>
                 </div>
               </div>
-            </motion.div>
+            </div>
           </div>
         )}
-      </AnimatePresence>
 
       {/* Flight Booking Modal */}
       {showBookingModal && bookingFlights.length > 0 && (
         <FlightBookingModal
           isOpen={showBookingModal}
-          onClose={() => setShowBookingModal(false)}
+          onClose={() => {
+            setShowBookingModal(false);
+            setBookingFlight(null);
+            setSelectedFlight(null);
+          }}
           flights={bookingFlights}
           user={user}
           date={departDate}
@@ -1249,6 +1259,7 @@ export default function FlightsPage() {
           children={children}
           infants={infants}
           traceId={searchTraceId}
+          childAges={childAges}
         />
       )}
 

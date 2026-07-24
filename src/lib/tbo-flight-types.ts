@@ -343,6 +343,7 @@ export interface TBOFlightBookPassenger {
   GSTCompanyEmail?: string;
   PassportNo?: string;
   PassportExpiry?: string;
+  PassportIssueCountryCode?: string;
 }
 
 export interface TBOFlightBookRequest {
@@ -542,4 +543,93 @@ export interface TBOBookingResult {
 
 export interface TBOFlightTicketOutput {
   results: TBOBookingResult[];
+}
+
+// Flight Cancellation Types
+
+export enum TBORequestType {
+  NotSet = 0,
+  FullCancellation = 1,
+  PartialCancellation = 2,
+  Reissuance = 3,
+}
+
+export enum TBOCancellationType {
+  NotSet = 0,
+  NoShow = 1,
+  FlightCancelled = 2,
+  Others = 3,
+}
+
+export interface TBOFlightGetCancellationChargesRequest {
+  EndUserIp: string;
+  TokenId: string;
+  RequestType: TBORequestType;
+  BookingId: number;
+  BookingMode?: number;
+}
+
+export interface TBOFlightGetCancellationChargesResponse {
+  Response: {
+    TraceId: string;
+    ResponseStatus: number;
+    RefundAmount: number;
+    CancellationCharge: number;
+    Remarks: string;
+    Currency: string;
+    Error: TBOFlightError | null;
+  };
+}
+
+export interface TBOFlightSendChangeRequest {
+  EndUserIp: string;
+  TokenId: string;
+  BookingId: number;
+  RequestType: TBORequestType;
+  CancellationType: TBOCancellationType;
+  Remarks: string;
+  Sectors?: { Origin: string; Destination: string }[];
+  TicketId?: number[];
+}
+
+export interface TBOFlightSendChangeResponse {
+  Response: {
+    TicketCRInfo: {
+      ChangeRequestId: number;
+      Status: number;
+      Remarks: string;
+    };
+    ResponseStatus: number;
+    Error: TBOFlightError | null;
+  };
+}
+
+export interface TBOFlightGetChangeRequestStatusRequest {
+  EndUserIp: string;
+  TokenId: string;
+  ChangeRequestId: number;
+}
+
+export interface TBOFlightGetChangeRequestStatusResponse {
+  Response: {
+    ChangeRequestId: number;
+    Status: number;
+    Remarks: string;
+    ResponseStatus: number;
+    Error: TBOFlightError | null;
+  };
+}
+
+export interface TBOFlightReleasePNRRequest {
+  EndUserIp: string;
+  TokenId: string;
+  BookingId: number;
+  Remarks: string;
+}
+
+export interface TBOFlightReleasePNRResponse {
+  Response: {
+    ResponseStatus: number;
+    Error: TBOFlightError | null;
+  };
 }

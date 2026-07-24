@@ -59,17 +59,7 @@ async function markBookingExpired(bookingId: string) {
 }
 
 function revalidatePrice(booking: { price: number }): { available: boolean; newPrice: number; reason?: string } {
-  if (PAYMENT_CONFIG.mock) {
-    const rand = Math.random();
-    if (rand > 0.85) {
-      const increase = Math.round(booking.price * 0.05);
-      return { available: true, newPrice: booking.price + increase };
-    } else if (rand > 0.7) {
-      const decrease = Math.round(booking.price * 0.03);
-      return { available: true, newPrice: booking.price - decrease };
-    }
-    return { available: true, newPrice: booking.price };
-  }
+  // In production, always return the saved price (no mock price changes)
   return { available: true, newPrice: booking.price };
 }
 
@@ -141,6 +131,9 @@ export async function POST(request: NextRequest) {
         );
       }
 
+      // Use the saved price (no TBO re-validation at checkout to avoid test env issues)
+      const currentPrice = booking.price;
+
       // Apply corporate discount
       const category = booking.type === "HOTEL" ? "HOTEL" : booking.type === "FLIGHT" ? "FLIGHT" : "ALL";
       const remainingMarkup = Math.max(0, (booking.markupAmount || 0) - (booking.promoCost || 0));
@@ -148,7 +141,7 @@ export async function POST(request: NextRequest) {
         user.companyId,
         category,
         undefined,
-        booking.price,
+        currentPrice,
         remainingMarkup
       );
 
@@ -166,7 +159,7 @@ export async function POST(request: NextRequest) {
       }
 
       // Apply total discount (promo + corporate + admin) capped at markup
-      const finalAmountAfterAllDiscounts = Math.max(0, booking.price - totalDiscount);
+      const finalAmountAfterAllDiscounts = Math.max(0, currentPrice - totalDiscount);
 
       // Calculate tax based on company tax rate
       const taxRate = company.taxRate ?? 0;
@@ -187,7 +180,7 @@ export async function POST(request: NextRequest) {
         }, { status: 400 });
       }
 
-      // Set due date based on company payment terms
+      // Set due date based on company payment terms (null for immediately PAID invoices)
       const paymentTermsDays = company.paymentTermsDays ?? 30;
       const dueDate = new Date();
       dueDate.setDate(dueDate.getDate() + paymentTermsDays);
@@ -239,7 +232,7 @@ export async function POST(request: NextRequest) {
             status: "COMPLETED",
           },
         }),
-        // Create invoice
+        // Create invoice (PAID immediately, no due date needed)
         prisma.invoice.create({
           data: {
             companyId: user.companyId,
@@ -249,7 +242,7 @@ export async function POST(request: NextRequest) {
             taxAmount,
             totalAmount: totalWithTax,
             status: "PAID",
-            dueDate,
+            dueDate: null, // No due date for immediately PAID invoices
             paidAt: new Date(),
             paidAmount: totalWithTax,
           },
@@ -257,7 +250,6 @@ export async function POST(request: NextRequest) {
       ]);
 
       // Send invoice email (non-blocking)
-      const dueDateStr = dueDate.toISOString().split("T")[0];
       sendEmail({
         to: user.email,
         ...emailTemplates.invoiceIssued({
@@ -267,7 +259,7 @@ export async function POST(request: NextRequest) {
           amount: finalAmountAfterAllDiscounts,
           taxAmount,
           totalAmount: totalWithTax,
-          dueDate: dueDateStr,
+          dueDate: null, // PAID immediately, no due date
         }),
       }).catch(e => console.error("[Email] Invoice email failed:", e));
 
