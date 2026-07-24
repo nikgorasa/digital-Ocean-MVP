@@ -188,22 +188,39 @@ export default function CitySearchDropdown({
   // Apply scope filtering for hotel mode
   if (mode === "hotel" && scope !== "all" && hotelCities.length > 0) {
     if (scope === "domestic") {
-      const indian = hotelCities.filter(c => c.country_code === "IN");
-      const international = hotelCities.filter(c => c.country_code !== "IN");
-      dataSource = [...indian, ...international.slice(0, 10)];
+      dataSource = hotelCities.filter(c => c.country_code === "IN");
     } else {
       dataSource = hotelCities.filter(c => c.country_code !== "IN");
     }
   }
 
   const filteredAirports = query
-    ? dataSource.filter(c =>
-        c.name.toLowerCase().includes(query) ||
-        c.iata_code?.toLowerCase().includes(query) ||
-        c.airport_name?.toLowerCase().includes(query) ||
-        c.state?.toLowerCase().includes(query) ||
-        c.country_code?.toLowerCase().includes(query)
-      ).slice(0, 20)
+    ? (() => {
+        const matches = dataSource.filter(c =>
+          c.name.toLowerCase().includes(query) ||
+          c.iata_code?.toLowerCase().includes(query) ||
+          c.airport_name?.toLowerCase().includes(query) ||
+          c.state?.toLowerCase().includes(query) ||
+          c.country_code?.toLowerCase().includes(query)
+        );
+        const isPopular = (c: City) =>
+          mode === "hotel" ? POPULAR_HOTEL_CITIES.includes(c.name) : POPULAR_IATA.includes(c.iata_code || "");
+        const isIndian = (c: City) => c.country_code === "IN";
+        const isPrefix = (c: City) => c.name.toLowerCase().startsWith(query);
+        matches.sort((a, b) => {
+          const aPop = isPopular(a) ? 0 : 1;
+          const bPop = isPopular(b) ? 0 : 1;
+          if (aPop !== bPop) return aPop - bPop;
+          const aInd = isIndian(a) ? 0 : 1;
+          const bInd = isIndian(b) ? 0 : 1;
+          if (aInd !== bInd) return aInd - bInd;
+          const aPre = isPrefix(a) ? 0 : 1;
+          const bPre = isPrefix(b) ? 0 : 1;
+          if (aPre !== bPre) return aPre - bPre;
+          return a.name.localeCompare(b.name);
+        });
+        return matches.slice(0, 20);
+      })()
     : [];
 
   const popular = query ? [] : dataSource.filter(c =>

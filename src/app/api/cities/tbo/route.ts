@@ -104,6 +104,7 @@ async function fetchTBOCities(countryCode: string, iataMap?: Record<string, stri
   const unique = parsed.filter(c => {
     const key = c.name.toLowerCase();
     if (seen.has(key)) return false;
+    if (!/^[a-zA-Z]/.test(c.name)) return false;
     seen.add(key);
     return true;
   }).sort((a, b) => a.name.localeCompare(b.name));
