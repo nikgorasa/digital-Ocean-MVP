@@ -61,6 +61,7 @@ export async function POST(req: NextRequest) {
           hotelCodes,
           city: cityName,
           cityCode,
+          countryCode: p.countryCode || p.CountryName || undefined,
           rooms: roomsArray,
           guestNationality: p.GuestNationality || p.guestNationality || "IN",
           preferredCurrency: p.PreferredCurrency || p.preferredCurrency || getCurrencyForCountry(p.GuestNationality || p.guestNationality || "IN"),

@@ -48,7 +48,21 @@ async function fetchIATACodes(): Promise<Record<string, string>> {
   return iataMap;
 }
 
-async function fetchTBOCities(countryCode: string): Promise<CityResult[]> {
+let _iataMapCache: Record<string, string> | null = null;
+let _iataMapCacheTime = 0;
+const IATA_CACHE_TTL = 60 * 60 * 1000;
+
+async function getIATAMap(): Promise<Record<string, string>> {
+  const now = Date.now();
+  if (_iataMapCache && now - _iataMapCacheTime < IATA_CACHE_TTL) {
+    return _iataMapCache;
+  }
+  _iataMapCache = await fetchIATACodes();
+  _iataMapCacheTime = now;
+  return _iataMapCache;
+}
+
+async function fetchTBOCities(countryCode: string, iataMap?: Record<string, string>): Promise<CityResult[]> {
   const now = Date.now();
   const cacheKey = countryCode.toUpperCase();
   if (_tboCitiesCache && cacheKey === _tboCitiesCacheKey && now - _tboCitiesCacheTime < CACHE_TTL) {
@@ -69,7 +83,7 @@ async function fetchTBOCities(countryCode: string): Promise<CityResult[]> {
     try { await cacheSet("CityList", tboCities, countryCode, { ttlSeconds: 86400 }); } catch {}
   }
 
-  const iataMap = await fetchIATACodes();
+  const map = iataMap || await getIATAMap();
 
   const parsed = tboCities.map(c => {
     const parts = (c.Name || "").split(",").map(s => s.trim());
@@ -80,7 +94,7 @@ async function fetchTBOCities(countryCode: string): Promise<CityResult[]> {
       name,
       state: parts[1] || "",
       source: "tbo" as const,
-      iata_code: iataMap[name.toLowerCase()] || undefined,
+      iata_code: map[name.toLowerCase()] || undefined,
       country_code: countryCode,
       flag: COUNTRY_FLAGS[countryCode] || undefined,
     };
@@ -112,21 +126,31 @@ export async function GET(req: NextRequest) {
         return NextResponse.json({ source: "tbo", cities: tboCities, countryCode });
       }
     } else {
-      // Global mode — fetch all cached countries and merge
+      // Global mode — fetch all cached countries in parallel
       const ALL_COUNTRIES = ["IN","AE","TH","SG","MY","ID","VN","PH","LK","NP","MV","BH","QA","OM","KW","SA","GB","US","DE","FR","IT","ES","NL","CH","AT","BE","TR","ZA","AU","NZ","JP","KR","CN","TW","HK","MO"];
+      const iataMap = await getIATAMap();
+      const results = await Promise.allSettled(
+        ALL_COUNTRIES.map(cc => fetchTBOCities(cc, iataMap))
+      );
       const allCities: CityResult[] = [];
       const seenNames = new Set<string>();
-      for (const cc of ALL_COUNTRIES) {
-        try {
-          const cities = await fetchTBOCities(cc);
-          for (const c of cities) {
+      let failCount = 0;
+      for (const r of results) {
+        if (r.status === "fulfilled") {
+          for (const c of r.value) {
             const key = `${c.name.toLowerCase()}:${c.code}`;
             if (!seenNames.has(key)) {
               seenNames.add(key);
               allCities.push(c);
             }
           }
-        } catch {}
+        } else {
+          failCount++;
+          console.warn("[TBO Cities] Country fetch failed:", r.reason);
+        }
+      }
+      if (failCount > 0) {
+        console.warn(`[TBO Cities] ${failCount}/${ALL_COUNTRIES.length} countries failed`);
       }
       allCities.sort((a, b) => a.name.localeCompare(b.name));
       if (allCities.length > 0) {
