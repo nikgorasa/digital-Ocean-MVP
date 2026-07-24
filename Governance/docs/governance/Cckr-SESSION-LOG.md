@@ -1,7 +1,7 @@
 # GoRASA CockroachDB Standalone — SESSION-LOG
 
 > **Purpose:** Living document tracking all sessions, changes, deployments, and learnings.
-> **Last updated:** 2026-07-24 (Session 39 — TBO Certification UX Fixes)
+> **Last updated:** 2026-07-24 (Session 40 — Search Epics 1-6: Global Cities)
 
 ---
 
@@ -1963,6 +1963,43 @@ Migrate the app's unconfigured Gmail-SMTP email layer to **Brevo** (transactiona
 - Build: passes clean
 - All 8 TBO hotel certification cases: UI support complete
 - All 5 TBO flight certification cases: UI support complete
+
+---
+
+## Session 40 — Search Epics 1-6: Global Cities & Revenue Unlock
+
+**Date:** 2026-07-24
+**Commit:** `559d954`
+**Scope:** Search epics (admin, cities, pricing, flights, UX, dead code)
+
+### Changes
+
+| Epic | What | Files |
+|------|------|-------|
+| EPIC 1 | Admin Load More — removed `.slice()` caps from countries/cities/hotels | `src/app/admin/config/page.tsx` |
+| EPIC 2 | Global Cities — removed India-only restriction, hotel code cap 50→200 | `src/app/api/cities/tbo/route.ts`, `src/components/CitySearchDropdown.tsx`, `src/app/hotels/page.tsx`, `src/lib/tbo-hotel-client.ts` |
+| EPIC 3 | Pricing fixes — double-counted tax, dynamic ranges, hardcoded ₹ | `src/components/HotelBookingModal.tsx`, `src/components/FlightBookingModal.tsx`, `src/hooks/useFilters.ts`, `src/components/FilterPanel.tsx` |
+| EPIC 4 | Flight API resilience — fetchWithRetry (1-2 retries) | `src/lib/tbo-flight-api.ts` |
+| EPIC 5 | UX — empty filter states | `src/app/hotels/page.tsx`, `src/app/flights/page.tsx` |
+| EPIC 6 | Dead code — removed `/api/tbo-flights` middleware entry | `src/middleware.ts` |
+
+### Key Decisions
+- **`GuestNationality: "IN"` kept** — correct for Indian users booking abroad (visa/nationality of the booker)
+- **`PreferredCurrency: "INR"` kept** — currency display handled at UI layer via `formatCurrency()`
+- **`hotelCountryCode` derived from city's `country_code`** — each search uses the correct country for TBO API
+- **Pricing formula unchanged** — `hotel.price = TBO TotalFare + markup`, no double-counting
+
+### Biggest Revenue Unlock
+EPIC 2 removes the India-only restriction. Previously, users could only search hotels in India (countryCode=IN). Now all 36 TBO-supported countries are searchable — Dubai, Bangkok, Singapore, etc. This opens worldwide hotel inventory.
+
+**Deployed:**
+- DEV: https://cckr.vercel.app ✅
+- PROD: https://project-yidb6.vercel.app ✅
+
+**Verification:**
+- TypeScript: 0 errors
+- Build: passes clean
+- 32 files changed, +2811/-1016
 
 ---
 

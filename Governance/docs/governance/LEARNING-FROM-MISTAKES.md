@@ -201,3 +201,17 @@
   1. Room fare must ALWAYS be per-night, regardless of whether `dayRates` is present.
   2. When `dayRates` is empty, divide totalFare by nights count.
   3. Verify: `roomFare * nights + totalTax ≈ totalFare` (within rounding).
+
+### Issue 016 — Hotel Booking Modal Double-Counted Tax
+
+- **Date:** 2026-07-24
+- **Duration:** ~20 min
+- **Severity:** High
+- **Symptoms:** Hotel booking modal showed inflated price breakup. "Room Fare + Taxes & Fees" exceeded the actual total payable. Users saw incorrect price components.
+- **Root Cause:** TBO's `TotalFare` already includes tax. But the modal code treated `room.roomFare` (derived from `TotalFare / nights`) as pre-tax fare, then added `room.roomTax` (from `TotalTax / nights`) on top. This double-counted the tax component. The search result card (`hotel.price`) was correct, but the modal's detailed breakup was wrong.
+- **Resolution:** Changed modal to use `room.totalFare / nights` as the per-room-per-night ground truth. Simplified display to show "Room (N nights)" total without separate fare/tax breakdown (since TBO doesn't cleanly separate them). Service fee (markup) shown separately.
+- **Prevention:**
+  1. TBO `TotalFare` is ALWAYS inclusive of tax — never treat it as pre-tax.
+  2. When displaying price breakup, use `room.totalFare` directly, not `roomFare + roomTax`.
+  3. If a breakdown is needed, derive it as `totalFare - TotalTax` (fare) and `TotalTax` (tax) — never sum per-night derived values.
+  4. Verify: modal total == search result card total == `hotel.price`.
