@@ -30,6 +30,7 @@ export default function FilterPanel({
   resultCount,
 }: FilterPanelProps) {
   const [isOpen, setIsOpen] = useState(false);
+  const [showAll, setShowAll] = useState(false);
 
   const toggleArrayFilter = <T extends string | number>(
     current: T[],
@@ -133,12 +134,6 @@ export default function FilterPanel({
         {renderStarRating(f.starRating, (stars) =>
           onChange({ ...f, starRating: toggleArrayFilter(f.starRating, stars) })
         )}
-        {renderMultiSelect("Amenities", HOTEL_AMENITIES, f.amenities, (amenity) =>
-          onChange({ ...f, amenities: toggleArrayFilter(f.amenities, amenity as string) })
-        )}
-        {renderMultiSelect("Property Type", PROPERTY_TYPES, f.propertyType, (pt) =>
-          onChange({ ...f, propertyType: toggleArrayFilter(f.propertyType, pt as string) })
-        )}
         {renderMultiSelect("Meal Plan", MEAL_PLANS, f.mealPlan, (plan) =>
           onChange({ ...f, mealPlan: toggleArrayFilter(f.mealPlan, plan as string) })
         )}
@@ -153,6 +148,31 @@ export default function FilterPanel({
             <span className="text-sm text-slate-600">Free Cancellation Only</span>
           </label>
         </div>
+
+        {!showAll && (
+          <button
+            type="button"
+            onClick={() => setShowAll(true)}
+            className="w-full text-left text-sm text-brand-antique-gold hover:text-brand-emerald font-medium mb-4 cursor-pointer"
+          >
+            More filters ({2})
+          </button>
+        )}
+
+        {showAll && (
+          <motion.div
+            initial={{ opacity: 0, height: 0 }}
+            animate={{ opacity: 1, height: "auto" }}
+            transition={{ duration: 0.2 }}
+          >
+            {renderMultiSelect("Amenities", HOTEL_AMENITIES, f.amenities, (amenity) =>
+              onChange({ ...f, amenities: toggleArrayFilter(f.amenities, amenity as string) })
+            )}
+            {renderMultiSelect("Property Type", PROPERTY_TYPES, f.propertyType, (pt) =>
+              onChange({ ...f, propertyType: toggleArrayFilter(f.propertyType, pt as string) })
+            )}
+          </motion.div>
+        )}
       </>
     );
   };
@@ -192,36 +212,55 @@ export default function FilterPanel({
         {renderMultiSelect("Airlines", AIRLINES, f.airlines, (airline) =>
           onChange({ ...f, airlines: toggleArrayFilter(f.airlines, airline as string) })
         )}
-        {renderMultiSelect("Departure Time", DEPARTURE_TIMES, f.departureTime, (time) =>
-          onChange({ ...f, departureTime: toggleArrayFilter(f.departureTime, time as string) })
+
+        {!showAll && (
+          <button
+            type="button"
+            onClick={() => setShowAll(true)}
+            className="w-full text-left text-sm text-brand-antique-gold hover:text-brand-emerald font-medium mb-4 cursor-pointer"
+          >
+            More filters ({3})
+          </button>
         )}
-        {renderMultiSelect("Fare Type", FARE_TYPES, f.fareType, (fareType) =>
-          onChange({ ...f, fareType: toggleArrayFilter(f.fareType, fareType as string) })
-        )}
-        <div className="mb-4">
-          <label className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-2 block">
-            Included Features
-          </label>
-          <div className="space-y-2">
-            {[
-              { label: "Refundable Only", key: "refundableOnly" as const },
-              { label: "Baggage Included", key: "baggageIncluded" as const },
-              { label: "Meals Included", key: "mealsIncluded" as const },
-              { label: "Lounge Access", key: "loungeIncluded" as const },
-              { label: "Free Reissue", key: "freeReissue" as const },
-            ].map((option) => (
-              <label key={option.key} className="flex items-center gap-2 cursor-pointer">
-                <input
-                  type="checkbox"
-                  checked={f[option.key]}
-                  onChange={(e) => onChange({ ...f, [option.key]: e.target.checked })}
-                  className="w-4 h-4 text-brand-saffron rounded focus:ring-brand-saffron"
-                />
-                <span className="text-sm text-slate-600">{option.label}</span>
+
+        {showAll && (
+          <motion.div
+            initial={{ opacity: 0, height: 0 }}
+            animate={{ opacity: 1, height: "auto" }}
+            transition={{ duration: 0.2 }}
+          >
+            {renderMultiSelect("Departure Time", DEPARTURE_TIMES, f.departureTime, (time) =>
+              onChange({ ...f, departureTime: toggleArrayFilter(f.departureTime, time as string) })
+            )}
+            {renderMultiSelect("Fare Type", FARE_TYPES, f.fareType, (fareType) =>
+              onChange({ ...f, fareType: toggleArrayFilter(f.fareType, fareType as string) })
+            )}
+            <div className="mb-4">
+              <label className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-2 block">
+                Included Features
               </label>
-            ))}
-          </div>
-        </div>
+              <div className="space-y-2">
+                {[
+                  { label: "Refundable Only", key: "refundableOnly" as const },
+                  { label: "Baggage Included", key: "baggageIncluded" as const },
+                  { label: "Meals Included", key: "mealsIncluded" as const },
+                  { label: "Lounge Access", key: "loungeIncluded" as const },
+                  { label: "Free Reissue", key: "freeReissue" as const },
+                ].map((option) => (
+                  <label key={option.key} className="flex items-center gap-2 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={f[option.key]}
+                      onChange={(e) => onChange({ ...f, [option.key]: e.target.checked })}
+                      className="w-4 h-4 text-brand-saffron rounded focus:ring-brand-saffron"
+                    />
+                    <span className="text-sm text-slate-600">{option.label}</span>
+                  </label>
+                ))}
+              </div>
+            </div>
+          </motion.div>
+        )}
       </>
     );
   };

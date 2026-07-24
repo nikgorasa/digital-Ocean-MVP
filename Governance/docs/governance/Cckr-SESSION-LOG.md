@@ -1,7 +1,7 @@
 # GoRASA CockroachDB Standalone — SESSION-LOG
 
 > **Purpose:** Living document tracking all sessions, changes, deployments, and learnings.
-> **Last updated:** 2026-07-24 (Session 40 — Search Epics 1-6: Global Cities)
+> **Last updated:** 2026-07-24 (Session 41 — Search UX Research & EPIC Planning)
 
 ---
 
@@ -2003,6 +2003,47 @@ EPIC 2 removes the India-only restriction. Previously, users could only search h
 
 ---
 
+## Session 41 — Search UX Research & EPIC Planning (2026-07-24)
+
+**Objective:** Comprehensive UX research for travel portal search optimization. Identified 3 major problem areas and created prioritized implementation roadmap.
+
+**Research Deliverable:**
+- Created `Research-Brief-Travel-Portal-Search-UX.md` (1,085 lines)
+- Sources: Baymard Institute (200,000+ hours UX research), NNGroup, Booking.com, MakeMyTrip, Agoda, Skyscanner, Google Flights, Kayak, Cleartrip, Goibibo
+- Key finding: 56% of ecommerce sites fail to adequately support search UX (Baymard 2026)
+
+**3 Problem Areas Identified:**
+
+| # | Problem | Impact | Evidence |
+|---|---------|--------|----------|
+| 1 | Cold Start & Loading States | Users see blank/spinner during 5-15s TBO API calls | Baymard: skeleton screens feel 2x faster than spinners |
+| 2 | Domestic/International Separation | Indian travelers think domestic-first; current UI is flat | MakeMyTrip/Goibibo use tabs; Booking.com uses country context |
+| 3 | Display Clutter | Too much info per card; filters overwhelm; price unclear | Baymard: progressive disclosure reduces cognitive load 40% |
+
+**EPICs Created:**
+
+| EPIC | Title | Priority | Issues |
+|------|-------|----------|--------|
+| SEARCH-UX-EPIC-1 | Cold Start & Loading States | P0 | Skeleton screens, popular destinations, status messages, search feedback |
+| SEARCH-UX-EPIC-2 | Domestic/International Separation | P0 | Tabs, default domestic, city databases per tab, currency display |
+| SEARCH-UX-EPIC-3 | Display Clutter Reduction | P0 | Price per night+total, progressive filters, card redesign, load more |
+
+**Prioritized Roadmap:**
+
+| Phase | Items | Focus |
+|-------|-------|-------|
+| Phase 1 (P0) | Skeleton screens, popular destinations, status messages, domestic/intl tabs, price display fix, progressive filters | Core UX foundations |
+| Phase 2 (P1) | Pre-fill From city, recent searches, hotel card redesign, load more button | Conversion optimization |
+| Phase 3 (P2) | Progressive loading, "Searching X providers" transparency, A/B testing framework | Advanced optimization |
+
+**Commit:** `bb2d5e9` — global cities fix (parallel fetch, pass countryCode) deployed prior to research
+
+**No code changes this session.** Research and planning only.
+
+**Governance docs updated:** Cckr-SESSION-LOG.md, CHANGE-LOG.md (CRDB-GOV-010), LEARNING-FROM-MISTAKES.md (Issue 017)
+
+---
+
 ## Current State (Updated)
 
 | Item | Value |
@@ -2015,4 +2056,5 @@ EPIC 2 removes the India-only restriction. Previously, users could only search h
 | **GitHub** | https://github.com/Gorasa-In-2026/Gorasa-Cockroach |
 | **Tables** | 32 |
 | **FK Constraints** | 14 |
-| **Last deployed** | 2026-07-24 — TBO certification UX fixes, pricing, browser compat (Session 39) |
+| **Last deployed** | 2026-07-24 — Global cities fix, parallel fetch (commit bb2d5e9) |
+| **Research brief** | `Research-Brief-Travel-Portal-Search-UX.md` — comprehensive UX research (1,085 lines) |

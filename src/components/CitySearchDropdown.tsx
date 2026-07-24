@@ -22,6 +22,7 @@ interface CitySearchDropdownProps {
   className?: string;
   countryCode?: string;
   mode?: "hotel" | "flight";
+  scope?: "domestic" | "international" | "all";
 }
 
 const ALL_AIRPORTS: City[] = [
@@ -110,7 +111,7 @@ function useDebounce<T>(value: T, delay: number): T {
 }
 
 export default function CitySearchDropdown({
-  value, onChange, placeholder = "Search cities...", label = "Location", className = "", mode = "hotel",
+  value, onChange, placeholder = "Search cities...", label = "Location", className = "", mode = "hotel", scope = "all",
 }: CitySearchDropdownProps) {
   const [open, setOpen] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -182,7 +183,18 @@ export default function CitySearchDropdown({
   }, [onChange, mode, dbAirports, hotelCities]);
 
   const query = search.toLowerCase().trim();
-  const dataSource = mode === "hotel" ? hotelCities : (dbAirports.length ? dbAirports : ALL_AIRPORTS);
+  let dataSource = mode === "hotel" ? hotelCities : (dbAirports.length ? dbAirports : ALL_AIRPORTS);
+
+  // Apply scope filtering for hotel mode
+  if (mode === "hotel" && scope !== "all" && hotelCities.length > 0) {
+    if (scope === "domestic") {
+      const indian = hotelCities.filter(c => c.country_code === "IN");
+      const international = hotelCities.filter(c => c.country_code !== "IN");
+      dataSource = [...indian, ...international.slice(0, 10)];
+    } else {
+      dataSource = hotelCities.filter(c => c.country_code !== "IN");
+    }
+  }
 
   const filteredAirports = query
     ? dataSource.filter(c =>

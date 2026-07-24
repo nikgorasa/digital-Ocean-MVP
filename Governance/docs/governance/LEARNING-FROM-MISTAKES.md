@@ -214,4 +214,23 @@
   1. TBO `TotalFare` is ALWAYS inclusive of tax — never treat it as pre-tax.
   2. When displaying price breakup, use `room.totalFare` directly, not `roomFare + roomTax`.
   3. If a breakdown is needed, derive it as `totalFare - TotalTax` (fare) and `TotalTax` (tax) — never sum per-night derived values.
-  4. Verify: modal total == search result card total == `hotel.price`.
+   4. Verify: modal total == search result card total == `hotel.price`.
+
+### Issue 017 — Global Cities API Slow Due to Sequential Country Fetching (Cold Start Problem)
+
+- **Date:** 2026-07-24
+- **Duration:** ~2 hours (across Sessions 40-41)
+- **Severity:** High
+- **Symptoms:** After removing the India-only restriction (Session 40, EPIC 2), the `/api/cities/tbo` endpoint became slow because it fetches city data from 36 countries. The initial implementation fetched countries sequentially, causing the CitySearchDropdown to take 5-10 seconds to populate. Users saw a blank dropdown or spinner with no feedback.
+- **Root Cause:** The global cities change (commit `bb2d5e9`) expanded from 1 country (India) to 36 TBO-supported countries. Each country requires a TBO API call to fetch cities. Sequential fetching = 36 × latency. The parallel fetch fix helped, but the real problem is architectural: there is no cold start UX pattern (skeleton, popular destinations, status messages) to mask the latency.
+- **Resolution (partial):** Commit `bb2d5e9` changed to parallel fetching and passes `countryCode` correctly. But the UX problem remains — users still see a loading state with no feedback for several seconds.
+- **Full Solution (planned):** SEARCH-UX-EPIC-1 (Cold Start & Loading States):
+  1. Skeleton screens for hotel/flight results (immediate visual feedback)
+  2. Popular destinations shown on empty state (no API call needed)
+  3. Status messages during search ("Searching 50+ providers...", "Still searching... we're checking the best rates")
+  4. Immediate search feedback (button state change, progress indication)
+- **Prevention:**
+  1. Any API that expands scope (1 country → 36 countries) must include UX masking (skeleton/progress) BEFORE the expansion ships.
+  2. Never show a blank screen or generic spinner during multi-second API calls — use skeleton screens (Baymard research: feel 2x faster).
+  3. For search endpoints with >3s latency, always implement: skeleton → status message → progressive results.
+  4. Consider pre-fetching popular destinations into DB cache so the dropdown has instant data before TBO API responds.

@@ -5,6 +5,7 @@ import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import LoginModal from "@/components/LoginModal";
 import { useAuth } from "@/hooks/useAuth";
+import { useSearchTimer } from "@/hooks/useSearchTimer";
 
 import { motion, AnimatePresence } from "motion/react";
 import { formatCurrency } from "@/lib";
@@ -159,6 +160,7 @@ export default function FlightsPage() {
   const [searching, setSearching] = useState(false);
   const [searchTraceId, setSearchTraceId] = useState<string>("");
   const [searchError, setSearchError] = useState("");
+  const { statusMessage } = useSearchTimer(searching);
   const [selectedFlight, setSelectedFlight] = useState<Flight | null>(null);
   const [bookingFlight, setBookingFlight] = useState<Flight | null>(null);
   const [showBookingModal, setShowBookingModal] = useState(false);
@@ -955,7 +957,7 @@ export default function FlightsPage() {
             {searching ? (
               <div className="py-6">
                 <div className="text-center mb-6">
-                  <h2 className="text-xl font-bold text-brand-charcoal mb-2">Searching flights...</h2>
+                  <h2 className="text-xl font-bold text-brand-charcoal mb-2">{statusMessage}</h2>
                   <p className="text-slate-600 text-sm">Checking available routes between {originCity.name} and {destinationCity.name}.</p>
                 </div>
                 <SearchResultsSkeleton count={4} type="flight" />

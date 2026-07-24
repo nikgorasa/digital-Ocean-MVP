@@ -5,6 +5,7 @@ import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import LoginModal from "@/components/LoginModal";
 import { useAuth } from "@/hooks/useAuth";
+import { useSearchTimer } from "@/hooks/useSearchTimer";
 
 import { motion, AnimatePresence } from "motion/react";
 import { formatCurrency } from "@/lib";
@@ -89,6 +90,7 @@ export default function HotelsPage() {
   const [showLogin, setShowLogin] = useState(false);
   const [selectedCity, setSelectedCity] = useState<City>({ code: "15648", name: "Goa", state: "Goa", source: "fallback", country_code: "IN" });
   const [hotelCountryCode, setHotelCountryCode] = useState("IN");
+  const [searchScope, setSearchScope] = useState<"domestic" | "international">("domestic");
   const [checkIn, setCheckIn] = useState("");
   const [checkOut, setCheckOut] = useState("");
   const [roomCount, setRoomCount] = useState(1);
@@ -115,6 +117,7 @@ export default function HotelsPage() {
   const { filters, updateFilter, resetFilters, hasActiveFilters, activeFilterCount } = useHotelFilters(priceRange);
   const [error, setError] = useState("");
   const [hotelNameFilter, setHotelNameFilter] = useState("");
+  const { statusMessage } = useSearchTimer(loading, selectedCity.name);
 
   const filteredResults = useMemo(() => {
     let filtered = results;
@@ -278,15 +281,40 @@ export default function HotelsPage() {
               className="bg-white rounded-2xl p-5 shadow-xl"
             >
               <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
-                <CitySearchDropdown
-                  value={selectedCity.name}
-                  onChange={(city) => {
-                    setSelectedCity(city);
-                    if (city.country_code) setHotelCountryCode(city.country_code);
-                  }}
-                  placeholder="Search cities..."
-                  label="Location"
-                />
+                <div>
+                  <div className="flex gap-1 mb-2">
+                    <button
+                      onClick={() => setSearchScope("domestic")}
+                      className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors cursor-pointer ${
+                        searchScope === "domestic"
+                          ? "bg-brand-antique-gold text-white"
+                          : "bg-slate-100 text-slate-600 hover:bg-slate-200"
+                      }`}
+                    >
+                      Domestic
+                    </button>
+                    <button
+                      onClick={() => setSearchScope("international")}
+                      className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors cursor-pointer ${
+                        searchScope === "international"
+                          ? "bg-brand-antique-gold text-white"
+                          : "bg-slate-100 text-slate-600 hover:bg-slate-200"
+                      }`}
+                    >
+                      International
+                    </button>
+                  </div>
+                  <CitySearchDropdown
+                    value={selectedCity.name}
+                    onChange={(city) => {
+                      setSelectedCity(city);
+                      if (city.country_code) setHotelCountryCode(city.country_code);
+                    }}
+                    placeholder="Search cities..."
+                    label="Location"
+                    scope={searchScope}
+                  />
+                </div>
                 <div className="md:col-span-2">
                   <DateRangePicker
                     mode="range"
@@ -496,7 +524,7 @@ export default function HotelsPage() {
             ) : loading ? (
               <div className="py-6">
                 <div className="text-center mb-6">
-                  <p className="text-slate-600 text-sm">Searching hotels in {selectedCity.name}...</p>
+                  <p className="text-slate-600 text-sm">{statusMessage}</p>
                 </div>
                 <SearchResultsSkeleton count={3} type="hotel" />
               </div>
@@ -663,8 +691,8 @@ export default function HotelsPage() {
                         <p className="text-xs text-slate-600/70 mt-2 line-clamp-2">{hotel.description}</p>
                         <div className="mt-3 pt-3 border-t border-slate-100 flex items-center justify-between">
                           <div>
-                            <p className="text-xl font-black font-mono text-brand-charcoal">{formatCurrency(Math.round(hotel.price))}</p>
-                            <p className="text-[10px] text-slate-600/70">for {roomCount} {roomCount === 1 ? "room" : "rooms"}, {nights} {nights === 1 ? "night" : "nights"}</p>
+                            <p className="text-xl font-black font-mono text-brand-charcoal">{formatCurrency(Math.round(hotel.price / nights))}<span className="text-xs font-normal text-slate-500">/night</span></p>
+                            <p className="text-[11px] text-slate-600">{formatCurrency(Math.round(hotel.price))} total · {nights} {nights === 1 ? "night" : "nights"} · <span className="text-emerald-600 font-medium">Taxes included</span></p>
                           </div>
                           <button className="px-4 py-2 bg-brand-antique-gold text-white rounded-xl text-xs font-bold hover:bg-brand-emerald transition-colors cursor-pointer">
                             View Rooms
