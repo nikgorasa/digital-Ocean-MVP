@@ -15,7 +15,7 @@ import {
 import * as api from "@/lib/tbo-hotel-api";
 import { getCurrencyForCountry } from "@/lib/utils";
 
-export const maxDuration = 30;
+export const maxDuration = 60;
 
 function formatDate(dateStr: string): string {
   if (!dateStr) return "";
