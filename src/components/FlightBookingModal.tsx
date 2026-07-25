@@ -345,12 +345,45 @@ export default function FlightBookingModal({
     setStep("addons");
     setSsrLoading(true);
     try {
-      const res = await fetch("/api/tbo", {
+      let traceId = currentTraceIdRef.current;
+      let res = await fetch("/api/tbo", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ action: "ssr", params: { traceId: currentTraceIdRef.current, resultIndex: flight.id } }),
+        body: JSON.stringify({ action: "ssr", params: { traceId, resultIndex: flight.id } }),
       });
-      const data = await res.json();
+      let data = await res.json();
+
+      if (data.error && data.error.includes("expired")) {
+        console.log("[SSR] TraceId expired, re-searching...");
+        const searchRes = await fetch("/api/tbo", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            action: "search",
+            params: {
+              origin: flight.origin,
+              destination: flight.destination,
+              adults,
+              children,
+              infants,
+              date,
+              tripType: "OneWay",
+            },
+          }),
+        });
+        const searchData = await searchRes.json();
+        if (searchData.traceId) {
+          traceId = searchData.traceId;
+          currentTraceIdRef.current = traceId;
+          res = await fetch("/api/tbo", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ action: "ssr", params: { traceId, resultIndex: flight.id } }),
+          });
+          data = await res.json();
+        }
+      }
+
       if (!res.ok || data.error) {
         setErrorMessage(data.error || "Failed to load add-ons. Please try again.");
         setStep("error");
@@ -522,7 +555,7 @@ export default function FlightBookingModal({
       if (currentTraceId) {
         // Step 1: FareQuote — validate real-time price
         try {
-          const fqRes = await fetchWithRetry("/api/tbo", {
+          let fqRes = await fetchWithRetry("/api/tbo", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
@@ -530,7 +563,42 @@ export default function FlightBookingModal({
               params: { traceId: currentTraceId, resultIndex: flight.id },
             }),
           });
-          const fqData = await fqRes.json();
+          let fqData = await fqRes.json();
+
+          if (fqData.error && fqData.error.includes("expired")) {
+            console.log("[FareQuote] TraceId expired, re-searching...");
+            const searchRes = await fetch("/api/tbo", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                action: "search",
+                params: {
+                  origin: flight.origin,
+                  destination: flight.destination,
+                  adults,
+                  children,
+                  infants,
+                  date,
+                  tripType: "OneWay",
+                },
+              }),
+            });
+            const searchData = await searchRes.json();
+            if (searchData.traceId) {
+              currentTraceId = searchData.traceId;
+              currentTraceIdRef.current = currentTraceId;
+              fqRes = await fetchWithRetry("/api/tbo", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                  action: "fare-quote",
+                  params: { traceId: currentTraceId, resultIndex: flight.id },
+                }),
+              });
+              fqData = await fqRes.json();
+            }
+          }
+
           if (fqData.traceId) currentTraceId = fqData.traceId;
           if (fqData.isPriceChanged) {
             const userAccepted = await new Promise<boolean>(resolve => {
