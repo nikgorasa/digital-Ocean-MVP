@@ -13,8 +13,6 @@ export type ApiProvider =
   | 'brevo'
   | 'razorpay';
 
-const MAX_BODY = 65536; // 64KB for all endpoints
-
 // Fire-and-forget logger — NEVER await this.
 export function logApiCall(params: {
   provider: ApiProvider;
@@ -35,13 +33,11 @@ export function logApiCall(params: {
 }) {
   const environment = process.env.APP_ENV || process.env.VERCEL_ENV || process.env.NODE_ENV || 'dev';
   const vercelDeploymentId = process.env.VERCEL_DEPLOYMENT_ID || null;
-  const maxBody = MAX_BODY;
 
-  const truncate = (obj: unknown, max = maxBody): string | null => {
+  const stringify = (obj: unknown): string | null => {
     if (!obj) return null;
     try {
-      const str = JSON.stringify(obj);
-      return str.length > max ? str.slice(0, max) + `...[truncated at ${max} bytes]` : str;
+      return JSON.stringify(obj);
     } catch {
       return null;
     }
@@ -112,8 +108,8 @@ export function logApiCall(params: {
     provider: params.provider,
     endpoint: params.endpoint,
     method: params.method,
-    request_body: truncate(params.requestBody),
-    response_body: truncate(params.responseBody),
+    request_body: stringify(params.requestBody),
+    response_body: stringify(params.responseBody),
     status_code: params.statusCode ?? null,
     tbo_status_code: tboStatusCode,
     response_time_ms: params.responseTimeMs ?? null,
