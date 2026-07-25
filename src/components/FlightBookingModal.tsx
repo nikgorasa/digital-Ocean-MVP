@@ -340,8 +340,30 @@ export default function FlightBookingModal({
   };
 
   const fetchSSR = async () => {
-    // Bypass SSR — go straight to booking with default add-ons
+    // Try SSR — if it fails, proceed without SSR data (TBO accepts Ticket without it)
+    // For certification, SSR data is required when SSR succeeds
     setStep("saving");
+    try {
+      const traceId = currentTraceIdRef.current;
+      const resultIndex = flight.id;
+      const res = await fetch("/api/tbo", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "ssr", params: { traceId, resultIndex } }),
+      });
+      const data = await res.json();
+      if (data.traceId) currentTraceIdRef.current = data.traceId;
+      if (!data.error && data.baggage?.length) {
+        setSsrBaggage(data.baggage || []);
+        setSsrMeals(data.meals || []);
+        setSsrSeats(data.seats || []);
+        console.log("[SSR] Loaded", data.baggage?.length, "baggage,", data.meals?.length, "meals,", data.seats?.length, "seats");
+      } else {
+        console.log("[SSR] No data or error — proceeding without SSR selections");
+      }
+    } catch (e) {
+      console.log("[SSR] Failed — proceeding without SSR selections:", e);
+    }
     handleBook();
   };
 
