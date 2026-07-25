@@ -42,3 +42,4 @@
 | 2026-07-24 | PROD | ✅ Live | https://project-yidb6.vercel.app | Search Epics 1-6 — same as DEV (559d954) |
 | 2026-07-24 | DEV+PROD | ✅ Live | Both | Search UX — status messages, price display, domestic/intl tabs, progressive filters (4d99cdf) |
 | 2026-07-24 | DEV+PROD | ✅ Live | Both | Global cities fix — parallel fetch, countryCode pass (bb2d5e9) |
+| 2026-07-25 | DEV+PROD | ✅ Live | Both | Session 44: CANCEL/TBO-ARCH/RECONCILE — cancel button in FlightBookingModal, ConfigProvider for flight endpoints, forceMock fallback, Zaakpay refund in cancellations, reconciliation cron for stuck PENDING bookings |

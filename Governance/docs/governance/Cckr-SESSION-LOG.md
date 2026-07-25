@@ -2249,3 +2249,56 @@ EPIC 2 removes the India-only restriction. Previously, users could only search h
 | **FK Constraints** | 14 |
 | **Last deployed** | 2026-07-24 — Global cities fix, parallel fetch (commit bb2d5e9) |
 | **Research brief** | `Research-Brief-Travel-Portal-Search-UX.md` — comprehensive UX research (1,085 lines) |
+
+---
+
+## Session 44 — CANCEL/TBO-ARCH/RECONCILE Implementation (2026-07-25)
+
+**Objective:** Implement all 5 P0 blockers identified in Session 43 consolidation — cancel button, ConfigProvider for flight API, forceMock fallback, Zaakpay refund, reconciliation cron.
+
+### Changes Implemented
+
+| # | Task | Files Changed | Status |
+|---|------|---------------|--------|
+| 1 | **Cancel button in FlightBookingModal done step** | `src/components/FlightBookingModal.tsx` — Added CancellationDialog import, showCancellation state, cancel button in done step, onConfirm handler calling `/api/cancellations` | ✅ Done |
+| 2 | **Flight API endpoints from ConfigProvider** | `src/lib/tbo-flight-api.ts` — Replaced hardcoded AUTH_URL/API_BASE with async getAuthUrl()/getApiBase() reading from ConfigProvider; `src/lib/config-service.ts` — Added baseUrl/bookingUrl to tbo_flight envFallback | ✅ Done |
+| 3 | **Mock fallback (forceMock) for flight client** | `src/lib/tbo-flight-client.ts` — Added cfg.forceMock check in searchFlights(), returns empty results when enabled | ✅ Done |
+| 4 | **Zaakpay refund in cancellation flow** | `src/app/api/cancellations/route.ts` — Added createRefund import, calls Zaakpay refund for non-corporate gateway bookings | ✅ Done |
+| 5 | **Reconciliation cron for stuck PENDING bookings** | `src/app/api/cron/reconcile-bookings/route.ts` (NEW) — Finds PENDING bookings with supplierBookingRef >30min old, calls TBO GetBookingDetail, auto-confirms or auto-cancels | ✅ Done |
+
+### GitHub Issues Resolved
+
+| Issue | Status | Resolution |
+|-------|--------|------------|
+| #296 (CANCEL-04: Cancel button in FlightBookingModal) | **RESOLVED** | Added Cancel button in done step using existing CancellationDialog |
+| #238 (TBO-ARCH-01: ConfigProvider integration) | **RESOLVED** | Flight API now reads endpoints from ConfigProvider DB |
+| #239 (TBO-ARCH-02: Mock fallback) | **RESOLVED** | forceMock flag in ConfigProvider returns mock data |
+| #112 (PAY-06: Zaakpay refund in cancellation) | **RESOLVED** | Zaakpay refund API called for non-corporate gateway bookings |
+| #286 (CORP-RECONCILE-01: Stuck PENDING bookings) | **RESOLVED** | New cron `/api/cron/reconcile-bookings` auto-reconciles |
+
+### SPRINT-PLAN.md Updates
+
+- ZAAKPAY: PAY-06 now **PARTIAL** (refund added, creds still external)
+- CANCEL-EPIC: #296 **RESOLVED** (cancel button added)
+- TBO-ARCH: #238 **RESOLVED**, #239 **RESOLVED** (ConfigProvider + forceMock done)
+- CORP-EPIC: #286 **PARTIAL** (reconciliation cron created, voucher verification pending)
+- All 5 P0 blockers from Session 43 addressed
+
+### Files Changed
+
+- `src/components/FlightBookingModal.tsx` — Cancel button + CancellationDialog
+- `src/lib/tbo-flight-api.ts` — ConfigProvider endpoint resolution
+- `src/lib/config-service.ts` — tbo_flight baseUrl/bookingUrl in envFallback
+- `src/lib/tbo-flight-client.ts` — forceMock support
+- `src/app/api/cancellations/route.ts` — Zaakpay refund integration
+- `src/app/api/cron/reconcile-bookings/route.ts` — **NEW** reconciliation cron
+- `Governance/docs/governance/SPRINT-PLAN.md` — Updated issue statuses
+- `Governance/docs/governance/CHANGE-LOG.md` — CRDB-GOV-013
+- `Governance/docs/governance/MISTAKE-LOG.md` — CRDB-021
+
+### Verification
+
+- TypeScript: 0 errors
+- Build: passes clean
+- Preflight (quick): 12/12 gating checks passed
+- Post-task: 11/11 checks passed

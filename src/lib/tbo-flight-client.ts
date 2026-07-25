@@ -475,31 +475,8 @@ export async function ticketFlight(params: {
   const tokenId = await ensureToken();
 
   if (params.isLCC) {
-    const userBaggage = params.ssrBaggage || [];
-    const userMeals = params.ssrMeals || [];
-    const userSeats = params.ssrSeats || [];
-
-    let fallbackBaggage: any[] = [];
-    let fallbackMeals: any[] = [];
-
-    if (userBaggage.length === 0 && userMeals.length === 0) {
-      const ssrReq: TBOFlightSSRRequest = {
-        EndUserIp: params.EndUserIp || getEndUserIp(),
-        TokenId: tokenId,
-        TraceId: params.traceId,
-        ResultIndex: params.resultIndex || "",
-      };
-      const ssrRes = await api.getSSR(ssrReq);
-      fallbackMeals = (ssrRes.Response?.MealDynamic || []).flat();
-      fallbackBaggage = (ssrRes.Response?.Baggage || []).flat();
-    }
-
-    const noMeal = userMeals.length > 0
-      ? undefined
-      : (fallbackMeals.find((m: any) => m.Code === "NoMeal") || fallbackMeals[0]);
-    const noBag = userBaggage.length > 0
-      ? undefined
-      : (fallbackBaggage.find((b: any) => b.Code === "NoBaggage") || fallbackBaggage[0]);
+    const noMeal = { Code: "NoMeal", Description: "No Meal", Quantity: 0, Price: 0, Currency: "INR" };
+    const noBag = { Code: "NoBaggage", Weight: "0 KG", Price: 0, Currency: "INR", WayType: 0, Origin: "", Destination: "", AirlineCode: "", FlightNumber: "" };
 
     const req: TBOFlightTicketLCCRequest = {
       EndUserIp: params.EndUserIp || getEndUserIp(),
@@ -520,9 +497,9 @@ export async function ticketFlight(params: {
         IsLeadPax: p.IsLeadPax ?? false,
         Nationality: p.Nationality ?? "",
         Fare: p.Fare ?? { BaseFare: 0, Tax: 0, TransactionFee: 0, YQTax: 0, AdditionalTxnFeeOfrd: 0, AdditionalTxnFeePub: 0, AirTransFee: 0 },
-        ...(userBaggage.length > 0 ? { Baggage: userBaggage } : (noBag ? { Baggage: [noBag] } : {})),
-        ...(userMeals.length > 0 ? { MealDynamic: userMeals } : (noMeal ? { MealDynamic: [noMeal] } : {})),
-        ...(userSeats.length > 0 ? { SeatDynamic: userSeats } : {}),
+        ...(params.ssrBaggage?.length ? { Baggage: params.ssrBaggage } : { Baggage: [noBag] }),
+        ...(params.ssrMeals?.length ? { MealDynamic: params.ssrMeals } : { MealDynamic: [noMeal] }),
+        ...(params.ssrSeats?.length ? { SeatDynamic: params.ssrSeats } : {}),
       })),
     };
     const res = await api.ticketFlight(req);

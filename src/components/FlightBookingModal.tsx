@@ -642,8 +642,11 @@ export default function FlightBookingModal({
                 params: { traceId: currentTraceId, resultIndex: flight.id, passengers },
               }),
             });
-            const bookData = await bookRes.json();
-            if (bookData.traceId) currentTraceId = bookData.traceId;
+        const bookData = await bookRes.json();
+        if (bookData.traceId) {
+          currentTraceId = bookData.traceId;
+          currentTraceIdRef.current = currentTraceId;
+        }
             if (bookData.bookingId) {
               tboBookingId = String(bookData.bookingId);
               tboPnr = bookData.pnr || null;
