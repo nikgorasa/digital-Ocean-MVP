@@ -77,12 +77,20 @@ export async function POST(req: NextRequest) {
         if (!p.traceId || !p.resultIndex || !p.passengers) {
           return NextResponse.json({ error: "traceId, resultIndex, passengers required" }, { status: 400 });
         }
-        const result = await bookFlight({
-          traceId: p.traceId,
-          resultIndex: p.resultIndex,
-          passengers: p.passengers,
-        });
-        return NextResponse.json(result);
+        try {
+          const result = await bookFlight({
+            traceId: p.traceId,
+            resultIndex: p.resultIndex,
+            passengers: p.passengers,
+          });
+          return NextResponse.json(result);
+        } catch (e: any) {
+          return NextResponse.json({
+            error: e.message || "Book failed",
+            freshTraceId: e.freshTraceId || null,
+            errorCode: e.errorCode || null,
+          });
+        }
       }
 
       case "ticket": {

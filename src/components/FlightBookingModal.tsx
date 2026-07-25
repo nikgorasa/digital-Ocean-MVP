@@ -586,7 +586,7 @@ export default function FlightBookingModal({
         // Step 2: Book via TBO — creates a reservation (skip for LCC flights)
         if (!flight.isLCC) {
           try {
-            const bookRes = await fetchWithRetry("/api/tbo", {
+            let bookRes = await fetchWithRetry("/api/tbo", {
               method: "POST",
               headers: { "Content-Type": "application/json" },
               body: JSON.stringify({
@@ -594,11 +594,26 @@ export default function FlightBookingModal({
                 params: { traceId: currentTraceId, resultIndex: flight.id, passengers },
               }),
             });
-        const bookData = await bookRes.json();
-        if (bookData.traceId) {
-          currentTraceId = bookData.traceId;
-          currentTraceIdRef.current = currentTraceId;
-        }
+            let bookData = await bookRes.json();
+
+            if (bookData.error && bookData.freshTraceId) {
+              currentTraceId = bookData.freshTraceId;
+              currentTraceIdRef.current = currentTraceId;
+              bookRes = await fetchWithRetry("/api/tbo", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                  action: "book",
+                  params: { traceId: currentTraceId, resultIndex: flight.id, passengers },
+                }),
+              });
+              bookData = await bookRes.json();
+            }
+
+            if (bookData.traceId) {
+              currentTraceId = bookData.traceId;
+              currentTraceIdRef.current = currentTraceId;
+            }
             if (bookData.bookingId) {
               tboBookingId = String(bookData.bookingId);
               tboPnr = bookData.pnr || null;

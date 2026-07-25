@@ -396,7 +396,7 @@ export async function bookFlight(params: {
   resultIndex: string;
   passengers: TBOFlightBookRequest["Passengers"];
   EndUserIp?: string;
-  }): Promise<{ bookingId: string; pnr: string; isPriceChanged: boolean; isTimeChanged: boolean }> {
+  }): Promise<{ bookingId: string; pnr: string; isPriceChanged: boolean; isTimeChanged: boolean; traceId: string | null }> {
   await validateCredentials();
   const tokenId = await ensureToken();
   const req: TBOFlightBookRequest = {
@@ -421,7 +421,10 @@ export async function bookFlight(params: {
   
   if (responseStatus !== 1) {
     const errMsg = (res as any).Error?.ErrorMessage || res.Response?.Error?.ErrorMessage || responseStatus;
-    throw new Error(`Flight book failed: ${errMsg}`);
+    const err: any = new Error(`Flight book failed: ${errMsg}`);
+    err.freshTraceId = res.Response?.TraceId || (res as any).TraceId || null;
+    err.errorCode = (res as any).Error?.ErrorCode || res.Response?.Error?.ErrorCode || responseStatus;
+    throw err;
   }
   
   // FlightItinerary may be at different nesting levels depending on TBO response version
@@ -441,6 +444,7 @@ export async function bookFlight(params: {
     pnr: itinerary.PNR,
     isPriceChanged: (res.Response?.IsPriceChanged ?? (res as any).IsPriceChanged) || false,
     isTimeChanged: (res.Response?.IsTimeChanged ?? (res as any).IsTimeChanged) || false,
+    traceId: res.Response?.TraceId || (res as any).TraceId || null,
   };
 }
 
