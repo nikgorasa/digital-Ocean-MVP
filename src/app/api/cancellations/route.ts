@@ -5,6 +5,7 @@ import { z } from "zod";
 import { sendEmail, emailTemplates } from "@/lib/email";
 import { cancelBooking } from "@/lib/tbo-hotel-client";
 import { cancelFlight, getCancellationCharges } from "@/lib/tbo-flight-client";
+import { createRefund } from "@/lib/payment/zaakpay-client";
 
 const cancellationSchema = z.object({
   bookingId: z.string().min(1, "bookingId is required"),
@@ -243,6 +244,32 @@ export async function POST(request: NextRequest) {
             },
           }),
         ]);
+      }
+    }
+
+    // Gateway refund (Zaakpay) for non-corporate bookings
+    if (booking.paymentMethod !== "corporate_wallet" && booking.paymentMethod === "gateway") {
+      const payment = await prisma.payment.findUnique({ where: { bookingId } });
+      if (payment && payment.orderId && payment.gateway === "zaakpay") {
+        try {
+          const refundResult = await createRefund(payment.orderId, refundAmount);
+          await prisma.payment.update({
+            where: { bookingId },
+            data: {
+              status: "REFUNDED",
+              refundedAt: new Date(),
+              refundAmount: refundAmount,
+              metadata: {
+                ...((payment.metadata as Record<string, unknown>) || {}),
+                refundId: refundResult.refundId,
+              },
+            },
+          });
+          console.log(`[Zaakpay Refund] Booking ${bookingId} refunded: ${refundResult.refundId}`);
+        } catch (e) {
+          console.error(`[Zaakpay Refund] Failed for booking ${bookingId}:`, e);
+          // Don't fail the cancellation - log and continue
+        }
       }
     }
 

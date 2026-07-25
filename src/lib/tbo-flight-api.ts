@@ -27,9 +27,17 @@ import type {
 } from "./tbo-flight-types";
 import { logApiCall } from "./api-logger";
 import { fetchWithRetry } from "./fetch-with-retry";
+import { readConfig } from "./config-service";
 
-const AUTH_URL = "http://Sharedapi.tektravels.com/SharedData.svc/rest/Authenticate";
-const API_BASE = "http://api.tektravels.com/BookingEngineService_Air/AirService.svc/rest";
+async function getAuthUrl(): Promise<string> {
+  const cfg = await readConfig("tbo_flight");
+  return cfg.baseUrl || "http://Sharedapi.tektravels.com/SharedData.svc/rest/Authenticate";
+}
+
+async function getApiBase(): Promise<string> {
+  const cfg = await readConfig("tbo_flight");
+  return cfg.bookingUrl || "http://api.tektravels.com/BookingEngineService_Air/AirService.svc/rest";
+}
 
 async function post<T>(url: string, body: unknown, maxRetries = 1): Promise<T> {
   const start = Date.now();
@@ -47,7 +55,7 @@ async function post<T>(url: string, body: unknown, maxRetries = 1): Promise<T> {
   if (!res.ok) {
     logApiCall({
       provider: 'tbo_flight',
-      endpoint: url.replace(API_BASE, '').replace(AUTH_URL, '/Authenticate'),
+      endpoint: url,
       method: 'POST',
       requestBody: body,
       statusCode: res.status,
@@ -58,13 +66,12 @@ async function post<T>(url: string, body: unknown, maxRetries = 1): Promise<T> {
   }
 
   const data = await res.json();
-  // Log full response shape for book/ticket to debug TBO response issues
   if (endpointShort === 'Book' || endpointShort === 'Ticket') {
     console.log(`[TBO-API] ${endpointShort} raw response:`, JSON.stringify(data).slice(0, 4000));
   }
   logApiCall({
     provider: 'tbo_flight',
-    endpoint: url.replace(API_BASE, '').replace(AUTH_URL, '/Authenticate'),
+    endpoint: url,
     method: 'POST',
     requestBody: body,
     responseBody: data,
@@ -75,52 +82,64 @@ async function post<T>(url: string, body: unknown, maxRetries = 1): Promise<T> {
   return data as T;
 }
 
-export function authenticate(req: TBOFlightAuthRequest): Promise<TBOFlightAuthResponse> {
-  return post<TBOFlightAuthResponse>(AUTH_URL, req);
+export async function authenticate(req: TBOFlightAuthRequest): Promise<TBOFlightAuthResponse> {
+  const url = await getAuthUrl();
+  return post<TBOFlightAuthResponse>(url, req);
 }
 
-export function searchFlights(tokenId: string, req: Omit<TBOFlightSearchRequest, "TokenId">): Promise<TBOFlightSearchResponse> {
-  return post<TBOFlightSearchResponse>(`${API_BASE}/Search`, { ...req, TokenId: tokenId });
+export async function searchFlights(tokenId: string, req: Omit<TBOFlightSearchRequest, "TokenId">): Promise<TBOFlightSearchResponse> {
+  const base = await getApiBase();
+  return post<TBOFlightSearchResponse>(`${base}/Search`, { ...req, TokenId: tokenId });
 }
 
-export function getFareRule(req: TBOFlightFareRuleRequest): Promise<TBOFlightFareRuleResponse> {
-  return post<TBOFlightFareRuleResponse>(`${API_BASE}/FareRule`, req);
+export async function getFareRule(req: TBOFlightFareRuleRequest): Promise<TBOFlightFareRuleResponse> {
+  const base = await getApiBase();
+  return post<TBOFlightFareRuleResponse>(`${base}/FareRule`, req);
 }
 
-export function getFareQuote(req: TBOFlightFareQuoteRequest): Promise<TBOFlightFareQuoteResponse> {
-  return post<TBOFlightFareQuoteResponse>(`${API_BASE}/FareQuote`, req);
+export async function getFareQuote(req: TBOFlightFareQuoteRequest): Promise<TBOFlightFareQuoteResponse> {
+  const base = await getApiBase();
+  return post<TBOFlightFareQuoteResponse>(`${base}/FareQuote`, req);
 }
 
-export function getSSR(req: TBOFlightSSRRequest): Promise<TBOFlightSSRResponse> {
-  return post<TBOFlightSSRResponse>(`${API_BASE}/SSR`, req, 2);
+export async function getSSR(req: TBOFlightSSRRequest): Promise<TBOFlightSSRResponse> {
+  const base = await getApiBase();
+  return post<TBOFlightSSRResponse>(`${base}/SSR`, req, 2);
 }
 
-export function bookFlight(req: TBOFlightBookRequest): Promise<TBOFlightBookResponse> {
-  return post<TBOFlightBookResponse>(`${API_BASE}/Book`, req, 2);
+export async function bookFlight(req: TBOFlightBookRequest): Promise<TBOFlightBookResponse> {
+  const base = await getApiBase();
+  return post<TBOFlightBookResponse>(`${base}/Book`, req, 2);
 }
 
-export function ticketFlight(req: TBOFlightTicketNonLCCRequest | TBOFlightTicketLCCRequest): Promise<TBOFlightTicketResponse> {
-  return post<TBOFlightTicketResponse>(`${API_BASE}/Ticket`, req, 2);
+export async function ticketFlight(req: TBOFlightTicketNonLCCRequest | TBOFlightTicketLCCRequest): Promise<TBOFlightTicketResponse> {
+  const base = await getApiBase();
+  return post<TBOFlightTicketResponse>(`${base}/Ticket`, req, 2);
 }
 
-export function getBookingDetail(req: TBOFlightBookingDetailRequest): Promise<TBOFlightBookingDetailResponse> {
-  return post<TBOFlightBookingDetailResponse>(`${API_BASE}/GetBookingDetail`, req);
+export async function getBookingDetail(req: TBOFlightBookingDetailRequest): Promise<TBOFlightBookingDetailResponse> {
+  const base = await getApiBase();
+  return post<TBOFlightBookingDetailResponse>(`${base}/GetBookingDetail`, req);
 }
 
 // Flight Cancellation APIs
 
-export function getCancellationCharges(req: TBOFlightGetCancellationChargesRequest): Promise<TBOFlightGetCancellationChargesResponse> {
-  return post<TBOFlightGetCancellationChargesResponse>(`${API_BASE}/GetCancellationCharges`, req);
+export async function getCancellationCharges(req: TBOFlightGetCancellationChargesRequest): Promise<TBOFlightGetCancellationChargesResponse> {
+  const base = await getApiBase();
+  return post<TBOFlightGetCancellationChargesResponse>(`${base}/GetCancellationCharges`, req);
 }
 
-export function sendChangeRequest(req: TBOFlightSendChangeRequest): Promise<TBOFlightSendChangeResponse> {
-  return post<TBOFlightSendChangeResponse>(`${API_BASE}/SendChangeRequest`, req);
+export async function sendChangeRequest(req: TBOFlightSendChangeRequest): Promise<TBOFlightSendChangeResponse> {
+  const base = await getApiBase();
+  return post<TBOFlightSendChangeResponse>(`${base}/SendChangeRequest`, req);
 }
 
-export function getChangeRequestStatus(req: TBOFlightGetChangeRequestStatusRequest): Promise<TBOFlightGetChangeRequestStatusResponse> {
-  return post<TBOFlightGetChangeRequestStatusResponse>(`${API_BASE}/GetChangeRequestStatus`, req);
+export async function getChangeRequestStatus(req: TBOFlightGetChangeRequestStatusRequest): Promise<TBOFlightGetChangeRequestStatusResponse> {
+  const base = await getApiBase();
+  return post<TBOFlightGetChangeRequestStatusResponse>(`${base}/GetChangeRequestStatus`, req);
 }
 
-export function releasePNR(req: TBOFlightReleasePNRRequest): Promise<TBOFlightReleasePNRResponse> {
-  return post<TBOFlightReleasePNRResponse>(`${API_BASE}/ReleasePNRRequest`, req);
+export async function releasePNR(req: TBOFlightReleasePNRRequest): Promise<TBOFlightReleasePNRResponse> {
+  const base = await getApiBase();
+  return post<TBOFlightReleasePNRResponse>(`${base}/ReleasePNRRequest`, req);
 }

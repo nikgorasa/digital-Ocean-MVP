@@ -200,6 +200,12 @@ export async function searchFlights(params: {
     throw new Error("TBO flight credentials not configured.");
   }
 
+  // Mock fallback: if forceMock is enabled in ConfigProvider, return empty results
+  if (cfg.forceMock) {
+    console.log("[TBO-FLIGHT] forceMock enabled — returning empty results");
+    return { flights: [], traceId: `MOCK-TRACE-${Date.now()}` };
+  }
+
   const t1 = Date.now();
   const cabinClassMap: Record<string, number> = {
     "economy": 1,

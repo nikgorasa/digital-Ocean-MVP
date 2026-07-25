@@ -81,8 +81,8 @@ function envFallback(provider: string): ConfigProviderData {
       break;
     case "tbo_flight":
       cfg.label = "TBO Flight";
-      cfg.baseUrl = null;
-      cfg.bookingUrl = null;
+      cfg.baseUrl = process.env.TBO_FLIGHT_AUTH_URL || "http://Sharedapi.tektravels.com/SharedData.svc/rest/Authenticate";
+      cfg.bookingUrl = process.env.TBO_FLIGHT_API_BASE || "http://api.tektravels.com/BookingEngineService_Air/AirService.svc/rest";
       cfg.staticUrl = null;
       cfg.clientId = process.env.TBO_CLIENT_ID || "ApiIntegrationNew";
       cfg.username = process.env.TBO_USERNAME || "";
