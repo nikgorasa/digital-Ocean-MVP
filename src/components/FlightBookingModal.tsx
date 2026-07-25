@@ -340,50 +340,9 @@ export default function FlightBookingModal({
   };
 
   const fetchSSR = async () => {
-    if (!flight.isLCC) {
-      setStep("saving");
-      handleBook();
-      return;
-    }
-    setStep("addons");
-    setSsrLoading(true);
-    try {
-      let traceId = currentTraceIdRef.current;
-      let resultIndex = flight.id;
-      let res = await fetch("/api/tbo", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ action: "ssr", params: { traceId, resultIndex } }),
-      });
-      let data = await res.json();
-
-      if (data.error && data.freshTraceId) {
-        traceId = data.freshTraceId;
-        currentTraceIdRef.current = traceId;
-        res = await fetch("/api/tbo", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ action: "ssr", params: { traceId, resultIndex } }),
-        });
-        data = await res.json();
-      }
-
-      if (data.traceId) currentTraceIdRef.current = data.traceId;
-      setSsrBaggage(data.baggage || []);
-      setSsrMeals(data.meals || []);
-      setSsrSeats(data.seats || []);
-      if ((data.baggage || []).length === 0 && (data.meals || []).length === 0 && (data.seats || []).length === 0) {
-        setStep("saving");
-        handleBook();
-        return;
-      }
-    } catch (e) {
-      console.error("SSR fetch failed:", e);
-      setErrorMessage("Could not load add-ons. Proceeding without selection.");
-      setStep("error");
-    } finally {
-      setSsrLoading(false);
-    }
+    // Bypass SSR — go straight to booking with default add-ons
+    setStep("saving");
+    handleBook();
   };
 
   const buildSSRBaggage = () => {
@@ -641,6 +600,13 @@ export default function FlightBookingModal({
         // Step 3: Ticket — finalize the booking (for LCC, this replaces Book)
         {
           try {
+            console.log("[TBO-TICKET] Request params:", {
+              traceId: currentTraceId,
+              resultIndex: flight.id,
+              bookingId: tboBookingId,
+              pnr: tboPnr,
+              isLCC: flight.isLCC,
+            });
             const ticketRes = await fetchWithRetry("/api/tbo", {
               method: "POST",
               headers: { "Content-Type": "application/json" },

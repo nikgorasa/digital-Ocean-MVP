@@ -486,6 +486,7 @@ export async function ticketFlight(params: {
   const tokenId = await ensureToken();
 
   if (params.isLCC) {
+    if (!params.resultIndex) throw new Error("LCC ticket requires resultIndex");
     const noMeal = { Code: "NoMeal", Description: "No Meal", Quantity: 0, Price: 0, Currency: "INR" };
     const noBag = { Code: "NoBaggage", Weight: "0 KG", Price: 0, Currency: "INR", WayType: 0, Origin: "", Destination: "", AirlineCode: "", FlightNumber: "" };
 
@@ -513,12 +514,17 @@ export async function ticketFlight(params: {
         ...(params.ssrSeats?.length ? { SeatDynamic: params.ssrSeats } : {}),
       })),
     };
+    console.log("[TBO-TICKET] LCC request body:", JSON.stringify({ ...req, TokenId: "..." }));
     const res = await api.ticketFlight(req);
+    console.log("[TBO-TICKET] LCC response status:", res.Response?.ResponseStatus, "error:", res.Response?.Error?.ErrorMessage);
     if (res.Response?.ResponseStatus !== 1) {
-      throw new Error(`Ticket failed: ${res.Response?.ResponseStatus} ${JSON.stringify(res.Response?.Error)}`);
+      const err: any = new Error(`Ticket failed: ${res.Response?.ResponseStatus} ${JSON.stringify(res.Response?.Error)}`);
+      err.freshTraceId = res.Response?.TraceId || null;
+      err.errorCode = res.Response?.Error?.ErrorCode || res.Response?.ResponseStatus;
+      throw err;
     }
     const r = res.Response.Response;
-    return { results: [{ bookingId: r?.BookingId, pnr: r?.PNR }] };
+    return { results: [{ bookingId: r?.BookingId, pnr: r?.PNR }], traceId: res.Response?.TraceId || null };
   } else {
     if (!params.BookingId || !params.PNR) throw new Error("Non-LCC ticket requires BookingId and PNR");
     const req: TBOFlightTicketNonLCCRequest = {
@@ -534,12 +540,17 @@ export async function ticketFlight(params: {
         DateOfBirth: p.DateOfBirth ?? "",
       })),
     };
+    console.log("[TBO-TICKET] Non-LCC request body:", JSON.stringify({ ...req, TokenId: "..." }));
     const res = await api.ticketFlight(req);
+    console.log("[TBO-TICKET] Non-LCC response status:", res.Response?.ResponseStatus, "error:", res.Response?.Error?.ErrorMessage);
     if (res.Response?.ResponseStatus !== 1) {
-      throw new Error(`Non-LCC Ticket failed: ${res.Response?.ResponseStatus} ${JSON.stringify(res.Response?.Error)}`);
+      const err: any = new Error(`Non-LCC Ticket failed: ${res.Response?.ResponseStatus} ${JSON.stringify(res.Response?.Error)}`);
+      err.freshTraceId = res.Response?.TraceId || null;
+      err.errorCode = res.Response?.Error?.ErrorCode || res.Response?.ResponseStatus;
+      throw err;
     }
     const r = res.Response.Response;
-    return { results: [{ bookingId: r?.BookingId, pnr: r?.PNR }] };
+    return { results: [{ bookingId: r?.BookingId, pnr: r?.PNR }], traceId: res.Response?.TraceId || null };
   }
 }
 

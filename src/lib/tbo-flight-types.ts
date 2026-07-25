@@ -543,6 +543,7 @@ export interface TBOBookingResult {
 
 export interface TBOFlightTicketOutput {
   results: TBOBookingResult[];
+  traceId: string | null;
 }
 
 // Flight Cancellation Types

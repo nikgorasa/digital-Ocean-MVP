@@ -62,6 +62,7 @@ async function post<T>(url: string, body: unknown, maxRetries = 1): Promise<T> {
       responseTimeMs: responseTime,
       errorMessage: `HTTP ${res.status}: ${res.statusText}`,
     });
+    console.error(`[TBO-API] ${endpointShort} request body:`, JSON.stringify(body).slice(0, 2000));
     throw new Error(`TBO HTTP ${res.status}: ${res.statusText}`);
   }
 

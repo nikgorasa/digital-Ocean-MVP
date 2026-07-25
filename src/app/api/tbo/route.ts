@@ -98,21 +98,29 @@ export async function POST(req: NextRequest) {
         if (!p.traceId || !p.passengers) {
           return NextResponse.json({ error: "traceId, passengers required" }, { status: 400 });
         }
-        const result = await ticketFlight({
-          traceId: p.traceId,
-          resultIndex: p.resultIndex,
-          PNR: p.pnr,
-          BookingId: p.bookingId,
-          passengers: p.passengers,
-          segments: p.segments || [],
-          fare: p.fare || {},
-          fareBreakdown: p.fareBreakdown || [],
-          isLCC: p.isLCC || false,
-          ssrBaggage: p.ssrBaggage,
-          ssrMeals: p.ssrMeals,
-          ssrSeats: p.ssrSeats,
-        });
-        return NextResponse.json(result);
+        try {
+          const result = await ticketFlight({
+            traceId: p.traceId,
+            resultIndex: p.resultIndex,
+            PNR: p.pnr,
+            BookingId: p.bookingId,
+            passengers: p.passengers,
+            segments: p.segments || [],
+            fare: p.fare || {},
+            fareBreakdown: p.fareBreakdown || [],
+            isLCC: p.isLCC || false,
+            ssrBaggage: p.ssrBaggage,
+            ssrMeals: p.ssrMeals,
+            ssrSeats: p.ssrSeats,
+          });
+          return NextResponse.json(result);
+        } catch (e: any) {
+          return NextResponse.json({
+            error: e.message || "Ticket failed",
+            freshTraceId: e.freshTraceId || null,
+            errorCode: e.errorCode || null,
+          });
+        }
       }
 
       case "ssr": {
