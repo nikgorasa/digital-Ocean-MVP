@@ -110,7 +110,7 @@ export async function calculatePrice(
   if (applicableRule) {
     appliedRuleName = applicableRule.name;
     if (applicableRule.markupType === "FLAT") {
-      markupAmount = applicableRule.markupValue;
+      markupAmount = applicableRule.markupValue * (context.unitCount || 1);
     } else {
       markupAmount = Math.round(baseRate * (applicableRule.markupValue / 100));
     }

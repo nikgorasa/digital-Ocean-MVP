@@ -5,6 +5,7 @@ export interface PricingContext {
   hotelName?: string;
   airlineCode?: string;
   roomType?: string;
+  unitCount?: number; // Number of units (rooms for hotels, pax for flights)
 }
 
 export interface PricingResult {

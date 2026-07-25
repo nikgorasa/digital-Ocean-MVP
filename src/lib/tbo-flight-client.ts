@@ -108,6 +108,7 @@ function lastSeg(r: TBOFlightResult): TBOFlightSegment | undefined {
 async function toDisplay(
   r: TBOFlightResult,
   leg: "outbound" | "inbound" | "oneway",
+  unitCount: number = 1,
 ): Promise<TBOFlightDisplay> {
   const f = firstSeg(r);
   const l = lastSeg(r);
@@ -117,7 +118,7 @@ async function toDisplay(
 
   const pricing = await calculatePrice(
     r.Fare.PublishedFare,
-    { category: "FLIGHT", airlineCode: f?.Airline?.AirlineCode },
+    { category: "FLIGHT", airlineCode: f?.Airline?.AirlineCode, unitCount },
     r.Fare.Currency || "INR",
   );
 
@@ -287,7 +288,7 @@ export async function searchFlights(params: {
     if (!isReturn) leg = "oneway";
     else if (tripInd === 1) leg = "outbound";
     else leg = "inbound";
-    return toDisplay(r, leg);
+    return toDisplay(r, leg, (params.AdultCount || 1) + (params.ChildCount || 0) + (params.InfantCount || 0));
   }));
   const result: TBOFlightSearchOutput = { flights, traceId: res.Response.TraceId };
   const t4 = Date.now();

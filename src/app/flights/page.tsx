@@ -10,7 +10,7 @@ import { useSearchTimer } from "@/hooks/useSearchTimer";
 import { motion, AnimatePresence } from "motion/react";
 import { formatCurrency } from "@/lib";
 import { parseFareType, parseFareInclusions, getFareTypeColor, formatFareType, type FareType } from "@/lib/fare-utils";
-import { Plane, Search, Calendar, Users, ArrowRight, Star, Clock, Luggage, X, Loader2, ChevronDown, ChevronUp, Minus, Plus, User, AlertCircle, RefreshCw, SlidersHorizontal, Utensils, Armchair } from "lucide-react";
+import { Plane, Search, Calendar, Users, ArrowRight, ArrowRightLeft, Route, Star, Clock, Luggage, X, Loader2, ChevronDown, ChevronUp, Minus, Plus, User, AlertCircle, RefreshCw, SlidersHorizontal, Utensils, Armchair } from "lucide-react";
 import FlightBookingModal from "@/components/FlightBookingModal";
 import CitySearchDropdown from "@/components/CitySearchDropdown";
 import DateRangePicker from "@/components/DateRangePicker";
@@ -166,6 +166,21 @@ export default function FlightsPage() {
   const [bookingFlight, setBookingFlight] = useState<Flight | null>(null);
   const [showBookingModal, setShowBookingModal] = useState(false);
   const [flightSelections, setFlightSelections] = useState<Map<string, Flight>>(new Map());
+
+  const handleTripTypeChange = (type: "one-way" | "return" | "multi-city") => {
+    if (type === tripType) return;
+    setTripType(type);
+    setDepartDate("");
+    setReturnDate("");
+    if (type === "multi-city") {
+      setMultiCityLegs([
+        { origin: originCity, destination: destinationCity, date: "" },
+        { origin: destinationCity, destination: originCity, date: "" },
+      ]);
+    }
+    setResults([]);
+    setSearched(false);
+  };
 
   const totalPassengers = adults + children + infants;
   const showConcierge = totalPassengers > 10;
@@ -646,304 +661,400 @@ export default function FlightsPage() {
               transition={{ delay: 0.1 }}
               className="bg-white rounded-2xl p-5 shadow-xl"
             >
-              {/* Trip Type Tabs */}
-              <div className="flex gap-1 mb-4 bg-brand-ivory rounded-xl p-1 w-full flex-wrap">
-                {(["one-way", "return", "multi-city"] as const).map((t) => (
+              {/* Trip Type Selector — segmented control, industry-standard */}
+              <div className="flex gap-1 mb-5 bg-slate-100 rounded-xl p-1 w-full sm:w-auto" role="tablist" aria-label="Trip type">
+                {([
+                  { key: "one-way" as const, label: "One Way", icon: ArrowRight },
+                  { key: "return" as const, label: "Return", icon: ArrowRightLeft },
+                  { key: "multi-city" as const, label: "Multi-city", icon: Route },
+                ]).map(({ key, label, icon: Icon }) => (
                   <button
-                    key={t}
-                    onClick={() => setTripType(t)}
-                    className={`px-4 py-1.5 rounded-lg text-sm font-medium cursor-pointer transition-all ${
-                      tripType === t
-                        ? "bg-brand-antique-gold text-white shadow-sm"
-                        : "text-slate-600 hover:text-brand-charcoal"
+                    key={key}
+                    role="tab"
+                    aria-selected={tripType === key}
+                    onClick={() => handleTripTypeChange(key)}
+                    className={`flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-semibold cursor-pointer transition-all min-h-[40px] ${
+                      tripType === key
+                        ? "bg-white text-brand-charcoal shadow-sm ring-1 ring-slate-200"
+                        : "text-slate-500 hover:text-brand-charcoal hover:bg-white/50"
                     }`}
                   >
-                    {t === "one-way" ? "One Way" : t === "return" ? "Return" : "Multi-city"}
+                    <Icon size={14} className={tripType === key ? "text-brand-antique-gold" : ""} />
+                    {label}
                   </button>
                 ))}
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
-                <CitySearchDropdown
-                  value={originCity.name}
-                  onChange={setOriginCity}
-                  placeholder="Search airport..."
-                  label="From"
-                  mode="flight"
-                />
-                <CitySearchDropdown
-                  value={destinationCity.name}
-                  onChange={setDestinationCity}
-                  placeholder="Search airport..."
-                  label="To"
-                  mode="flight"
-                />
-                {tripType === "one-way" ? (
-                  <DateRangePicker
-                    mode="single"
-                    startDate={departDate}
-                    onStartDateChange={setDepartDate}
-                    minDate={new Date()}
-                    label="Departure"
-                  />
-                ) : tripType === "return" ? (
-                  <div className="md:col-span-2">
-                    <DateRangePicker
-                      mode="range"
-                      startDate={departDate}
-                      endDate={returnDate}
-                      onStartDateChange={setDepartDate}
-                      onEndDateChange={setReturnDate}
-                      minDate={new Date()}
-                      label="Departure / Return"
-                      showNightsCount={false}
-                    />
-                  </div>
-                ) : (
-                  <div className="md:col-span-3 space-y-3">
-                    {multiCityLegs.map((leg, i) => (
-                      <div key={i} className="flex items-start gap-2">
-                        <div className="flex-1 grid grid-cols-1 sm:grid-cols-3 gap-2">
-                          <div>
-                            <label className="text-[10px] font-bold uppercase tracking-widest text-slate-600 mb-1 block">
-                              From
-                            </label>
-                            <CitySearchDropdown
-                              value={leg.origin.name}
-                              onChange={(city) => {
-                                const next = [...multiCityLegs];
-                                next[i] = { ...next[i], origin: city };
-                                setMultiCityLegs(next);
-                              }}
-                              placeholder="Origin airport"
-                              className="w-full"
-                              mode="flight"
-                            />
-                          </div>
-                          <div>
-                            <label className="text-[10px] font-bold uppercase tracking-widest text-slate-600 mb-1 block">
-                              To
-                            </label>
-                            <CitySearchDropdown
-                              value={leg.destination.name}
-                              onChange={(city) => {
-                                const next = [...multiCityLegs];
-                                next[i] = { ...next[i], destination: city };
-                                setMultiCityLegs(next);
-                              }}
-                              placeholder="Destination airport"
-                              className="w-full"
-                              mode="flight"
-                            />
-                          </div>
-                          <div>
-                            <label className="text-[10px] font-bold uppercase tracking-widest text-slate-600 mb-1 block">
-                              Date
-                            </label>
-                            <input
-                              type="date"
-                              value={leg.date}
-                              min={i > 0 && multiCityLegs[i - 1]?.date ? multiCityLegs[i - 1].date : todayStr()}
-                              onChange={(e) => {
-                                const next = [...multiCityLegs];
-                                next[i] = { ...next[i], date: e.target.value };
-                                setMultiCityLegs(next);
-                              }}
-                              className="w-full px-3 py-2.5 bg-white border border-slate-200 rounded-xl text-sm focus:ring-2 outline-none"
-                            />
-                          </div>
+              {/* Multi-city layout — dedicated full-width view */}
+              {tripType === "multi-city" && (
+                <div className="space-y-3 mb-3">
+                  {multiCityLegs.map((leg, i) => (
+                    <div key={i} className="flex items-start gap-2">
+                      <div className="flex-1 grid grid-cols-1 sm:grid-cols-3 gap-2">
+                        <div>
+                          <label className="text-[10px] font-bold uppercase tracking-widest text-slate-600 mb-1 block">
+                            {i === 0 ? "From" : `Leg ${i + 1} From`}
+                          </label>
+                          <CitySearchDropdown
+                            value={leg.origin.name}
+                            onChange={(city) => {
+                              const next = [...multiCityLegs];
+                              next[i] = { ...next[i], origin: city };
+                              setMultiCityLegs(next);
+                            }}
+                            placeholder="Origin airport"
+                            className="w-full"
+                            mode="flight"
+                          />
                         </div>
-                        <div className="flex items-center gap-1 mt-5">
-                          {multiCityLegs.length > 2 && (
-                            <button
-                              onClick={() => setMultiCityLegs(multiCityLegs.filter((_, idx) => idx !== i))}
-                              className="p-2 rounded-lg border border-dashed border-slate-200 text-slate-600 hover:text-red-500 hover:border-red-300 transition-colors cursor-pointer"
-                              title="Remove leg"
-                            >
-                              <Minus size={16} />
-                            </button>
-                          )}
-                          {i === multiCityLegs.length - 1 && (
-                            <button
-                              onClick={() => setMultiCityLegs([...multiCityLegs, { origin: leg.destination, destination: leg.origin, date: "" }])}
-                              className="p-2 rounded-lg border border-dashed border-slate-200 text-slate-600 hover:text-brand-antique-gold hover:border-brand-antique-gold transition-colors cursor-pointer"
-                              title="Add leg"
-                            >
-                              <Plus size={16} />
-                            </button>
-                          )}
+                        <div>
+                          <label className="text-[10px] font-bold uppercase tracking-widest text-slate-600 mb-1 block">To</label>
+                          <CitySearchDropdown
+                            value={leg.destination.name}
+                            onChange={(city) => {
+                              const next = [...multiCityLegs];
+                              next[i] = { ...next[i], destination: city };
+                              setMultiCityLegs(next);
+                            }}
+                            placeholder="Destination airport"
+                            className="w-full"
+                            mode="flight"
+                          />
+                        </div>
+                        <div>
+                          <label className="text-[10px] font-bold uppercase tracking-widest text-slate-600 mb-1 block">Date</label>
+                          <input
+                            type="date"
+                            value={leg.date}
+                            min={i > 0 && multiCityLegs[i - 1]?.date ? multiCityLegs[i - 1].date : todayStr()}
+                            onChange={(e) => {
+                              const next = [...multiCityLegs];
+                              next[i] = { ...next[i], date: e.target.value };
+                              setMultiCityLegs(next);
+                            }}
+                            className="w-full px-3 py-2.5 bg-white border border-slate-200 rounded-xl text-sm focus:ring-2 outline-none"
+                          />
                         </div>
                       </div>
-                    ))}
-                  </div>
-                )}
-
-                {/* Passenger + Cabin Popover */}
-                <div ref={passengerRef} className="relative">
-                  <label className="text-[11px] font-bold uppercase tracking-widest text-slate-600 mb-1.5 block">
-                    Passengers & Cabin
-                  </label>
-                  <button
-                    onClick={() => setShowPassengerPopover(!showPassengerPopover)}
-                    className="w-full px-3 py-3 bg-white border border-slate-200 rounded-xl text-sm flex items-center justify-between gap-2 cursor-pointer hover:border-brand-antique-gold/30 transition-colors focus:ring-2 focus:ring-brand-antique-gold focus:ring-offset-2 outline-none"
-                  >
-                    <span className="flex items-center gap-2">
-                      <Users size={14} className="text-slate-600" />
-                      <span className="text-brand-charcoal font-medium">{totalPassengers}</span>
-                      <span className="text-slate-600">{totalPassengers === 1 ? "Passenger" : "Passengers"}</span>
-                      <span className="text-slate-600/50 mx-1">·</span>
-                      <span className="text-slate-600">{cabinClass}</span>
-                    </span>
-                    <ChevronDown size={14} className={`text-slate-600 transition-transform ${showPassengerPopover ? "rotate-180" : ""}`} />
-                  </button>
-
-                  {showPassengerPopover && (
-                    <div className="absolute left-0 right-0 sm:left-auto sm:right-0 top-full mt-1 z-50 w-full sm:w-80 bg-white rounded-2xl shadow-xl border border-slate-200 p-4">
-                      {showConcierge ? (
-                        <div className="text-center py-6">
-                          <User size={32} className="mx-auto text-brand-antique-gold mb-3" />
-                          <p className="font-bold text-brand-charcoal mb-1">Large Group Booking</p>
-                          <p className="text-xs text-slate-600 mb-3">
-                            For groups larger than 10 passengers, please contact our concierge.
-                          </p>
-                          <Link
-                            href="/support"
-                            className="inline-block px-6 py-2.5 bg-brand-antique-gold text-white rounded-xl font-bold text-sm hover:bg-brand-emerald transition-colors"
+                      <div className="flex items-center gap-1 mt-5">
+                        {multiCityLegs.length > 2 && (
+                          <button
+                            onClick={() => setMultiCityLegs(multiCityLegs.filter((_, idx) => idx !== i))}
+                            className="p-2 rounded-lg border border-dashed border-slate-200 text-slate-600 hover:text-red-500 hover:border-red-300 transition-colors cursor-pointer"
+                            title="Remove leg"
                           >
-                            Submit to Concierge
-                          </Link>
-                        </div>
-                      ) : (
-                        <div className="space-y-4">
-                          {/* Cabin Class */}
-                          <div>
-                            <p className="text-[10px] font-bold uppercase tracking-widest text-slate-600 mb-2">Cabin Class</p>
-                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-1.5">
-                              {CABIN_OPTIONS.map((c) => (
-                                <button
-                                  key={c}
-                                  onClick={() => setCabinClass(c)}
-                                  className={`px-3 py-2 rounded-lg text-xs font-medium border cursor-pointer transition-all ${
-                                    cabinClass === c
-                                      ? "bg-brand-antique-gold text-white border-brand-antique-gold"
-                                      : "bg-transparent text-slate-600 border-slate-200"
-                                  }`}
-                                >
-                                  {c}
-                                </button>
-                              ))}
-                            </div>
-                          </div>
+                            <Minus size={16} />
+                          </button>
+                        )}
+                        {i === multiCityLegs.length - 1 && (
+                          <button
+                            onClick={() => setMultiCityLegs([...multiCityLegs, { origin: leg.destination, destination: leg.origin, date: "" }])}
+                            className="p-2 rounded-lg border border-dashed border-slate-200 text-slate-600 hover:text-brand-antique-gold hover:border-brand-antique-gold transition-colors cursor-pointer"
+                            title="Add leg"
+                          >
+                            <Plus size={16} />
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                  {/* Passenger + Cabin — below multi-city legs */}
+                  <div ref={passengerRef} className="relative mt-1">
+                    <label className="text-[11px] font-bold uppercase tracking-widest text-slate-600 mb-1.5 block">
+                      Passengers & Cabin
+                    </label>
+                    <button
+                      onClick={() => setShowPassengerPopover(!showPassengerPopover)}
+                      className="w-full px-3 py-3 bg-white border border-slate-200 rounded-xl text-sm flex items-center justify-between gap-2 cursor-pointer hover:border-brand-antique-gold/30 transition-colors focus:ring-2 focus:ring-brand-antique-gold focus:ring-offset-2 outline-none"
+                    >
+                      <span className="flex items-center gap-2">
+                        <Users size={14} className="text-slate-600" />
+                        <span className="text-brand-charcoal font-medium">{totalPassengers}</span>
+                        <span className="text-slate-600">{totalPassengers === 1 ? "Passenger" : "Passengers"}</span>
+                        <span className="text-slate-600/50 mx-1">&middot;</span>
+                        <span className="text-slate-600">{cabinClass}</span>
+                      </span>
+                      <ChevronDown size={14} className={`text-slate-600 transition-transform ${showPassengerPopover ? "rotate-180" : ""}`} />
+                    </button>
 
-                          {/* Adults */}
-                          <div className="flex items-center justify-between">
+                    {showPassengerPopover && (
+                      <div className="absolute left-0 right-0 sm:left-auto sm:right-0 top-full mt-1 z-50 w-full sm:w-80 bg-white rounded-2xl shadow-xl border border-slate-200 p-4">
+                        {showConcierge ? (
+                          <div className="text-center py-6">
+                            <User size={32} className="mx-auto text-brand-antique-gold mb-3" />
+                            <p className="font-bold text-brand-charcoal mb-1">Large Group Booking</p>
+                            <p className="text-xs text-slate-600 mb-3">
+                              For groups larger than 10 passengers, please contact our concierge.
+                            </p>
+                            <Link href="/support" className="inline-block px-6 py-2.5 bg-brand-antique-gold text-white rounded-xl font-bold text-sm hover:bg-brand-emerald transition-colors">
+                              Submit to Concierge
+                            </Link>
+                          </div>
+                        ) : (
+                          <div className="space-y-4">
                             <div>
-                              <p className="text-sm font-semibold text-brand-charcoal">Adults</p>
-                              <p className="text-[10px] text-slate-600">12+ years</p>
-                            </div>
-                            <div className="flex items-center gap-3">
-                              <button
-                                onClick={() => setAdults(Math.max(1, adults - 1))}
-                                className="w-8 h-8 rounded-full border border-slate-200 flex items-center justify-center text-slate-600 hover:bg-brand-ivory cursor-pointer disabled:opacity-30"
-                                disabled={adults <= 1}
-                              >
-                                <Minus size={14} />
-                              </button>
-                              <span className="w-6 text-center font-bold text-brand-charcoal">{adults}</span>
-                              <button
-                                onClick={() => setAdults(Math.min(9, adults + 1))}
-                                className="w-8 h-8 rounded-full border border-slate-200 flex items-center justify-center text-slate-600 hover:bg-brand-ivory cursor-pointer disabled:opacity-30"
-                                disabled={adults >= 9}
-                              >
-                                <Plus size={14} />
-                              </button>
-                            </div>
-                          </div>
-
-                          {/* Children */}
-                          <div className="flex items-center justify-between">
-                            <div>
-                              <p className="text-sm font-semibold text-brand-charcoal">Children</p>
-                              <p className="text-[10px] text-slate-600">2-17 years</p>
-                            </div>
-                            <div className="flex items-center gap-3">
-                              <button
-                                onClick={() => setChildren(Math.max(0, children - 1))}
-                                className="w-8 h-8 rounded-full border border-slate-200 flex items-center justify-center text-slate-600 hover:bg-brand-ivory cursor-pointer disabled:opacity-30"
-                                disabled={children <= 0}
-                              >
-                                <Minus size={14} />
-                              </button>
-                              <span className="w-6 text-center font-bold text-brand-charcoal">{children}</span>
-                              <button
-                                onClick={() => setChildren(Math.min(9, children + 1))}
-                                className="w-8 h-8 rounded-full border border-slate-200 flex items-center justify-center text-slate-600 hover:bg-brand-ivory cursor-pointer disabled:opacity-30"
-                                disabled={children >= 9}
-                              >
-                                <Plus size={14} />
-                              </button>
-                            </div>
-                          </div>
-
-                          {/* Child Ages */}
-                          {childAges.map((age, i) => (
-                            <div key={i} className="flex items-center gap-2 pl-4">
-                              <span className="text-[10px] text-slate-600 w-16">Child {i + 1} age</span>
-                              <select
-                                value={age}
-                                onChange={(e) => {
-                                  const next = [...childAges];
-                                  next[i] = parseInt(e.target.value);
-                                  setChildAges(next);
-                                }}
-                                className="flex-1 px-2 py-1.5 bg-white border border-slate-200 rounded-lg text-xs outline-none"
-                              >
-                                {Array.from({ length: 16 }, (_, i) => i + 2).map((a) => (
-                                  <option key={a} value={a}>{a} years</option>
+                              <p className="text-[10px] font-bold uppercase tracking-widest text-slate-600 mb-2">Cabin Class</p>
+                              <div className="grid grid-cols-1 sm:grid-cols-2 gap-1.5">
+                                {CABIN_OPTIONS.map((c) => (
+                                  <button key={c} onClick={() => setCabinClass(c)}
+                                    className={`px-3 py-2 rounded-lg text-xs font-medium border cursor-pointer transition-all ${cabinClass === c ? "bg-brand-antique-gold text-white border-brand-antique-gold" : "bg-transparent text-slate-600 border-slate-200"}`}>
+                                    {c}
+                                  </button>
                                 ))}
-                              </select>
+                              </div>
                             </div>
-                          ))}
-
-                          {/* Infants */}
-                          <div className="flex items-center justify-between">
-                            <div>
-                              <p className="text-sm font-semibold text-brand-charcoal">Infants (lap)</p>
-                              <p className="text-[10px] text-slate-600">0-2 years</p>
+                            <div className="flex items-center justify-between">
+                              <div><p className="text-sm font-semibold text-brand-charcoal">Adults</p><p className="text-[10px] text-slate-600">12+ years</p></div>
+                              <div className="flex items-center gap-3">
+                                <button onClick={() => setAdults(Math.max(1, adults - 1))} className="w-8 h-8 rounded-full border border-slate-200 flex items-center justify-center text-slate-600 hover:bg-brand-ivory cursor-pointer disabled:opacity-30" disabled={adults <= 1}><Minus size={14} /></button>
+                                <span className="w-6 text-center font-bold text-brand-charcoal">{adults}</span>
+                                <button onClick={() => setAdults(Math.min(9, adults + 1))} className="w-8 h-8 rounded-full border border-slate-200 flex items-center justify-center text-slate-600 hover:bg-brand-ivory cursor-pointer disabled:opacity-30" disabled={adults >= 9}><Plus size={14} /></button>
+                              </div>
                             </div>
-                            <div className="flex items-center gap-3">
-                              <button
-                                onClick={() => setInfants(Math.max(0, infants - 1))}
-                                className="w-8 h-8 rounded-full border border-slate-200 flex items-center justify-center text-slate-600 hover:bg-brand-ivory cursor-pointer disabled:opacity-30"
-                                disabled={infants <= 0}
-                              >
-                                <Minus size={14} />
-                              </button>
-                              <span className="w-6 text-center font-bold text-brand-charcoal">{infants}</span>
-                              <button
-                                onClick={() => setInfants(Math.min(9, infants + 1))}
-                                className="w-8 h-8 rounded-full border border-slate-200 flex items-center justify-center text-slate-600 hover:bg-brand-ivory cursor-pointer disabled:opacity-30"
-                                disabled={infants >= 9}
-                              >
-                                <Plus size={14} />
-                              </button>
+                            <div className="flex items-center justify-between">
+                              <div><p className="text-sm font-semibold text-brand-charcoal">Children</p><p className="text-[10px] text-slate-600">2-17 years</p></div>
+                              <div className="flex items-center gap-3">
+                                <button onClick={() => setChildren(Math.max(0, children - 1))} className="w-8 h-8 rounded-full border border-slate-200 flex items-center justify-center text-slate-600 hover:bg-brand-ivory cursor-pointer disabled:opacity-30" disabled={children <= 0}><Minus size={14} /></button>
+                                <span className="w-6 text-center font-bold text-brand-charcoal">{children}</span>
+                                <button onClick={() => setChildren(Math.min(9, children + 1))} className="w-8 h-8 rounded-full border border-slate-200 flex items-center justify-center text-slate-600 hover:bg-brand-ivory cursor-pointer disabled:opacity-30" disabled={children >= 9}><Plus size={14} /></button>
+                              </div>
+                            </div>
+                            {childAges.map((age, i) => (
+                              <div key={i} className="flex items-center gap-2 pl-4">
+                                <span className="text-[10px] text-slate-600 w-16">Child {i + 1} age</span>
+                                <select value={age} onChange={(e) => { const next = [...childAges]; next[i] = parseInt(e.target.value); setChildAges(next); }} className="flex-1 px-2 py-1.5 bg-white border border-slate-200 rounded-lg text-xs outline-none">
+                                  {Array.from({ length: 16 }, (_, i) => i + 2).map((a) => (<option key={a} value={a}>{a} years</option>))}
+                                </select>
+                              </div>
+                            ))}
+                            <div className="flex items-center justify-between">
+                              <div><p className="text-sm font-semibold text-brand-charcoal">Infants (lap)</p><p className="text-[10px] text-slate-600">0-2 years</p></div>
+                              <div className="flex items-center gap-3">
+                                <button onClick={() => setInfants(Math.max(0, infants - 1))} className="w-8 h-8 rounded-full border border-slate-200 flex items-center justify-center text-slate-600 hover:bg-brand-ivory cursor-pointer disabled:opacity-30" disabled={infants <= 0}><Minus size={14} /></button>
+                                <span className="w-6 text-center font-bold text-brand-charcoal">{infants}</span>
+                                <button onClick={() => setInfants(Math.min(9, infants + 1))} className="w-8 h-8 rounded-full border border-slate-200 flex items-center justify-center text-slate-600 hover:bg-brand-ivory cursor-pointer disabled:opacity-30" disabled={infants >= 9}><Plus size={14} /></button>
+                              </div>
                             </div>
                           </div>
-                        </div>
-                      )}
+                        )}
+                        {!showConcierge && (
+                          <button onClick={() => setShowPassengerPopover(false)} className="w-full mt-4 py-2 bg-brand-antique-gold text-white rounded-xl font-bold text-sm hover:bg-brand-emerald transition-colors cursor-pointer">
+                            Done
+                          </button>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
 
-                      {!showConcierge && (
+              {/* One-way / Return layout — compact grid */}
+              {tripType !== "multi-city" && (
+                <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
+                  <CitySearchDropdown
+                    value={originCity.name}
+                    onChange={setOriginCity}
+                    placeholder="Search airport..."
+                    label="From"
+                    mode="flight"
+                  />
+                  <CitySearchDropdown
+                    value={destinationCity.name}
+                    onChange={setDestinationCity}
+                    placeholder="Search airport..."
+                    label="To"
+                    mode="flight"
+                  />
+                  {tripType === "return" ? (
+                    <div className="md:col-span-2">
+                      <DateRangePicker
+                        mode="range"
+                        startDate={departDate}
+                        endDate={returnDate}
+                        onStartDateChange={setDepartDate}
+                        onEndDateChange={setReturnDate}
+                        minDate={new Date()}
+                        label="Departure / Return"
+                        showNightsCount={false}
+                      />
+                    </div>
+                  ) : (
+                    <DateRangePicker
+                      mode="single"
+                      startDate={departDate}
+                      onStartDateChange={setDepartDate}
+                      minDate={new Date()}
+                      label="Departure"
+                    />
+                  )}
+
+                  {/* Passenger + Cabin Popover */}
+                  <div ref={passengerRef} className="relative">
+                    <label className="text-[11px] font-bold uppercase tracking-widest text-slate-600 mb-1.5 block">
+                      Passengers & Cabin
+                    </label>
+                    <button
+                      onClick={() => setShowPassengerPopover(!showPassengerPopover)}
+                      className="w-full px-3 py-3 bg-white border border-slate-200 rounded-xl text-sm flex items-center justify-between gap-2 cursor-pointer hover:border-brand-antique-gold/30 transition-colors focus:ring-2 focus:ring-brand-antique-gold focus:ring-offset-2 outline-none"
+                    >
+                      <span className="flex items-center gap-2">
+                        <Users size={14} className="text-slate-600" />
+                        <span className="text-brand-charcoal font-medium">{totalPassengers}</span>
+                        <span className="text-slate-600">{totalPassengers === 1 ? "Passenger" : "Passengers"}</span>
+                        <span className="text-slate-600/50 mx-1">&middot;</span>
+                        <span className="text-slate-600">{cabinClass}</span>
+                      </span>
+                      <ChevronDown size={14} className={`text-slate-600 transition-transform ${showPassengerPopover ? "rotate-180" : ""}`} />
+                    </button>
+
+                    {showPassengerPopover && (
+                      <div className="absolute left-0 right-0 sm:left-auto sm:right-0 top-full mt-1 z-50 w-full sm:w-80 bg-white rounded-2xl shadow-xl border border-slate-200 p-4">
+                        {showConcierge ? (
+                          <div className="text-center py-6">
+                            <User size={32} className="mx-auto text-brand-antique-gold mb-3" />
+                            <p className="font-bold text-brand-charcoal mb-1">Large Group Booking</p>
+                            <p className="text-xs text-slate-600 mb-3">
+                              For groups larger than 10 passengers, please contact our concierge.
+                            </p>
+                            <Link
+                              href="/support"
+                              className="inline-block px-6 py-2.5 bg-brand-antique-gold text-white rounded-xl font-bold text-sm hover:bg-brand-emerald transition-colors"
+                            >
+                              Submit to Concierge
+                            </Link>
+                          </div>
+                        ) : (
+                          <div className="space-y-4">
+                            {/* Cabin Class */}
+                            <div>
+                              <p className="text-[10px] font-bold uppercase tracking-widest text-slate-600 mb-2">Cabin Class</p>
+                              <div className="grid grid-cols-1 sm:grid-cols-2 gap-1.5">
+                                {CABIN_OPTIONS.map((c) => (
+                                  <button
+                                    key={c}
+                                    onClick={() => setCabinClass(c)}
+                                    className={`px-3 py-2 rounded-lg text-xs font-medium border cursor-pointer transition-all ${
+                                      cabinClass === c
+                                        ? "bg-brand-antique-gold text-white border-brand-antique-gold"
+                                        : "bg-transparent text-slate-600 border-slate-200"
+                                    }`}
+                                  >
+                                    {c}
+                                  </button>
+                                ))}
+                              </div>
+                            </div>
+
+                            {/* Adults */}
+                            <div className="flex items-center justify-between">
+                              <div>
+                                <p className="text-sm font-semibold text-brand-charcoal">Adults</p>
+                                <p className="text-[10px] text-slate-600">12+ years</p>
+                              </div>
+                              <div className="flex items-center gap-3">
+                                <button
+                                  onClick={() => setAdults(Math.max(1, adults - 1))}
+                                  className="w-8 h-8 rounded-full border border-slate-200 flex items-center justify-center text-slate-600 hover:bg-brand-ivory cursor-pointer disabled:opacity-30"
+                                  disabled={adults <= 1}
+                                >
+                                  <Minus size={14} />
+                                </button>
+                                <span className="w-6 text-center font-bold text-brand-charcoal">{adults}</span>
+                                <button
+                                  onClick={() => setAdults(Math.min(9, adults + 1))}
+                                  className="w-8 h-8 rounded-full border border-slate-200 flex items-center justify-center text-slate-600 hover:bg-brand-ivory cursor-pointer disabled:opacity-30"
+                                  disabled={adults >= 9}
+                                >
+                                  <Plus size={14} />
+                                </button>
+                              </div>
+                            </div>
+
+                            {/* Children */}
+                            <div className="flex items-center justify-between">
+                              <div>
+                                <p className="text-sm font-semibold text-brand-charcoal">Children</p>
+                                <p className="text-[10px] text-slate-600">2-17 years</p>
+                              </div>
+                              <div className="flex items-center gap-3">
+                                <button
+                                  onClick={() => setChildren(Math.max(0, children - 1))}
+                                  className="w-8 h-8 rounded-full border border-slate-200 flex items-center justify-center text-slate-600 hover:bg-brand-ivory cursor-pointer disabled:opacity-30"
+                                  disabled={children <= 0}
+                                >
+                                  <Minus size={14} />
+                                </button>
+                                <span className="w-6 text-center font-bold text-brand-charcoal">{children}</span>
+                                <button
+                                  onClick={() => setChildren(Math.min(9, children + 1))}
+                                  className="w-8 h-8 rounded-full border border-slate-200 flex items-center justify-center text-slate-600 hover:bg-brand-ivory cursor-pointer disabled:opacity-30"
+                                  disabled={children >= 9}
+                                >
+                                  <Plus size={14} />
+                                </button>
+                              </div>
+                            </div>
+
+                            {/* Child Ages */}
+                            {childAges.map((age, i) => (
+                              <div key={i} className="flex items-center gap-2 pl-4">
+                                <span className="text-[10px] text-slate-600 w-16">Child {i + 1} age</span>
+                                <select
+                                  value={age}
+                                  onChange={(e) => {
+                                    const next = [...childAges];
+                                    next[i] = parseInt(e.target.value);
+                                    setChildAges(next);
+                                  }}
+                                  className="flex-1 px-2 py-1.5 bg-white border border-slate-200 rounded-lg text-xs outline-none"
+                                >
+                                  {Array.from({ length: 16 }, (_, i) => i + 2).map((a) => (
+                                    <option key={a} value={a}>{a} years</option>
+                                  ))}
+                                </select>
+                              </div>
+                            ))}
+
+                            {/* Infants */}
+                            <div className="flex items-center justify-between">
+                              <div>
+                                <p className="text-sm font-semibold text-brand-charcoal">Infants (lap)</p>
+                                <p className="text-[10px] text-slate-600">0-2 years</p>
+                              </div>
+                              <div className="flex items-center gap-3">
+                                <button
+                                  onClick={() => setInfants(Math.max(0, infants - 1))}
+                                  className="w-8 h-8 rounded-full border border-slate-200 flex items-center justify-center text-slate-600 hover:bg-brand-ivory cursor-pointer disabled:opacity-30"
+                                  disabled={infants <= 0}
+                                >
+                                  <Minus size={14} />
+                                </button>
+                                <span className="w-6 text-center font-bold text-brand-charcoal">{infants}</span>
+                                <button
+                                  onClick={() => setInfants(Math.min(9, infants + 1))}
+                                  className="w-8 h-8 rounded-full border border-slate-200 flex items-center justify-center text-slate-600 hover:bg-brand-ivory cursor-pointer disabled:opacity-30"
+                                  disabled={infants >= 9}
+                                >
+                                  <Plus size={14} />
+                                </button>
+                              </div>
+                            </div>
+                          </div>
+                        )}
+
+                        {!showConcierge && (
                           <button
                             onClick={() => setShowPassengerPopover(false)}
                             className="w-full mt-4 py-2 bg-brand-antique-gold text-white rounded-xl font-bold text-sm hover:bg-brand-emerald transition-colors cursor-pointer"
                           >
-                          Done
-                        </button>
-                      )}
-                    </div>
-                  )}
+                            Done
+                          </button>
+                        )}
+                      </div>
+                    )}
+                  </div>
                 </div>
-              </div>
+              )}
 
               <button
                 onClick={handleSearch}

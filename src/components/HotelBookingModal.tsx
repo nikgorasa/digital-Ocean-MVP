@@ -168,8 +168,9 @@ export default function HotelBookingModal({
   const perRoomPerNight = Math.round(room.totalFare / nights);
   const perRoomTotal = perRoomPerNight * nights;
   const rawTotal = perRoomTotal * roomCount;
-  const serviceFee = Math.max(0, hotel.price - rawTotal);
-  const totalPayable = hotel.price - discountApplied; // Total for all rooms
+  const totalWithMarkup = hotel.price * roomCount;
+  const serviceFee = Math.max(0, totalWithMarkup - rawTotal);
+  const totalPayable = totalWithMarkup - discountApplied; // Total for all rooms
   const passportValid = !passportRequired || (passportNo.trim() && passportExpiry);
   const panValid = !panRequired || pan.trim().length > 0;
   const isValid = firstName.trim() && lastName.trim() && phone.trim().length >= 7 && email.trim() && passportValid && panValid;
@@ -431,7 +432,7 @@ export default function HotelBookingModal({
           travelDates: `${checkIn} to ${checkOut}`,
           leadGuestPan: showPan && pan.trim() ? pan.trim().toUpperCase() : undefined,
           supplierBookingRef: bookData?.bookingId ? String(bookData.bookingId) : undefined,
-          markupAmount: Math.max(0, hotel.price - room.totalFare),
+          markupAmount: Math.max(0, (hotel.price - room.totalFare) * roomCount),
           metadata: {
             tboBookingId: bookData?.bookingId,
             confirmationNo: bookData?.confirmationNo,
