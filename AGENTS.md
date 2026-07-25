@@ -212,6 +212,16 @@ ALL external API calls (TBO, payment gateways) must have retry logic:
 **ALWAYS** use only one animation system per element: either Tailwind CSS transitions OR motion/react animations.
 **ALWAYS** test interactive elements on multiple browsers (Chrome, Firefox, Safari, Vivaldi, Opera) before deploying.
 
+### Rule 13: EPIC/Issue Tracking Gate (MANDATORY)
+
+Before ANY code commit or work session starts, the agent MUST:
+1. Read `Governance/docs/governance/EPIC-ISSUE-TRACKER.md` for current active epics and open issues
+2. Verify every planned change maps to at least one open GitHub issue
+3. If no issue exists, STOP and create one via `gh issue create` BEFORE writing any code
+4. Update `EPIC-ISSUE-TRACKER.md` with new issues/status changes BEFORE committing code
+5. Closed issues must match closed code work — no orphaned open issues
+6. No work can be committed without the issue being listed in `EPIC-ISSUE-TRACKER.md`
+
 ---
 
 ## Key Files
@@ -226,6 +236,7 @@ ALL external API calls (TBO, payment gateways) must have retry logic:
 | `Governance/docs/governance/DB-CHANGES.md` | DB changes |
 | `Governance/docs/governance/DEPLOYMENT-LOG.md` | Deployments |
 | `Governance/docs/governance/LEARNING-FROM-MISTAKES.md` | Issue deep-dives |
+| `Governance/docs/governance/EPIC-ISSUE-TRACKER.md` | Active epics + open issues registry (MUST update before commit) |
 | `Governance/scripts/Cckr-api-config-check.sh` | API config validation (6 checks) |
 | `Governance/scripts/Cckr-governance-check.sh` | Context-aware governance (18 checks, task routing) |
 | `Governance/docs/static-data/TBO-STATIC-DATA-REFERENCE.md` | TBO API endpoint reference |

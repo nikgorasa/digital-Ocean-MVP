@@ -360,6 +360,40 @@ function getTruncationLimit(provider: string): number {
 
 ---
 
+#### LOG-10: TBO TraceId Sliding-Token Bug Fix ✅ DONE
+**Priority:** CRITICAL
+**Effort:** 2h (actual: 2h)
+**Status:** COMPLETED 2026-07-26
+
+**Acceptance Criteria:**
+- [x] Removed internal SSR re-fetch from `ticketFlight()` — uses static "NoMeal"/"NoBaggage" defaults
+- [x] Book step updates `currentTraceIdRef.current` with `bookData.traceId` before Ticket call
+- [x] Recovery re-search updates ref in-place (no separate page-state fix needed)
+- [x] Auth token refresh does NOT invalidate TraceId chain
+- [x] TypeScript compiles clean
+
+**Root Cause:**
+TBO's TraceId is a sliding session token — every API call consumes/replaces it. The code treated it as a stable token for the entire booking flow.
+```
+Search → T1 (consumed)
+SSR → T2 (T1 dead)
+FareQuote → T3 (T2 dead)
+ticketFlight() internal SSR → T3 again → "expired"
+```
+
+**Bugs Fixed:**
+1. `ticketFlight()` called `getSSR()` internally with already-consumed TraceId → removed
+2. Book step updated local `currentTraceId` but not the ref → now updates ref
+3. Recovery re-search already updates ref in-place (no Fix 3 needed)
+
+**Files modified:**
+- `src/lib/tbo-flight-client.ts` — removed internal SSR fallback, static NoMeal/NoBaggage
+- `src/components/FlightBookingModal.tsx` — Book step updates `currentTraceIdRef.current`
+
+**Dependencies:** LOG-09
+
+---
+
 ### Epic 7 Summary
 
 | Issue | Title | Priority | Effort | Dependencies |
@@ -373,9 +407,10 @@ function getTruncationLimit(provider: string): number {
 | LOG-07 | Full-body storage for cert endpoints | MEDIUM | 6h | LOG-03 |
 | LOG-08 | Flight Source (GDS/LCC) in logs + admin filter + UI badge | MEDIUM | 3h | None |
 | LOG-09 | TBO SSR Certification Compliance | HIGH | 2h | None |
+| LOG-10 | TBO TraceId Sliding-Token Bug Fix | CRITICAL | 2h | None |
 
-**Total estimated effort:** 25h
-**Critical path:** LOG-01 → LOG-02 → LOG-06 → LOG-04 → LOG-05
+**Total estimated effort:** 27h (+2h)
+**Critical path:** LOG-01 → LOG-02 → LOG-06 → LOG-04 → LOG-05 → LOG-10
 
 ---
 
