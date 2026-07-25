@@ -945,7 +945,7 @@ export default function HotelBookingModal({
             <button
               onClick={handleBook}
               disabled={!isValid}
-              className="w-full py-3.5 bg-brand-saffron text-white rounded-xl font-bold hover:bg-brand-burnt transition-colors disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer flex items-center justify-center gap-2 active:scale-[0.98]"
+              className="w-full py-3.5 bg-brand-saffron text-white rounded-xl font-bold hover:bg-brand-burnt transition-colors disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer flex items-center justify-center gap-2"
             >
               <CreditCard size={18} />
               Confirm Booking – {formatCurrency(totalPayable)}
@@ -1239,7 +1239,7 @@ export default function HotelBookingModal({
 
             <button
               onClick={handleClose}
-              className="w-full py-3 bg-brand-saffron text-white rounded-xl font-bold hover:bg-brand-burnt cursor-pointer active:scale-[0.98]"
+              className="w-full py-3 bg-brand-saffron text-white rounded-xl font-bold hover:bg-brand-burnt cursor-pointer"
             >
               Done
             </button>
@@ -1262,7 +1262,7 @@ export default function HotelBookingModal({
               </button>
               <button
                 onClick={() => { setStep("form"); setErrorMessage(""); }}
-                className="flex-1 py-3 bg-brand-saffron text-white rounded-xl font-bold hover:bg-brand-burnt cursor-pointer active:scale-[0.98]"
+                className="flex-1 py-3 bg-brand-saffron text-white rounded-xl font-bold hover:bg-brand-burnt cursor-pointer"
               >
                 Try Again
               </button>

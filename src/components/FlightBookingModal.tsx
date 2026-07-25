@@ -1218,7 +1218,7 @@ export default function FlightBookingModal({
             <button
               onClick={fetchSSR}
               disabled={!isValid}
-              className="w-full py-3.5 bg-brand-saffron text-white rounded-xl font-bold hover:bg-brand-burnt transition-colors disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer flex items-center justify-center gap-2 active:scale-[0.98]"
+              className="w-full py-3.5 bg-brand-saffron text-white rounded-xl font-bold hover:bg-brand-burnt transition-colors disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer flex items-center justify-center gap-2"
             >
               {flight.isLCC ? (
                 <><Luggage size={18} /> Continue to Add-ons</>
@@ -1417,7 +1417,7 @@ export default function FlightBookingModal({
                   </button>
                   <button
                     onClick={handleBook}
-                    className="flex-1 py-3 bg-brand-saffron text-white rounded-xl font-bold hover:bg-brand-burnt cursor-pointer flex items-center justify-center gap-2 active:scale-[0.98]"
+                    className="flex-1 py-3 bg-brand-saffron text-white rounded-xl font-bold hover:bg-brand-burnt cursor-pointer flex items-center justify-center gap-2"
                   >
                     <CreditCard size={18} />
                     Proceed to Pay – {formatCurrency(totalPayable)}
@@ -1576,7 +1576,7 @@ export default function FlightBookingModal({
                 )}
               </div>
             )}
-            <button onClick={handleClose} className="w-full py-3 bg-brand-saffron text-white rounded-xl font-bold hover:bg-brand-burnt cursor-pointer active:scale-[0.98]">Done</button>
+            <button onClick={handleClose} className="w-full py-3 bg-brand-saffron text-white rounded-xl font-bold hover:bg-brand-burnt cursor-pointer">Done</button>
             <button
               onClick={() => setShowCancellation(true)}
               className="w-full mt-3 py-2.5 text-sm text-red-600 hover:text-red-700 font-medium cursor-pointer"
@@ -1615,7 +1615,7 @@ export default function FlightBookingModal({
               </button>
               <button
                 onClick={() => { priceChangeDialog.resolve(true); setPriceChangeDialog(null); }}
-                className="flex-1 py-3 bg-brand-saffron text-white rounded-xl font-bold hover:bg-brand-burnt cursor-pointer active:scale-[0.98]"
+                className="flex-1 py-3 bg-brand-saffron text-white rounded-xl font-bold hover:bg-brand-burnt cursor-pointer"
               >
                 Accept New Price
               </button>
@@ -1633,7 +1633,7 @@ export default function FlightBookingModal({
             <p className="text-sm text-red-500 mb-6">{errorMessage}</p>
             <div className="flex gap-2">
               <button onClick={handleClose} className="flex-1 py-3 bg-slate-200 text-slate-700 rounded-xl font-bold hover:bg-slate-300 cursor-pointer">Cancel</button>
-              <button onClick={() => { setStep("form"); setErrorMessage(""); }} className="flex-1 py-3 bg-brand-saffron text-white rounded-xl font-bold hover:bg-brand-burnt cursor-pointer active:scale-[0.98]">Try Again</button>
+              <button onClick={() => { setStep("form"); setErrorMessage(""); }} className="flex-1 py-3 bg-brand-saffron text-white rounded-xl font-bold hover:bg-brand-burnt cursor-pointer">Try Again</button>
             </div>
           </div>
         )}

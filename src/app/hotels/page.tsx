@@ -506,7 +506,7 @@ export default function HotelsPage() {
               <button
                 onClick={handleSearch}
                 disabled={loading || !checkIn || !checkOut || !selectedCity.name}
-                className="mt-4 w-full md:w-auto px-8 py-3 bg-brand-antique-gold text-white rounded-xl font-bold hover:bg-brand-emerald transition-colors flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50 active:scale-[0.98]"
+                className="mt-4 w-full md:w-auto px-8 py-3 bg-brand-antique-gold text-white rounded-xl font-bold hover:bg-brand-emerald transition-colors flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
               >
                 {loading ? <Loader2 size={18} className="animate-spin" /> : <Search size={18} />}
                 {loading ? "Searching..." : "Search Hotels"}

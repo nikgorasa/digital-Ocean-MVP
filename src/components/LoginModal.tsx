@@ -173,7 +173,7 @@ export default function LoginModal({ isOpen, onClose }: LoginModalProps) {
             <button
               type="submit"
               disabled={loading}
-              className="w-full py-3.5 bg-brand-saffron text-white rounded-xl font-bold hover:bg-brand-burnt transition-colors shadow-lg disabled:opacity-50 cursor-pointer text-sm active:scale-[0.98]"
+              className="w-full py-3.5 bg-brand-saffron text-white rounded-xl font-bold hover:bg-brand-burnt transition-colors shadow-lg disabled:opacity-50 cursor-pointer text-sm"
             >
               {loading ? "Loading..." : isRegistering ? "Create Account" : "Sign In"}
             </button>

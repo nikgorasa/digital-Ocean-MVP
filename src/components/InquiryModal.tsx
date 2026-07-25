@@ -112,7 +112,7 @@ export default function InquiryModal({ isOpen, onClose, pkg, userName, userEmail
               <p className="text-slate-500 mb-6">Our travel experts will contact you within 24 hours.</p>
               <button
                 onClick={onClose}
-                className="w-full py-3 bg-brand-saffron text-white rounded-xl font-bold hover:bg-brand-burnt transition-colors cursor-pointer active:scale-[0.98]"
+                className="w-full py-3 bg-brand-saffron text-white rounded-xl font-bold hover:bg-brand-burnt transition-colors cursor-pointer"
               >
                 Done
               </button>
@@ -183,7 +183,7 @@ export default function InquiryModal({ isOpen, onClose, pkg, userName, userEmail
                 <button
                   type="submit"
                   disabled={loading}
-                  className="w-full py-3.5 bg-brand-saffron text-white rounded-xl font-bold hover:bg-brand-burnt transition-colors flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50 active:scale-[0.98]"
+                  className="w-full py-3.5 bg-brand-saffron text-white rounded-xl font-bold hover:bg-brand-burnt transition-colors flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
                 >
                   {loading ? "Submitting..." : (
                     <>

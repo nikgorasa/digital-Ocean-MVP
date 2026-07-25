@@ -105,7 +105,7 @@ export default function PriceChangeModal({
             </button>
             <button
               onClick={onAccept}
-              className={`flex-1 py-3 rounded-xl font-bold cursor-pointer transition-colors active:scale-[0.98] ${
+              className={`flex-1 py-3 rounded-xl font-bold cursor-pointer transition-colors ${
                 priceIncreased
                   ? "bg-brand-saffron text-white hover:bg-brand-burnt"
                   : "bg-green-600 text-white hover:bg-green-700"

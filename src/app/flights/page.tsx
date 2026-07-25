@@ -948,7 +948,7 @@ export default function FlightsPage() {
               <button
                 onClick={handleSearch}
                 disabled={searching || !originCity.name || !destinationCity.name || (tripType !== "multi-city" && !departDate) || (tripType === "multi-city" && multiCityLegs.some(l => !l.origin.name || !l.destination.name || !l.date))}
-                className="mt-4 w-full md:w-auto px-8 py-3 bg-brand-antique-gold text-white rounded-xl font-bold hover:bg-brand-emerald transition-colors flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed active:scale-[0.98]"
+                className="mt-4 w-full md:w-auto px-8 py-3 bg-brand-antique-gold text-white rounded-xl font-bold hover:bg-brand-emerald transition-colors flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {searching ? (
                   <><Loader2 size={18} className="animate-spin" /> Searching...</>
