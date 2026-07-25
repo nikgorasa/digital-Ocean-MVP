@@ -368,11 +368,6 @@ export default function FlightBookingModal({
         data = await res.json();
       }
 
-      if (!res.ok || data.error) {
-        setErrorMessage(data.error || "Failed to load add-ons. Please try again.");
-        setStep("error");
-        return;
-      }
       if (data.traceId) currentTraceIdRef.current = data.traceId;
       setSsrBaggage(data.baggage || []);
       setSsrMeals(data.meals || []);
