@@ -340,10 +340,33 @@ export default function FlightBookingModal({
   };
 
   const fetchSSR = async () => {
-    // Try SSR — if it fails, proceed without SSR data (TBO accepts Ticket without it)
-    // For certification, SSR data is required when SSR succeeds
+    // Always do a fresh search first to get a fresh TraceId
+    // (the current one might be consumed by a previous booking)
     setStep("saving");
     try {
+      // Step 1: Fresh search to get a fresh TraceId
+      const searchRes = await fetch("/api/tbo", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          action: "search",
+          params: {
+            origin: flight.origin,
+            destination: flight.destination,
+            adults,
+            children,
+            infants,
+            departureDate: date,
+            tripType: "OneWay",
+          },
+        }),
+      });
+      const searchData = await searchRes.json();
+      if (searchData.traceId) {
+        currentTraceIdRef.current = searchData.traceId;
+      }
+
+      // Step 2: Try SSR with fresh TraceId
       const traceId = currentTraceIdRef.current;
       const resultIndex = flight.id;
       const res = await fetch("/api/tbo", {
@@ -510,7 +533,35 @@ export default function FlightBookingModal({
 
       let tboBookingId: string | null = null;
       let tboPnr: string | null = null;
+
+      // Always do a fresh search first to get a fresh TraceId
+      // (the current one might be consumed by a previous booking)
       let currentTraceId = currentTraceIdRef.current;
+      try {
+        const searchRes = await fetch("/api/tbo", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            action: "search",
+            params: {
+              origin: flight.origin,
+              destination: flight.destination,
+              adults,
+              children,
+              infants,
+              departureDate: date,
+              tripType: "OneWay",
+            },
+          }),
+        });
+        const searchData = await searchRes.json();
+        if (searchData.traceId) {
+          currentTraceId = searchData.traceId;
+          currentTraceIdRef.current = currentTraceId;
+        }
+      } catch (e) {
+        console.warn("Fresh search failed, using existing TraceId:", e);
+      }
 
       if (currentTraceId) {
         // Step 1: FareQuote — validate real-time price
