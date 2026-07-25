@@ -77,24 +77,26 @@ export function logApiCall(params: {
 
   if (params.responseBody && typeof params.responseBody === 'object') {
     const resp = params.responseBody as Record<string, unknown>;
-    const status = resp.Status as Record<string, unknown> | undefined;
+    // TBO flight wraps under .Response, hotel API has Status at top level
+    const innerResp = (resp.Response || resp) as Record<string, unknown>;
+    const status = innerResp.Status as Record<string, unknown> | undefined;
     if (status && typeof status.Code === 'number') {
       tboStatusCode = status.Code;
     }
     const statusDesc = status?.Description as string | undefined;
     if (statusDesc) {
       summary = statusDesc;
-    } else if (Array.isArray(resp.HotelResult)) {
-      summary = `${resp.HotelResult.length} hotels found`;
-    } else if (Array.isArray(resp.FlightResult)) {
-      summary = `${resp.FlightResult.length} flights found`;
+    } else if (Array.isArray(innerResp.HotelResult)) {
+      summary = `${innerResp.HotelResult.length} hotels found`;
+    } else if (Array.isArray(innerResp.FlightResult)) {
+      summary = `${innerResp.FlightResult.length} flights found`;
     }
     // Extract TraceId from response if not passed explicitly
-    if (!traceId && typeof resp.TraceId === 'string') {
-      traceId = resp.TraceId;
+    if (!traceId && typeof innerResp.TraceId === 'string') {
+      traceId = innerResp.TraceId;
     }
-    // Extract Source from flight search Results[0][0].Source
-    const results = resp.Results;
+    // Extract Source from flight search Response.Results[0][0].Source
+    const results = innerResp.Results;
     if (Array.isArray(results) && results[0]) {
       const firstGroup = Array.isArray(results[0]) ? results[0] : [results[0]];
       if (firstGroup[0] && typeof firstGroup[0] === 'object') {
