@@ -348,6 +348,7 @@ export default function FlightBookingModal({
     setStep("addons");
     setSsrLoading(true);
     try {
+      console.log("[SSR] Starting with traceId:", currentTraceIdRef.current, "resultIndex:", flight.id);
       let traceId = currentTraceIdRef.current;
       let res = await fetch("/api/tbo", {
         method: "POST",
@@ -355,6 +356,7 @@ export default function FlightBookingModal({
         body: JSON.stringify({ action: "ssr", params: { traceId, resultIndex: flight.id } }),
       });
       let data = await res.json();
+      console.log("[SSR] Response:", JSON.stringify(data).slice(0, 500));
 
       if (data.error && data.error.includes("expired")) {
         console.log("[SSR] TraceId expired, re-searching...");
@@ -375,6 +377,7 @@ export default function FlightBookingModal({
           }),
         });
         const searchData = await searchRes.json();
+        console.log("[SSR] Re-search result:", JSON.stringify(searchData).slice(0, 300));
         if (searchData.traceId) {
           traceId = searchData.traceId;
           currentTraceIdRef.current = traceId;
@@ -384,6 +387,7 @@ export default function FlightBookingModal({
             body: JSON.stringify({ action: "ssr", params: { traceId, resultIndex: flight.id } }),
           });
           data = await res.json();
+          console.log("[SSR] Retry response:", JSON.stringify(data).slice(0, 500));
         }
       }
 

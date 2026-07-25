@@ -364,7 +364,9 @@ export async function getSSR(params: {
     TraceId: params.traceId,
     ResultIndex: params.resultIndex,
   };
+  console.log("[TBO-SSR] Request:", JSON.stringify({ ...req, TokenId: "..." }));
   const res = await api.getSSR(req);
+  console.log("[TBO-SSR] Response status:", res.Response?.ResponseStatus, "error:", res.Response?.Error?.ErrorMessage);
   if (res.Response?.ResponseStatus !== 1) {
     throw new Error(`SSR failed: ${res.Response?.Error?.ErrorMessage || res.Response?.ResponseStatus}`);
   }
