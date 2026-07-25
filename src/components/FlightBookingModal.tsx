@@ -146,6 +146,7 @@ export default function FlightBookingModal({
     availableBalance?: number;
     corporateDiscount?: number;
   } | null>(null);
+  const [showCancellation, setShowCancellation] = useState(false);
 
   // International detection
   const isInternational = flight.isDomestic === false || flight.isPassportRequiredAtBook === true;
@@ -1576,6 +1577,12 @@ export default function FlightBookingModal({
               </div>
             )}
             <button onClick={handleClose} className="w-full py-3 bg-brand-saffron text-white rounded-xl font-bold hover:bg-brand-burnt cursor-pointer active:scale-[0.98]">Done</button>
+            <button
+              onClick={() => setShowCancellation(true)}
+              className="w-full mt-3 py-2.5 text-sm text-red-600 hover:text-red-700 font-medium cursor-pointer"
+            >
+              Cancel Booking
+            </button>
           </div>
         )}
 
@@ -1631,6 +1638,30 @@ export default function FlightBookingModal({
           </div>
         )}
       </motion.div>
+
+      {/* Cancellation Dialog */}
+      <CancellationDialog
+        isOpen={showCancellation}
+        onClose={() => setShowCancellation(false)}
+        onConfirm={async (reason) => {
+          if (!bookingId) return;
+          const res = await fetch("/api/cancellations", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ bookingId, reason }),
+          });
+          if (!res.ok) {
+            const data = await res.json();
+            throw new Error(data.error || "Cancellation failed");
+          }
+          const data = await res.json();
+          setConfirmation(prev => prev ? { ...prev, status: "Cancelled" } : null);
+        }}
+        bookingId={bookingId || ""}
+        bookingType="FLIGHT"
+        bookingPrice={totalFlightPrice + addonsTotal}
+        itemName={`${flight.airline} ${flight.origin} \u2192 ${flight.destination}`}
+      />
     </div>
   );
 }
