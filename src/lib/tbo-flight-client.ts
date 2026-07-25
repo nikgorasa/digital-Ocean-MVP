@@ -487,8 +487,6 @@ export async function ticketFlight(params: {
 
   if (params.isLCC) {
     if (!params.resultIndex) throw new Error("LCC ticket requires resultIndex");
-    const noMeal = { Code: "NoMeal", Description: "No Meal", Quantity: 0, Price: 0, Currency: "INR" };
-    const noBag = { Code: "NoBaggage", Weight: "0 KG", Price: 0, Currency: "INR", WayType: 0, Origin: "", Destination: "", AirlineCode: "", FlightNumber: "" };
 
     const req: TBOFlightTicketLCCRequest = {
       EndUserIp: params.EndUserIp || getEndUserIp(),
@@ -509,8 +507,8 @@ export async function ticketFlight(params: {
         IsLeadPax: p.IsLeadPax ?? false,
         Nationality: p.Nationality ?? "",
         Fare: p.Fare ?? { BaseFare: 0, Tax: 0, TransactionFee: 0, YQTax: 0, AdditionalTxnFeeOfrd: 0, AdditionalTxnFeePub: 0, AirTransFee: 0 },
-        ...(params.ssrBaggage?.length ? { Baggage: params.ssrBaggage } : { Baggage: [noBag] }),
-        ...(params.ssrMeals?.length ? { MealDynamic: params.ssrMeals } : { MealDynamic: [noMeal] }),
+        ...(params.ssrBaggage?.length ? { Baggage: params.ssrBaggage } : {}),
+        ...(params.ssrMeals?.length ? { MealDynamic: params.ssrMeals } : {}),
         ...(params.ssrSeats?.length ? { SeatDynamic: params.ssrSeats } : {}),
       })),
     };

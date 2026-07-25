@@ -460,7 +460,7 @@ export default function FlightBookingModal({
           AddressLine1: defaultCity,
           City: defaultCity,
           CountryCode: nationalityCode,
-          CountryName: nationality,
+          CountryName: nationality === "Indian" ? "India" : nationality,
           ContactNo: isLead ? (phone || "") : "",
           Email: isLead ? (email || user.email) : "",
           IsLeadPax: isLead,
