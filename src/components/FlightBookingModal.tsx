@@ -10,7 +10,9 @@ import {
   X, Loader2, CheckCircle, AlertCircle, Plane,
   MapPin, Calendar, Phone, Mail, User, CreditCard, Clock, Luggage,
   Tag, Building2, ChevronDown, ChevronUp, Globe, Utensils, Armchair,
+  Trash2, XCircle,
 } from "lucide-react";
+import CancellationDialog from "./CancellationDialog";
 import CheckoutButton from "./CheckoutButton";
 import FormInput from "./ui/FormInput";
 import FormPhone from "./ui/FormPhone";
@@ -599,7 +601,10 @@ export default function FlightBookingModal({
             }
           }
 
-          if (fqData.traceId) currentTraceId = fqData.traceId;
+          if (fqData.traceId) {
+            currentTraceId = fqData.traceId;
+            currentTraceIdRef.current = currentTraceId;
+          }
           if (fqData.isPriceChanged) {
             const userAccepted = await new Promise<boolean>(resolve => {
               setPriceChangeDialog({

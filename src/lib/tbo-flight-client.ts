@@ -25,29 +25,7 @@ import { calculatePrice } from "./pricing/pricing-service";
 let cachedToken: { tokenId: string; date: string } | null = null;
 
 // Flight search result cache (5-minute TTL)
-const searchCache = new Map<string, { data: TBOFlightSearchOutput; ts: number }>();
-const SEARCH_CACHE_TTL_MS = 5 * 60 * 1000; // 5 minutes
-
-function getSearchCacheKey(params: {
-  Origin: string; Destination: string; AdultCount: number; ChildCount: number;
-  InfantCount: number; JourneyType: number; PreferredDepartureTime?: string;
-  PreferredArrivalTime?: string; CabinClass?: string;
-  multiCityLegs?: { origin: string; destination: string; date: string }[];
-}): string {
-  return JSON.stringify({
-    o: params.Origin, d: params.Destination, a: params.AdultCount,
-    c: params.ChildCount, i: params.InfantCount, j: params.JourneyType,
-    dep: params.PreferredDepartureTime, ret: params.PreferredArrivalTime,
-    cab: params.CabinClass, mcl: params.multiCityLegs,
-  });
-}
-
-function cleanSearchCache() {
-  const now = Date.now();
-  for (const [key, val] of searchCache) {
-    if (now - val.ts > SEARCH_CACHE_TTL_MS) searchCache.delete(key);
-  }
-}
+const SEARCH_CACHE_TTL_MS = 0; // Disabled — caching returns stale TraceIds
 
 let _defaultEndUserIp = "192.168.1.1";
 
@@ -211,15 +189,8 @@ export async function searchFlights(params: {
 }): Promise<TBOFlightSearchOutput> {
   const t0 = Date.now();
 
-  // Check cache first
-  cleanSearchCache();
-  const cacheKey = getSearchCacheKey(params);
-  const cached = searchCache.get(cacheKey);
-  if (cached && Date.now() - cached.ts < SEARCH_CACHE_TTL_MS) {
-    console.log(`[TBO] Cache HIT for ${params.Origin}→${params.Destination}`);
-    return cached.data;
-  }
-  console.log(`[TBO] Cache MISS for ${params.Origin}→${params.Destination} — fetching`);
+  // Cache disabled — always fetch fresh TraceId
+  console.log(`[TBO] Fetching fresh results for ${params.Origin}→${params.Destination}`);
 
   // Read config ONCE (cached 60s in config-service)
   const cfg = await readConfig("tbo_flight");
@@ -315,8 +286,6 @@ export async function searchFlights(params: {
   const result: TBOFlightSearchOutput = { flights, traceId: res.Response.TraceId };
   const t4 = Date.now();
   console.log(`[TBO] Result processing: ${t4 - t3}ms (${flightList.length} flights → ${result.flights.length} displayed)`);
-  // Cache the result
-  searchCache.set(cacheKey, { data: result, ts: Date.now() });
   console.log(`[TBO] Total search: ${t4 - t0}ms (config: ${t1-t0}ms, token: ${t2-t1}ms, api: ${t3-t2}ms, process: ${t4-t3}ms)`);
   return result;
 }
