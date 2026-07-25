@@ -348,47 +348,24 @@ export default function FlightBookingModal({
     setStep("addons");
     setSsrLoading(true);
     try {
-      console.log("[SSR] Starting with traceId:", currentTraceIdRef.current, "resultIndex:", flight.id);
       let traceId = currentTraceIdRef.current;
+      let resultIndex = flight.id;
       let res = await fetch("/api/tbo", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ action: "ssr", params: { traceId, resultIndex: flight.id } }),
+        body: JSON.stringify({ action: "ssr", params: { traceId, resultIndex } }),
       });
       let data = await res.json();
-      console.log("[SSR] Response:", JSON.stringify(data).slice(0, 500));
 
-      if (data.error && data.error.includes("expired")) {
-        console.log("[SSR] TraceId expired, re-searching...");
-        const searchRes = await fetch("/api/tbo", {
+      if (data.error && data.freshTraceId) {
+        traceId = data.freshTraceId;
+        currentTraceIdRef.current = traceId;
+        res = await fetch("/api/tbo", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            action: "search",
-            params: {
-              origin: flight.origin,
-              destination: flight.destination,
-              adults,
-              children,
-              infants,
-              date,
-              tripType: "OneWay",
-            },
-          }),
+          body: JSON.stringify({ action: "ssr", params: { traceId, resultIndex } }),
         });
-        const searchData = await searchRes.json();
-        console.log("[SSR] Re-search result:", JSON.stringify(searchData).slice(0, 300));
-        if (searchData.traceId) {
-          traceId = searchData.traceId;
-          currentTraceIdRef.current = traceId;
-          res = await fetch("/api/tbo", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ action: "ssr", params: { traceId, resultIndex: flight.id } }),
-          });
-          data = await res.json();
-          console.log("[SSR] Retry response:", JSON.stringify(data).slice(0, 500));
-        }
+        data = await res.json();
       }
 
       if (!res.ok || data.error) {
@@ -572,38 +549,18 @@ export default function FlightBookingModal({
           });
           let fqData = await fqRes.json();
 
-          if (fqData.error && fqData.error.includes("expired")) {
-            console.log("[FareQuote] TraceId expired, re-searching...");
-            const searchRes = await fetch("/api/tbo", {
+          if (fqData.error && fqData.freshTraceId) {
+            currentTraceId = fqData.freshTraceId;
+            currentTraceIdRef.current = currentTraceId;
+            fqRes = await fetchWithRetry("/api/tbo", {
               method: "POST",
               headers: { "Content-Type": "application/json" },
               body: JSON.stringify({
-                action: "search",
-                params: {
-                  origin: flight.origin,
-                  destination: flight.destination,
-                  adults,
-                  children,
-                  infants,
-                  date,
-                  tripType: "OneWay",
-                },
+                action: "fare-quote",
+                params: { traceId: currentTraceId, resultIndex: flight.id },
               }),
             });
-            const searchData = await searchRes.json();
-            if (searchData.traceId) {
-              currentTraceId = searchData.traceId;
-              currentTraceIdRef.current = currentTraceId;
-              fqRes = await fetchWithRetry("/api/tbo", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({
-                  action: "fare-quote",
-                  params: { traceId: currentTraceId, resultIndex: flight.id },
-                }),
-              });
-              fqData = await fqRes.json();
-            }
+            fqData = await fqRes.json();
           }
 
           if (fqData.traceId) {

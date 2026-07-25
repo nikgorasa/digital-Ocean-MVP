@@ -337,7 +337,10 @@ export async function getFareQuote(params: {
   };
   const res = await api.getFareQuote(req);
   if (res.Response?.ResponseStatus !== 1) {
-    throw new Error(`FareQuote failed: ${res.Response?.Error?.ErrorMessage || res.Response?.ResponseStatus}`);
+    const err: any = new Error(`FareQuote failed: ${res.Response?.Error?.ErrorMessage || res.Response?.ResponseStatus}`);
+    err.freshTraceId = res.Response?.TraceId || null;
+    err.errorCode = res.Response?.Error?.ErrorCode || res.Response?.ResponseStatus;
+    throw err;
   }
   const r = Array.isArray(res.Response.Results)
     ? res.Response.Results[0]
@@ -368,7 +371,10 @@ export async function getSSR(params: {
   const res = await api.getSSR(req);
   console.log("[TBO-SSR] Response status:", res.Response?.ResponseStatus, "error:", res.Response?.Error?.ErrorMessage);
   if (res.Response?.ResponseStatus !== 1) {
-    throw new Error(`SSR failed: ${res.Response?.Error?.ErrorMessage || res.Response?.ResponseStatus}`);
+    const err: any = new Error(`SSR failed: ${res.Response?.Error?.ErrorMessage || res.Response?.ResponseStatus}`);
+    err.freshTraceId = res.Response?.TraceId || null;
+    err.errorCode = res.Response?.Error?.ErrorCode || res.Response?.ResponseStatus;
+    throw err;
   }
   return {
     isLCC: res.Response.IsLCC,
