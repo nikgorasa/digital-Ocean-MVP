@@ -401,6 +401,7 @@ export interface TBOHotelDisplay {
 export interface TBOHotelSearchOutput {
   hotels: TBOHotelDisplay[];
   traceId: string;
+  message?: string;
 }
 
 export interface TBOHotelPreBookOutput {

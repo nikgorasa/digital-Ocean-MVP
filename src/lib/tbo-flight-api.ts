@@ -92,7 +92,7 @@ export function getFareQuote(req: TBOFlightFareQuoteRequest): Promise<TBOFlightF
 }
 
 export function getSSR(req: TBOFlightSSRRequest): Promise<TBOFlightSSRResponse> {
-  return post<TBOFlightSSRResponse>(`${API_BASE}/SSR`, req);
+  return post<TBOFlightSSRResponse>(`${API_BASE}/SSR`, req, 2);
 }
 
 export function bookFlight(req: TBOFlightBookRequest): Promise<TBOFlightBookResponse> {

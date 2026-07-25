@@ -23,20 +23,19 @@ export async function POST(request: NextRequest) {
   try {
     await requireAdmin();
     const body = await request.json();
-    const { name, domain, discountRate, walletBalance, creditLimit } = body;
+    const { name, domain, walletBalance, creditLimit } = body;
 
     if (!name) {
       return NextResponse.json({ error: "name is required" }, { status: 400 });
     }
 
-    const company = await companies.create({
-      name,
-      domain: domain || null,
-      discountRate: discountRate || 0,
-      walletBalance: walletBalance || 0,
-      creditLimit: creditLimit || 0,
-      isActive: true,
-    });
+  const company = await companies.create({
+    name,
+    domain: domain || null,
+    walletBalance: walletBalance || 0,
+    creditLimit: creditLimit || 0,
+    isActive: true,
+  });
 
     return NextResponse.json(company, { status: 201 });
   } catch (error) {

@@ -229,6 +229,7 @@ ALL external API calls (TBO, payment gateways) must have retry logic:
 | `Governance/scripts/Cckr-api-config-check.sh` | API config validation (6 checks) |
 | `Governance/scripts/Cckr-governance-check.sh` | Context-aware governance (18 checks, task routing) |
 | `Governance/docs/static-data/TBO-STATIC-DATA-REFERENCE.md` | TBO API endpoint reference |
+| `Governance/docs/governance/FLIGHT-CERTIFICATION-GUIDE.md` | TBO flight certification requirements, test cases, and gap analysis |
 | `src/lib/fetch-with-retry.ts` | Retry utility with exponential backoff for external APIs |
 | `scripts/seed-airports.ts` | Airport data download + DB upsert (OurAirports → City table) |
 | `src/app/api/cities/airports/route.ts` | Airport search API endpoint (DB-backed) |

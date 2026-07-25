@@ -3,7 +3,7 @@
 import { useState, useEffect, useMemo } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import Navbar from "@/components/Navbar";
-import { Download, ChevronDown, ChevronRight, Copy, Check } from "lucide-react";
+import { Download, ChevronDown, ChevronRight, Copy, Check, Trash2 } from "lucide-react";
 
 interface ApiLog {
   id: string;
@@ -13,12 +13,15 @@ interface ApiLog {
   request_body: any;
   response_body: any;
   status_code: number;
+  tbo_status_code: number | null;
+  flight_source: number | null;
   response_time_ms: number;
   error_message: string;
   environment: string;
   request_id: string;
   batch_index: number | null;
   batch_total: number | null;
+  summary: string | null;
   created_at: string;
 }
 
@@ -33,11 +36,13 @@ export default function ApiLogsPage() {
   const { user } = useAuth();
   const [logs, setLogs] = useState<ApiLog[]>([]);
   const [loading, setLoading] = useState(true);
-  const [filter, setFilter] = useState({ provider: "", status: "", environment: "", requestId: "" });
+  const [filter, setFilter] = useState({ provider: "", status: "", tboStatus: "", environment: "", requestId: "", source: "" });
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [expandedGroup, setExpandedGroup] = useState<string | null>(null);
   const [selectedGroups, setSelectedGroups] = useState<Set<string>>(new Set());
   const [copiedId, setCopiedId] = useState<string | null>(null);
+  const [cleanupResult, setCleanupResult] = useState<string | null>(null);
+  const [cleaning, setCleaning] = useState(false);
 
   // Date range state
   const [dateRange, setDateRange] = useState({ from: "", to: "" });
@@ -104,8 +109,10 @@ export default function ApiLogsPage() {
     return logs.filter(log => {
       if (filter.provider && log.provider !== filter.provider) return false;
       if (filter.status && log.status_code?.toString() !== filter.status) return false;
+      if (filter.tboStatus && log.tbo_status_code?.toString() !== filter.tboStatus) return false;
       if (filter.environment && log.environment !== filter.environment) return false;
       if (filter.requestId && log.request_id !== filter.requestId) return false;
+      if (filter.source && log.flight_source?.toString() !== filter.source) return false;
       return true;
     });
   }, [logs, filter]);
@@ -172,7 +179,10 @@ export default function ApiLogsPage() {
         endpoint: log.endpoint,
         method: log.method,
         status_code: log.status_code,
+        tbo_status_code: log.tbo_status_code,
+        flight_source: log.flight_source,
         response_time_ms: log.response_time_ms,
+        summary: log.summary,
         batch_index: log.batch_index,
         batch_total: log.batch_total,
         request_body: log.request_body,
@@ -196,7 +206,10 @@ export default function ApiLogsPage() {
         endpoint: log.endpoint,
         method: log.method,
         status_code: log.status_code,
+        tbo_status_code: log.tbo_status_code,
+        flight_source: log.flight_source,
         response_time_ms: log.response_time_ms,
+        summary: log.summary,
         batch_index: log.batch_index,
         batch_total: log.batch_total,
         request_body: log.request_body,
@@ -227,6 +240,27 @@ export default function ApiLogsPage() {
     navigator.clipboard.writeText(text);
     setCopiedId(id);
     setTimeout(() => setCopiedId(null), 2000);
+  };
+
+  const handleCleanup = async (days: number) => {
+    if (!confirm(`Delete all logs older than ${days} days? This cannot be undone.`)) return;
+    setCleaning(true);
+    setCleanupResult(null);
+    try {
+      const res = await fetch(`/api/admin/api-logs?days=${days}`, { method: "DELETE" });
+      const data = await res.json();
+      if (data.success) {
+        setCleanupResult(`Deleted ${data.deleted} logs older than ${days} days`);
+        fetchLogs(); // refresh the list
+      } else {
+        setCleanupResult(`Error: ${data.error}`);
+      }
+    } catch {
+      setCleanupResult("Failed to delete logs");
+    } finally {
+      setCleaning(false);
+      setTimeout(() => setCleanupResult(null), 5000);
+    }
   };
 
   const presets = [
@@ -264,6 +298,23 @@ export default function ApiLogsPage() {
                 <Download size={16} />
                 Export All
               </button>
+              <div className="relative group">
+                <button
+                  onClick={() => handleCleanup(90)}
+                  disabled={cleaning}
+                  className="px-4 py-2 bg-red-50 text-red-600 border border-red-200 rounded-lg text-sm font-medium hover:bg-red-100 flex items-center gap-2 disabled:opacity-50"
+                >
+                  <Trash2 size={16} />
+                  {cleaning ? "Cleaning..." : "Delete >90d"}
+                </button>
+              </div>
+              {cleanupResult && (
+                <span className={`px-3 py-2 rounded-lg text-sm font-medium ${
+                  cleanupResult.startsWith("Deleted") ? "bg-emerald-50 text-emerald-700" : "bg-red-50 text-red-700"
+                }`}>
+                  {cleanupResult}
+                </span>
+              )}
             </div>
           </div>
 
@@ -327,19 +378,40 @@ export default function ApiLogsPage() {
               className="px-3 py-2 bg-white border border-slate-200 rounded-lg text-sm"
             >
               <option value="">All Providers</option>
-              <option value="tbo_hotel">TBO Hotel</option>
+              <option value="tbo_hotel">TBO Hotel (Legacy)</option>
+              <option value="tbo_hotel_search">TBO Hotel Search</option>
+              <option value="tbo_hotel_static">TBO Hotel Static</option>
+              <option value="tbo_hotel_booking">TBO Hotel Booking</option>
+              <option value="tbo_hotel_prebook">TBO Hotel PreBook</option>
+              <option value="tbo_hotel_cancel">TBO Hotel Cancel</option>
+              <option value="tbo_hotel_voucher">TBO Hotel Voucher</option>
               <option value="tbo_flight">TBO Flight</option>
+              <option value="zaakpay">Zaakpay</option>
+              <option value="brevo">Brevo</option>
             </select>
             <select
               value={filter.status}
               onChange={(e) => setFilter({ ...filter, status: e.target.value })}
               className="px-3 py-2 bg-white border border-slate-200 rounded-lg text-sm"
             >
-              <option value="">All Status</option>
+              <option value="">All HTTP Status</option>
               <option value="200">200 OK</option>
+              <option value="201">201</option>
               <option value="400">400 Bad Request</option>
               <option value="401">401 Unauthorized</option>
+              <option value="404">404 Not Found</option>
               <option value="500">500 Server Error</option>
+            </select>
+            <select
+              value={filter.tboStatus}
+              onChange={(e) => setFilter({ ...filter, tboStatus: e.target.value })}
+              className="px-3 py-2 bg-white border border-slate-200 rounded-lg text-sm"
+            >
+              <option value="">All TBO Status</option>
+              <option value="200">200 (Rooms Found)</option>
+              <option value="201">201 (No Rooms)</option>
+              <option value="301">301 (Invalid City)</option>
+              <option value="500">500 (Server Error)</option>
             </select>
             <select
               value={filter.environment}
@@ -362,6 +434,23 @@ export default function ApiLogsPage() {
                 <option key={id} value={id}>{id}</option>
               ))}
             </select>
+            <select
+              value={filter.source}
+              onChange={(e) => setFilter({ ...filter, source: e.target.value })}
+              className="px-3 py-2 bg-white border border-slate-200 rounded-lg text-sm"
+            >
+              <option value="">All Sources</option>
+              <option value="4">4 — Amadeus (GDS)</option>
+              <option value="5">5 — Galileo (GDS)</option>
+              <option value="3">3 — SpiceJet (LCC)</option>
+              <option value="6">6 — IndiGo (LCC)</option>
+              <option value="10">10 — GoAir (LCC)</option>
+              <option value="13">13 — Air Arabia (LCC)</option>
+              <option value="14">14 — Air India Express (LCC)</option>
+              <option value="15">15 — Air India Express Dom (LCC)</option>
+              <option value="17">17 — FlyDubai (LCC)</option>
+              <option value="19">19 — AirAsia (LCC)</option>
+            </select>
             <button
               onClick={() => fetchLogs()}
               className="px-3 py-2 bg-slate-200 rounded-lg text-sm hover:bg-slate-300"
@@ -378,7 +467,7 @@ export default function ApiLogsPage() {
           ) : (
             <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
               <div className="max-h-[70vh] overflow-auto">
-                <table className="w-full text-sm min-w-[900px]">
+                <table className="w-full text-sm min-w-[1100px]">
                   <thead className="bg-slate-50 border-b border-slate-200 sticky top-0 z-10">
                     <tr>
                       <th className="px-4 py-3 text-left font-medium text-slate-600 w-10">
@@ -391,9 +480,12 @@ export default function ApiLogsPage() {
                       </th>
                       <th className="px-4 py-3 text-left font-medium text-slate-600">Request Group</th>
                       <th className="px-4 py-3 text-left font-medium text-slate-600">Provider</th>
+                      <th className="px-4 py-3 text-left font-medium text-slate-600">Summary</th>
+                      <th className="px-4 py-3 text-left font-medium text-slate-600">Source</th>
                       <th className="px-4 py-3 text-left font-medium text-slate-600">Calls</th>
                       <th className="px-4 py-3 text-left font-medium text-slate-600">Duration</th>
                       <th className="px-4 py-3 text-left font-medium text-slate-600">Status</th>
+                      <th className="px-4 py-3 text-left font-medium text-slate-600">TBO</th>
                       <th className="px-4 py-3 text-left font-medium text-slate-600">Env</th>
                       <th className="px-4 py-3 text-left font-medium text-slate-600">Time</th>
                       <th className="px-4 py-3 text-left font-medium text-slate-600 w-10"></th>
@@ -424,10 +516,32 @@ export default function ApiLogsPage() {
                           </td>
                           <td className="px-4 py-3">
                             <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                              group.logs[0]?.provider === 'tbo_hotel' ? 'bg-blue-100 text-blue-700' : 'bg-purple-100 text-purple-700'
+                              group.logs[0]?.provider === 'tbo_hotel' ? 'bg-blue-100 text-blue-700' :
+                              group.logs[0]?.provider === 'tbo_hotel_search' ? 'bg-cyan-100 text-cyan-700' :
+                              group.logs[0]?.provider === 'tbo_hotel_static' ? 'bg-teal-100 text-teal-700' :
+                              group.logs[0]?.provider === 'tbo_hotel_booking' ? 'bg-indigo-100 text-indigo-700' :
+                              group.logs[0]?.provider === 'tbo_flight' ? 'bg-purple-100 text-purple-700' :
+                              'bg-slate-100 text-slate-700'
                             }`}>
                               {group.logs[0]?.provider}
                             </span>
+                          </td>
+                          <td className="px-4 py-3 text-xs text-slate-500 max-w-[200px] truncate" title={group.logs[0]?.summary || ''}>
+                            {group.logs[0]?.summary || '—'}
+                          </td>
+                          <td className="px-4 py-3">
+                            {(() => {
+                              const src = group.logs.find(l => l.flight_source != null)?.flight_source;
+                              if (src == null) return <span className="text-slate-300">—</span>;
+                              const isGDS = [4, 5].includes(src);
+                              return (
+                                <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                                  isGDS ? 'bg-indigo-100 text-indigo-700' : 'bg-slate-100 text-slate-700'
+                                }`} title={`Source: ${src}`}>
+                                  {isGDS ? 'GDS' : src}
+                                </span>
+                              );
+                            })()}
                           </td>
                           <td className="px-4 py-3 text-slate-500">{group.logs.length}</td>
                           <td className="px-4 py-3 text-slate-500">{group.totalDuration}ms</td>
@@ -437,6 +551,15 @@ export default function ApiLogsPage() {
                             ) : (
                               <span className="px-2 py-1 rounded-full text-xs font-medium bg-emerald-100 text-emerald-700">OK</span>
                             )}
+                          </td>
+                          <td className="px-4 py-3">
+                            {(() => {
+                              const tboCode = group.logs.find(l => l.tbo_status_code)?.tbo_status_code;
+                              if (tboCode == null) return <span className="text-slate-300">—</span>;
+                              if (tboCode === 200) return <span className="px-2 py-1 rounded-full text-xs font-medium bg-emerald-100 text-emerald-700">200 OK</span>;
+                              if (tboCode === 201) return <span className="px-2 py-1 rounded-full text-xs font-medium bg-amber-100 text-amber-700">201 No Rooms</span>;
+                              return <span className="px-2 py-1 rounded-full text-xs font-medium bg-slate-100 text-slate-700">{tboCode}</span>;
+                            })()}
                           </td>
                           <td className="px-4 py-3">
                             <span className={`px-2 py-1 rounded-full text-[10px] font-medium ${
@@ -464,18 +587,21 @@ export default function ApiLogsPage() {
                         {/* Expanded Group Details */}
                         {expandedGroup === group.requestId && (
                           <tr key={`${group.requestId}-detail`}>
-                            <td colSpan={9} className="p-0">
+                            <td colSpan={11} className="p-0">
                               <div className="bg-slate-50 px-4 py-3">
                                 <table className="w-full text-xs">
                                   <thead>
                                     <tr className="text-slate-500">
-                                      <th className="pb-2 text-left">Endpoint</th>
-                                      <th className="pb-2 text-left">Method</th>
-                                      <th className="pb-2 text-left">Status</th>
-                                      <th className="pb-2 text-left">Duration</th>
-                                      <th className="pb-2 text-left">Batch</th>
-                                      <th className="pb-2 text-left">Env</th>
-                                      <th className="pb-2 text-left">Time</th>
+                                       <th className="pb-2 text-left">Endpoint</th>
+                                       <th className="pb-2 text-left">Method</th>
+                                       <th className="pb-2 text-left">Status</th>
+                                       <th className="pb-2 text-left">TBO</th>
+                                       <th className="pb-2 text-left">Source</th>
+                                       <th className="pb-2 text-left">Duration</th>
+                                       <th className="pb-2 text-left">Summary</th>
+                                       <th className="pb-2 text-left">Batch</th>
+                                       <th className="pb-2 text-left">Env</th>
+                                       <th className="pb-2 text-left">Time</th>
                                     </tr>
                                   </thead>
                                   <tbody>
@@ -489,15 +615,38 @@ export default function ApiLogsPage() {
                                           <td className="py-2 pr-4 font-mono">{log.endpoint}</td>
                                           <td className="py-2 pr-4">{log.method}</td>
                                           <td className="py-2 pr-4">
-                                            <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${
-                                              log.status_code === 200 ? 'bg-emerald-100 text-emerald-700' :
-                                              log.status_code >= 400 ? 'bg-red-100 text-red-700' :
-                                              'bg-slate-100 text-slate-700'
-                                            }`}>
-                                              {log.status_code || 'N/A'}
-                                            </span>
-                                          </td>
-                                          <td className="py-2 pr-4">{log.response_time_ms}ms</td>
+                                             <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${
+                                               log.status_code === 200 ? 'bg-emerald-100 text-emerald-700' :
+                                               log.status_code >= 400 ? 'bg-red-100 text-red-700' :
+                                               'bg-slate-100 text-slate-700'
+                                             }`}>
+                                               {log.status_code || 'N/A'}
+                                             </span>
+                                           </td>
+                                           <td className="py-2 pr-4">
+                                             {log.tbo_status_code != null ? (
+                                               <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${
+                                                 log.tbo_status_code === 200 ? 'bg-emerald-100 text-emerald-700' :
+                                                 log.tbo_status_code === 201 ? 'bg-amber-100 text-amber-700' :
+                                                 'bg-slate-100 text-slate-700'
+                                               }`}>
+                                                 {log.tbo_status_code}
+                                               </span>
+                                              ) : <span className="text-slate-300">—</span>}
+                                            </td>
+                                            <td className="py-2 pr-4">
+                                              {log.flight_source != null ? (
+                                                <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${
+                                                  [4, 5].includes(log.flight_source) ? 'bg-indigo-100 text-indigo-700' : 'bg-slate-100 text-slate-700'
+                                                }`}>
+                                                  {[4, 5].includes(log.flight_source) ? 'GDS' : log.flight_source}
+                                                </span>
+                                              ) : <span className="text-slate-300">—</span>}
+                                            </td>
+                                            <td className="py-2 pr-4">{log.response_time_ms}ms</td>
+                                           <td className="py-2 pr-4 text-xs text-slate-500 max-w-[150px] truncate" title={log.summary || ''}>
+                                             {log.summary || '—'}
+                                           </td>
                                           <td className="py-2 pr-4">
                                             {log.batch_index != null && log.batch_total != null ? (
                                               <span className="px-2 py-0.5 bg-blue-50 text-blue-600 rounded text-xs">
@@ -522,7 +671,7 @@ export default function ApiLogsPage() {
                                         </tr>
                                         {expandedId === log.id && (
                                           <tr key={`${log.id}-detail`}>
-                                            <td colSpan={6} className="py-3">
+                                            <td colSpan={9} className="py-3">
                                               <div className="grid grid-cols-2 gap-4">
                                                 <div>
                                                   <div className="flex items-center justify-between mb-1">

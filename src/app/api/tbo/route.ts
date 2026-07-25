@@ -92,6 +92,9 @@ export async function POST(req: NextRequest) {
           fare: p.fare || {},
           fareBreakdown: p.fareBreakdown || [],
           isLCC: p.isLCC || false,
+          ssrBaggage: p.ssrBaggage,
+          ssrMeals: p.ssrMeals,
+          ssrSeats: p.ssrSeats,
         });
         return NextResponse.json(result);
       }

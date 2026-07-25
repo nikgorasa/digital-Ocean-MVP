@@ -23,10 +23,9 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
     const body = await request.json();
 
     const updateData: Record<string, unknown> = { updatedAt: new Date().toISOString() };
-    if (body.name !== undefined) updateData.name = body.name;
-    if (body.domain !== undefined) updateData.domain = body.domain;
-    if (body.discountRate !== undefined) updateData.discountRate = body.discountRate;
-    if (body.creditLimit !== undefined) updateData.creditLimit = body.creditLimit;
+  if (body.name !== undefined) updateData.name = body.name;
+  if (body.domain !== undefined) updateData.domain = body.domain;
+  if (body.creditLimit !== undefined) updateData.creditLimit = body.creditLimit;
     if (body.isActive !== undefined) updateData.isActive = body.isActive;
 
     const company = await companies.update(id, updateData);

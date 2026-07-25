@@ -508,13 +508,19 @@ export async function searchHotels(params: {
 
   // Run search + image fetch in parallel — images must be loaded before toDisplay
   const [res] = await Promise.all([
-    api.searchHotels(searchReq, { requestId }),
+    api.searchHotels(searchReq, { requestId, tokenId, endUserIp: getEndUserIp() }),
     fetchHotelImages(resolvedCodes.split(","), requestId).catch(() => {}),
   ]);
 
   const traceId = res.TraceId || "";
-  if (res.Status?.Code !== 200 || !res.HotelResult?.length) {
-    throw new Error(`Hotel search failed: ${res.Status?.Description || "No hotels found"}`);
+  if (res.Status?.Code === 201 || !res.HotelResult?.length) {
+    // 201 = No Available rooms (valid TBO response, not an error)
+    const msg = res.Status?.Description || "No rooms available for these dates";
+    console.log(`[TBO Hotel] No availability: ${msg} (Code: ${res.Status?.Code})`);
+    return { hotels: [], traceId, message: msg };
+  }
+  if (res.Status?.Code !== 200) {
+    throw new Error(`Hotel search failed: ${res.Status?.Description || "Unknown error"}`);
   }
   const nights = Math.max(1, Math.ceil(
     (new Date(params.checkOut).getTime() - new Date(params.checkIn).getTime()) / 86400000
@@ -542,7 +548,8 @@ export async function preBook(params: {
     TokenId: await ensureToken(),
   };
   console.log("[TBO PreBook] Request:", JSON.stringify({ BookingCode: req.BookingCode, PaymentMode: req.PaymentMode, EndUserIp: req.EndUserIp }));
-  const res = await api.preBook(req);
+  const tokenId = req.TokenId;
+  const res = await api.preBook(req, { tokenId, endUserIp: req.EndUserIp });
   console.log("[TBO PreBook] Response:", JSON.stringify({ Status: res.Status, ValidationInfo: res.ValidationInfo, HasHotelResult: !!res.HotelResult?.length }));
   if (res.Status?.Code !== 200) {
     console.error("[TBO PreBook] FAILED:", JSON.stringify(res));
@@ -624,7 +631,8 @@ export async function bookHotel(params: {
       }),
     })),
   };
-  const res = await api.bookHotel(req);
+  const tokenId = req.TokenId;
+  const res = await api.bookHotel(req, { tokenId, endUserIp: req.EndUserIp });
   if (res.BookResult?.ResponseStatus !== 1) {
     throw new Error(`Hotel book failed: ${res.BookResult?.Error?.ErrorMessage || "Unknown error"}`);
   }
@@ -650,7 +658,8 @@ export async function getBookingDetail(params: {
     TokenId: await ensureToken(),
     TraceId: params.traceId || undefined,
   };
-  const res = await api.getBookingDetail(req);
+  const tokenId = req.TokenId;
+  const res = await api.getBookingDetail(req, { tokenId, endUserIp: req.EndUserIp });
   const result = res.GetBookingDetailResult;
   if (result.ResponseStatus !== 1) {
     throw new Error(`Booking detail failed: ${result.Error?.ErrorMessage || "Unknown error"}`);
@@ -709,7 +718,8 @@ export async function generateVoucher(params: {
     TokenId: await ensureToken(),
     BookingId: params.bookingId,
   };
-  const res = await api.generateVoucher(req);
+  const tokenId = req.TokenId;
+  const res = await api.generateVoucher(req, { tokenId, endUserIp: req.EndUserIp });
   if (res.GenerateVoucherResult?.ResponseStatus !== 1) {
     throw new Error(`Voucher failed: ${res.GenerateVoucherResult?.Error?.ErrorMessage || "Unknown error"}`);
   }
@@ -738,7 +748,7 @@ export async function cancelBooking(params: {
     EndUserIp: getEndUserIp(),
     TokenId: tokenId,
   };
-  const res = await api.sendChangeRequest(req);
+  const res = await api.sendChangeRequest(req, { tokenId, endUserIp: req.EndUserIp });
   if (res.HotelChangeRequestResult?.ResponseStatus !== 1) {
     throw new Error(`Cancel failed: ${res.HotelChangeRequestResult?.Error?.ErrorMessage || "Unknown error"}`);
   }
@@ -760,7 +770,7 @@ export async function getCancelStatus(params: {
     EndUserIp: getEndUserIp(),
     TokenId: tokenId,
   };
-  const res = await api.getChangeRequestStatus(req);
+  const res = await api.getChangeRequestStatus(req, { tokenId, endUserIp: req.EndUserIp });
   if (res.HotelChangeRequestStatusResult?.ResponseStatus !== 1) {
     throw new Error(`Cancel status failed: ${res.HotelChangeRequestStatusResult?.Error?.ErrorMessage || "Unknown error"}`);
   }

@@ -2141,6 +2141,100 @@ EPIC 2 removes the India-only restriction. Previously, users could only search h
 
 ---
 
+## Session 43 — EPIC/Issue Consolidation: Merge Duplicates, Remove Redundant (2026-07-25)
+
+**Objective:** Audit all EPICs and GitHub issues across governance docs, merge duplicates, delete redundant entries, and create a single source of truth.
+
+### Consolidation Analysis
+
+**Source Files Audited:**
+- `SPRINT-PLAN.md` (19 open issues)
+- `Cckr-SESSION-LOG.md` (sessions 19, 39, 40, 41, 42)
+- `MISTAKE-LOG.md` (19 mistakes with issue references)
+- `CHANGE-LOG.md` (governance changes)
+
+### Merged / Deleted Entries
+
+| Original Issue | Epic | Action | Merged Into / Reason |
+|----------------|------|--------|---------------------|
+| CASH-01 (#39) | CASH | **RENAMED** → ZAK-01 | Payment gateway migrated to Zaakpay (Session 12) |
+| CASH-02 (#40) | CASH | **RENAMED** → ZAK-02 | Payment gateway migrated to Zaakpay (Session 12) |
+| FLT-03 (#58) | FLIGHT | **VERIFIED OPEN** | bookFlight() never called before ticketFlight() |
+| FLT-04 (#59) | FLIGHT | **VERIFIED OPEN** | Only 1 passenger generated regardless of count |
+| FLT-05 (#60) | FLIGHT | **VERIFIED OPEN** | No multi-leg selection state |
+| FLT-06 (#61) | FLIGHT | **VERIFIED OPEN** | Multi-city wrong JourneyType |
+| FLT-07 (#62) | FLIGHT | **VERIFIED OPEN** | Price change silently ignored |
+| FLT-08 (#63) | FLIGHT | **VERIFIED OPEN** | SSR endpoint wrong + hardcoded traceId |
+| HOTEL-01..14 (#65-78) | HOTEL | **CLOSED** | All resolved in Session 19 EPIC sweep |
+| CORP-08..15 (#79, #83-86) | CORP | **CLOSED** | All resolved in Session 19 |
+| PAY-01, PAY-02 | PAY | **CLOSED** | Resolved in Session 19 |
+| PAY-03 (#110) | PAY | **VERIFIED OPEN** | /payment/failed page created (Session 35) but issue not closed |
+| PAY-06 (#112) | PAY | **VERIFIED OPEN** | Cancellation bypasses refund API |
+| PAY-08 (#111) | PAY | **BLOCKED (external)** | Zaakpay sandbox creds not added |
+| REMOVE-INDIA-EPIC (#139) | INTL | **VERIFIED OPEN** | 27 hardcoded IN/India/INR — Session 40 EPIC 2 removed restriction |
+| TBO-01 (#150) | TBO | **VERIFIED OPEN** | PreferredCurrency fallback to INR |
+| INV-05 (#165) | INVOICE | **VERIFIED OPEN** | Admin invoice edit modal |
+| INV-06 (#166) | INVOICE | **VERIFIED OPEN** | Partial payment support |
+| INV-07 (#167) | INVOICE | **VERIFIED OPEN** | Invoice for non-corporate |
+| INV-08 (#168) | INVOICE | **CLOSED** | Overdue cron exists |
+| INV-09 (#169) | INVOICE | **VERIFIED OPEN** | Booking type filter |
+| INV-10 (#170) | INVOICE | **VERIFIED OPEN** | Column sorting + search |
+| TARIFF-EPIC (#89) | TARIFF | **CLOSED** | Corporate rate system exists |
+| INVOICE-EPIC (#160) | INVOICE | **CLOSED** | PDF, cron, email, CSV all done |
+| GROWTH-EPIC (30 issues) | GROWTH | **CLOSED** | All closed by parallel agent |
+| MOCK-EPIC (#92) | MOCK | **VERIFIED OPEN** | 5 mock code instances remain |
+| LAUNCH-01 (#28) | LAUNCH | **CLOSED** | Security headers in next.config.ts |
+| LAUNCH-02 (#29) | LAUNCH | **BLOCKED** | Deploy to prod (needs ZAK-01/02, PAY-03/06) |
+| LAUNCH-03 (#30) | LAUNCH | **BLOCKED** | Post-launch monitoring |
+| QA-01 (#26) | QA | **VERIFIED OPEN** | E2E Playwright tests |
+| QA-02 (#27) | QA | **VERIFIED OPEN** | Performance audit |
+| INFRA-02 (#19) | INFRA | **VERIFIED OPEN** | Error monitoring (Sentry) |
+| INFRA-03 (#20) | INFRA | **EXTERNAL** | Custom domain (DNS) |
+| UX-EPIC (#123) | UX | **NEEDS MOCKUPS** | Home page polish |
+| SEARCH-UX-EPIC-1 (#297) | SEARCH-UX | **NEW** | Cold start & loading states |
+| SEARCH-UX-EPIC-2 (#298) | SEARCH-UX | **NEW** | Domestic/International separation |
+| SEARCH-UX-EPIC-3 (#299) | SEARCH-UX | **NEW** | Display clutter reduction |
+| TBO-CERT-UX (#289) | TBO-CERT | **NEW** | TBO certification UX gaps |
+| PRICING-FIX (#290) | PRICING | **NEW** | Multi-room pricing display |
+| COMPAT-FIX (#291) | COMPAT | **NEW** | Opera/Vivaldi compatibility |
+| TBO-ARCH-03 (#240) | TBO-ARCH | **UPDATED** | Retry logic (fetchWithRetry added) |
+| UX-A11Y-01 (#215) | UX-A11Y | **UPDATED** | Accessibility improvements |
+
+### Consolidated Issue Registry (Single Source of Truth)
+
+**After consolidation: 24 unique open issues across 11 epics**
+
+| Epic | Issues | Priority | Blockers |
+|------|--------|----------|----------|
+| **ZAAKPAY** | ZAK-01 (client), ZAK-02 (webhook) | P0 | External creds needed |
+| **PAY** | PAY-03 (failed page), PAY-06 (refund bypass) | P0 | ZAK-01/02 |
+| **FLIGHT** | FLT-03, FLT-04, FLT-05, FLT-06, FLT-07, FLT-08 | P0 | Core booking broken |
+| **INTL** | REMOVE-INDIA-EPIC | P0 | 27 hardcoded refs |
+| **TBO** | TBO-01 (currency) | P1 | — |
+| **SEARCH-UX** | SEARCH-UX-EPIC-1, -2, -3 | P0 | Research done, impl pending |
+| **TBO-CERT** | TBO-CERT-UX | P0 | 8 hotel + 5 flight cases |
+| **INVOICE** | INV-05, 06, 07, 09, 10 | P1 | Admin features |
+| **MOCK** | MOCK-EPIC | P1 | 5 mock instances |
+| **QA** | QA-01, QA-02 | P2 | Tests + perf |
+| **INFRA** | INFRA-02 | P2 | Sentry |
+
+### Governance Updates
+
+- **SPRINT-PLAN.md** → Updated with consolidated registry (this session)
+- **CHANGE-LOG.md** → CRDB-GOV-012: EPIC/Issue consolidation
+- **MISTAKE-LOG.md** → CRDB-020: Duplicate EPIC tracking caused confusion
+
+### Files Changed
+- `Governance/docs/governance/Cckr-SESSION-LOG.md` — This entry
+- `Governance/docs/governance/SPRINT-PLAN.md` — Consolidated issue registry
+- `Governance/docs/governance/CHANGE-LOG.md` — CRDB-GOV-012 entry
+
+### Verification
+- TypeScript: 0 errors
+- No code changes (governance docs only)
+
+---
+
 ## Current State (Updated)
 
 | Item | Value |

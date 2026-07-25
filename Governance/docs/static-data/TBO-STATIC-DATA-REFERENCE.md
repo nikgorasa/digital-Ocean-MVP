@@ -348,6 +348,11 @@ The Flight API uses **completely different endpoints** than the Hotel API. This 
 | 4 | Premium Business |
 | 5 | First |
 
+### Certification Guide
+
+For comprehensive flight certification requirements, test cases, request/response formats, and implementation gaps, see:
+**`Governance/docs/governance/FLIGHT-CERTIFICATION-GUIDE.md`**
+
 ### Known Issues (See TBO-ARCH-EPIC #237)
 
 1. **Endpoints hardcoded** — Not configurable via ConfigProvider or env vars

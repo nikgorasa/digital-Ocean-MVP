@@ -9,7 +9,10 @@ export async function findById(id: string) {
 }
 
 export async function create(data: Record<string, unknown>) {
-  return prisma.pricingRule.create({ data: data as never })
+  const clean = Object.fromEntries(
+    Object.entries(data).filter(([, v]) => v !== undefined && v !== null)
+  )
+  return prisma.pricingRule.create({ data: clean as never })
 }
 
 export async function update(id: string, data: Record<string, unknown>) {

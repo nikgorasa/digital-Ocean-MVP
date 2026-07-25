@@ -71,6 +71,9 @@ interface LogOptions {
   requestId?: string;
   batchIndex?: number;
   batchTotal?: number;
+  tokenId?: string;
+  endUserIp?: string;
+  traceId?: string;
 }
 
 async function staticJsonPost<T>(url: string, body: unknown, ctx: ApiContext, logOpts?: LogOptions): Promise<T> {
@@ -94,6 +97,8 @@ async function staticJsonPost<T>(url: string, body: unknown, ctx: ApiContext, lo
       requestId: logOpts?.requestId,
       batchIndex: logOpts?.batchIndex,
       batchTotal: logOpts?.batchTotal,
+      tokenId: logOpts?.tokenId,
+      endUserIp: logOpts?.endUserIp,
     });
     throw new Error(`TBO Hotel Static HTTP ${res.status}: ${res.statusText}`);
   }
@@ -110,6 +115,8 @@ async function staticJsonPost<T>(url: string, body: unknown, ctx: ApiContext, lo
     requestId: logOpts?.requestId,
     batchIndex: logOpts?.batchIndex,
     batchTotal: logOpts?.batchTotal,
+    tokenId: logOpts?.tokenId,
+    endUserIp: logOpts?.endUserIp,
   });
   return data as T;
 }
@@ -131,6 +138,8 @@ async function staticGet<T>(url: string, ctx: ApiContext, logOpts?: LogOptions):
       responseTimeMs: responseTime,
       errorMessage: `HTTP ${res.status}: ${res.statusText}`,
       requestId: logOpts?.requestId,
+      tokenId: logOpts?.tokenId,
+      endUserIp: logOpts?.endUserIp,
     });
     throw new Error(`TBO Hotel Static GET ${res.status}: ${res.statusText}`);
   }
@@ -144,6 +153,8 @@ async function staticGet<T>(url: string, ctx: ApiContext, logOpts?: LogOptions):
     statusCode: res.status,
     responseTimeMs: responseTime,
     requestId: logOpts?.requestId,
+    tokenId: logOpts?.tokenId,
+    endUserIp: logOpts?.endUserIp,
   });
   return data as T;
 }
@@ -167,6 +178,8 @@ async function searchPost<T>(url: string, body: unknown, ctx: ApiContext, logOpt
       responseTimeMs: responseTime,
       errorMessage: `HTTP ${res.status}: ${res.statusText}`,
       requestId: logOpts?.requestId,
+      tokenId: logOpts?.tokenId,
+      endUserIp: logOpts?.endUserIp,
     });
     throw new Error(`TBO Hotel Search HTTP ${res.status}: ${res.statusText}`);
   }
@@ -181,6 +194,9 @@ async function searchPost<T>(url: string, body: unknown, ctx: ApiContext, logOpt
     statusCode: res.status,
     responseTimeMs: responseTime,
     requestId: logOpts?.requestId,
+    tokenId: logOpts?.tokenId,
+    endUserIp: logOpts?.endUserIp,
+    traceId: logOpts?.traceId,
   });
   return data as T;
 }
@@ -204,6 +220,8 @@ async function bookingPost<T>(url: string, body: unknown, ctx: ApiContext, logOp
       responseTimeMs: responseTime,
       errorMessage: `HTTP ${res.status}: ${res.statusText}`,
       requestId: logOpts?.requestId,
+      tokenId: logOpts?.tokenId,
+      endUserIp: logOpts?.endUserIp,
     });
     throw new Error(`TBO Hotel Booking HTTP ${res.status}: ${res.statusText}`);
   }
@@ -218,6 +236,9 @@ async function bookingPost<T>(url: string, body: unknown, ctx: ApiContext, logOp
     statusCode: res.status,
     responseTimeMs: responseTime,
     requestId: logOpts?.requestId,
+    tokenId: logOpts?.tokenId,
+    endUserIp: logOpts?.endUserIp,
+    traceId: logOpts?.traceId,
   });
   return data as T;
 }
@@ -281,32 +302,32 @@ export async function searchHotels(req: TBOHotelSearchRequest, logOpts?: LogOpti
   return searchPost<TBOHotelSearchResponse>(`${ctx.baseUrl}/Search`, req, ctx, logOpts);
 }
 
-export async function preBook(req: TBOHotelPreBookRequest): Promise<TBOHotelPreBookResponse> {
+export async function preBook(req: TBOHotelPreBookRequest, logOpts?: LogOptions): Promise<TBOHotelPreBookResponse> {
   const ctx = await getSearchContext();
-  return searchPost<TBOHotelPreBookResponse>(`${ctx.baseUrl}/PreBook`, req, ctx);
+  return searchPost<TBOHotelPreBookResponse>(`${ctx.baseUrl}/PreBook`, req, ctx, logOpts);
 }
 
-export async function bookHotel(req: TBOHotelBookRequest): Promise<TBOHotelBookResponse> {
+export async function bookHotel(req: TBOHotelBookRequest, logOpts?: LogOptions): Promise<TBOHotelBookResponse> {
   const ctx = await getBookingActionContext();
-  return bookingPost<TBOHotelBookResponse>(`${ctx.baseUrl}/book/`, req, ctx);
+  return bookingPost<TBOHotelBookResponse>(`${ctx.baseUrl}/book/`, req, ctx, logOpts);
 }
 
-export async function getBookingDetail(req: TBOHotelBookingDetailRequest): Promise<TBOHotelBookingDetailResponse> {
+export async function getBookingDetail(req: TBOHotelBookingDetailRequest, logOpts?: LogOptions): Promise<TBOHotelBookingDetailResponse> {
   const ctx = await getBookingActionContext();
-  return bookingPost<TBOHotelBookingDetailResponse>(`${ctx.baseUrl}/Getbookingdetail/`, req, ctx);
+  return bookingPost<TBOHotelBookingDetailResponse>(`${ctx.baseUrl}/Getbookingdetail/`, req, ctx, logOpts);
 }
 
-export async function generateVoucher(req: TBOHotelGenerateVoucherRequest & { TokenId?: string }): Promise<TBOHotelGenerateVoucherResponse> {
+export async function generateVoucher(req: TBOHotelGenerateVoucherRequest & { TokenId?: string }, logOpts?: LogOptions): Promise<TBOHotelGenerateVoucherResponse> {
   const ctx = await getBookingActionContext();
-  return bookingPost<TBOHotelGenerateVoucherResponse>(`${ctx.baseUrl}/GenerateVoucher/`, req, ctx);
+  return bookingPost<TBOHotelGenerateVoucherResponse>(`${ctx.baseUrl}/GenerateVoucher/`, req, ctx, logOpts);
 }
 
-export async function sendChangeRequest(req: TBOHotelSendChangeRequest): Promise<TBOHotelSendChangeResponse> {
+export async function sendChangeRequest(req: TBOHotelSendChangeRequest, logOpts?: LogOptions): Promise<TBOHotelSendChangeResponse> {
   const ctx = await getBookingActionContext();
-  return bookingPost<TBOHotelSendChangeResponse>(`${ctx.baseUrl}/SendChangeRequest/`, req, ctx);
+  return bookingPost<TBOHotelSendChangeResponse>(`${ctx.baseUrl}/SendChangeRequest/`, req, ctx, logOpts);
 }
 
-export async function getChangeRequestStatus(req: TBOHotelGetChangeRequestStatusRequest): Promise<TBOHotelGetChangeRequestStatusResponse> {
+export async function getChangeRequestStatus(req: TBOHotelGetChangeRequestStatusRequest, logOpts?: LogOptions): Promise<TBOHotelGetChangeRequestStatusResponse> {
   const ctx = await getBookingActionContext();
-  return bookingPost<TBOHotelGetChangeRequestStatusResponse>(`${ctx.baseUrl}/GetChangeRequestStatus/`, req, ctx);
+  return bookingPost<TBOHotelGetChangeRequestStatusResponse>(`${ctx.baseUrl}/GetChangeRequestStatus/`, req, ctx, logOpts);
 }

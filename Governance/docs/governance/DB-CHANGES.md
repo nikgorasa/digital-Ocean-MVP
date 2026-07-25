@@ -10,6 +10,7 @@
 
 | Date | Time | Type | Table(s) | Description | Commit |
 |------|------|------|----------|-------------|--------|
+| 2026-07-26 | — | SCHEMA | api_logs | Added flight_source column + index for GDS/LCC filtering | 20260726_api_logs_flight_source.sql |
 | 2026-06-17 | 10:00 | SCHEMA | api_logs | Created api_logs table for TBO API logging | 20260617_api_logs.sql |
 
 ## 2026-07-17 — Corporate Invoice Schema Extensions

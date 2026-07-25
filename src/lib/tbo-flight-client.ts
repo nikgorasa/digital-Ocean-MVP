@@ -395,9 +395,14 @@ export async function getSSR(params: {
   }
   return {
     isLCC: res.Response.IsLCC,
-    baggage: res.Response.Baggage,
-    meals: res.Response.MealDynamic,
-    seats: res.Response.SeatDynamic,
+    baggage: (res.Response.Baggage || []).flat(),
+    meals: (res.Response.MealDynamic || []).flat(),
+    seats: (res.Response.SeatDynamic || []).flat().flatMap(seg =>
+      (seg?.RowSeats?.RowSeats || [])
+    ),
+    specialServices: (res.Response as any).SpecialServices?.flat() || [],
+    seatPreference: (res.Response as any).SeatPreference || [],
+    meal: (res.Response as any).Meal || [],
     traceId: res.Response.TraceId,
   };
 }
@@ -484,23 +489,40 @@ export async function ticketFlight(params: {
   fare: any;
   fareBreakdown: any[];
   isLCC: boolean;
+  ssrBaggage?: any[];
+  ssrMeals?: any[];
+  ssrSeats?: any[];
   EndUserIp?: string;
 }): Promise<TBOFlightTicketOutput> {
   await validateCredentials();
   const tokenId = await ensureToken();
 
   if (params.isLCC) {
-    const ssrReq: TBOFlightSSRRequest = {
-      EndUserIp: params.EndUserIp || getEndUserIp(),
-      TokenId: tokenId,
-      TraceId: params.traceId,
-      ResultIndex: params.resultIndex || "",
-    };
-    const ssrRes = await api.getSSR(ssrReq);
-    const allMeals = (ssrRes.Response?.MealDynamic || []).flat();
-    const allBaggage = (ssrRes.Response?.Baggage || []).flat();
-    const noMeal = allMeals.find((m: any) => m.Code === "NoMeal") || allMeals[0];
-    const noBag = allBaggage.find((b: any) => b.Code === "NoBaggage") || allBaggage[0];
+    const userBaggage = params.ssrBaggage || [];
+    const userMeals = params.ssrMeals || [];
+    const userSeats = params.ssrSeats || [];
+
+    let fallbackBaggage: any[] = [];
+    let fallbackMeals: any[] = [];
+
+    if (userBaggage.length === 0 && userMeals.length === 0) {
+      const ssrReq: TBOFlightSSRRequest = {
+        EndUserIp: params.EndUserIp || getEndUserIp(),
+        TokenId: tokenId,
+        TraceId: params.traceId,
+        ResultIndex: params.resultIndex || "",
+      };
+      const ssrRes = await api.getSSR(ssrReq);
+      fallbackMeals = (ssrRes.Response?.MealDynamic || []).flat();
+      fallbackBaggage = (ssrRes.Response?.Baggage || []).flat();
+    }
+
+    const noMeal = userMeals.length > 0
+      ? undefined
+      : (fallbackMeals.find((m: any) => m.Code === "NoMeal") || fallbackMeals[0]);
+    const noBag = userBaggage.length > 0
+      ? undefined
+      : (fallbackBaggage.find((b: any) => b.Code === "NoBaggage") || fallbackBaggage[0]);
 
     const req: TBOFlightTicketLCCRequest = {
       EndUserIp: params.EndUserIp || getEndUserIp(),
@@ -521,8 +543,9 @@ export async function ticketFlight(params: {
         IsLeadPax: p.IsLeadPax ?? false,
         Nationality: p.Nationality ?? "",
         Fare: p.Fare ?? { BaseFare: 0, Tax: 0, TransactionFee: 0, YQTax: 0, AdditionalTxnFeeOfrd: 0, AdditionalTxnFeePub: 0, AirTransFee: 0 },
-        ...(noBag ? { Baggage: [noBag] } : {}),
-        ...(noMeal ? { MealDynamic: [noMeal] } : {}),
+        ...(userBaggage.length > 0 ? { Baggage: userBaggage } : (noBag ? { Baggage: [noBag] } : {})),
+        ...(userMeals.length > 0 ? { MealDynamic: userMeals } : (noMeal ? { MealDynamic: [noMeal] } : {})),
+        ...(userSeats.length > 0 ? { SeatDynamic: userSeats } : {}),
       })),
     };
     const res = await api.ticketFlight(req);

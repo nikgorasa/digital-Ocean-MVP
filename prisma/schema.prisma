@@ -173,7 +173,7 @@ model PricingRule {
   destination   String?
   hotelCode     String?   @map("hotelCode")
   hotelName     String?
-  markupPercent Float
+  markupPercent Float?
   isActive      Boolean   @default(true)
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @default(now()) @updatedAt
@@ -562,25 +562,45 @@ model tickets {
 }
 
 model ApiLog {
-  id                 String   @id @default(cuid())
-  provider           String
-  endpoint           String
-  method             String
-  request_body       Json?
-  response_body      Json?
-  status_code        Int?
-  response_time_ms   Int?
-  error_message      String?
-  request_id         String?
-  batch_index        Int?
-  batch_total        Int?
-  environment        String
+  id                   String   @id @default(cuid())
+  provider             String
+  endpoint             String
+  method               String
+  request_body         Json?
+  response_body        Json?
+  status_code          Int?
+  tbo_status_code      Int?
+  response_time_ms     Int?
+  error_message        String?
+  request_id           String?
+  batch_index          Int?
+  batch_total          Int?
+  summary              String?
+  token_id             String?
+  end_user_ip          String?
+  city_codes           String?
+  hotel_codes          String?
+  check_in             String?
+  check_out            String?
+  pax_config           String?
+  guest_nationality    String?
+  preferred_currency   String?
+  trace_id             String?
+  flight_source        Int?
+  cert_case            Int?
+  cert_label           String?
+  environment          String
   vercel_deployment_id String?
-  created_at         DateTime @default(now())
+  created_at           DateTime @default(now())
 
   @@index([provider, created_at(sort: Desc)])
   @@index([request_id])
   @@index([environment, created_at(sort: Desc)])
+  @@index([tbo_status_code])
+  @@index([cert_case])
+  @@index([trace_id])
+  @@index([flight_source])
+  @@index([token_id])
   @@index([created_at(sort: Desc)])
   @@map("api_logs")
 }

@@ -98,6 +98,7 @@ interface Flight {
   resultIndex?: string;
   baseRate?: number;
   markupAmount?: number;
+  source?: number;
 }
 
 const CABIN_OPTIONS = ["Economy", "Premium Economy", "Business", "First Class"] as const;
@@ -339,6 +340,7 @@ export default function FlightsPage() {
         isPassportRequiredAtBook: f.isPassportRequiredAtBook ?? false,
         baseRate: f.baseRate,
         markupAmount: f.markupAmount,
+        source: f.source,
       }));
       setResults(flights);
       setSearchTraceId(data.traceId || "");
@@ -435,6 +437,13 @@ export default function FlightsPage() {
                 )}
                 {flight.isLCC && (
                   <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-full bg-sky-50 text-sky-600">LCC</span>
+                )}
+                {flight.source != null && (
+                  <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded-full ${
+                    [4, 5].includes(flight.source) ? 'bg-indigo-50 text-indigo-600' : 'bg-slate-100 text-slate-600'
+                  }`} title={`TBO Source: ${flight.source}`}>
+                    {[4, 5].includes(flight.source) ? 'GDS' : `Src:${flight.source}`}
+                  </span>
                 )}
               </div>
               <div className="flex items-center gap-1.5 mt-1">

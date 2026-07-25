@@ -48,6 +48,26 @@ export async function POST(req: NextRequest) {
         const hotelCodes = p.HotelCodes || p.hotelCodes;
         const checkIn = formatDate(p.CheckInDate || p.CheckIn || p.checkIn);
         const checkOut = formatDate(p.CheckOutDate || p.CheckOut || p.checkOut);
+
+        // Date validation (SANDBOX-04)
+        if (!checkIn || !checkOut) {
+          return NextResponse.json({ error: "checkIn and checkOut dates are required" }, { status: 400 });
+        }
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        const checkInDate = new Date(checkIn);
+        const checkOutDate = new Date(checkOut);
+        if (checkInDate < today) {
+          return NextResponse.json({ error: "Check-in date cannot be in the past" }, { status: 400 });
+        }
+        if (checkOutDate <= checkInDate) {
+          return NextResponse.json({ error: "Check-out must be after check-in" }, { status: 400 });
+        }
+        const maxNights = 30;
+        const nights = Math.ceil((checkOutDate.getTime() - checkInDate.getTime()) / 86400000);
+        if (nights > maxNights) {
+          return NextResponse.json({ error: `Maximum stay is ${maxNights} nights` }, { status: 400 });
+        }
         const roomsRaw = p.RoomGuests || p.rooms || [{ Adults: 1, Children: 0, ChildAge: [] }];
         const roomsArray = roomsRaw.map((r: any) => ({
           adults: r.Adults || r.adults || 1,

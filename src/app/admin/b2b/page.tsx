@@ -6,14 +6,13 @@ import { Wallet, Building2, Plus, ArrowUpRight, Check, Pencil, Trash2, X, Save }
 import { formatCurrency } from "@/lib";
 
 interface Company {
-  id: string;
-  name: string;
-  domain: string | null;
-  walletBalance: number;
-  creditLimit: number;
-  discountRate: number;
-  employees: number;
-  isActive: boolean;
+id: string;
+name: string;
+domain: string | null;
+walletBalance: number;
+creditLimit: number;
+employees: number;
+isActive: boolean;
 }
 
 export default function B2BPage() {
@@ -25,8 +24,8 @@ export default function B2BPage() {
   const [quickAmounts, setQuickAmounts] = useState<number[]>([10000, 25000, 50000, 100000]);
   const [showCreate, setShowCreate] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
-  const [editForm, setEditForm] = useState({ name: "", domain: "", discountRate: 0, creditLimit: 0 });
-  const [newCompany, setNewCompany] = useState({ name: "", domain: "", discountRate: 10, walletBalance: 0, creditLimit: 0 });
+  const [editForm, setEditForm] = useState({ name: "", domain: "", creditLimit: 0 });
+  const [newCompany, setNewCompany] = useState({ name: "", domain: "", walletBalance: 0, creditLimit: 0 });
 
   const fetchCompanies = async () => {
     try {
@@ -83,7 +82,7 @@ export default function B2BPage() {
         body: JSON.stringify(newCompany),
       });
       if (res.ok) {
-        setNewCompany({ name: "", domain: "", discountRate: 10, walletBalance: 0, creditLimit: 0 });
+        setNewCompany({ name: "", domain: "", walletBalance: 0, creditLimit: 0 });
         setShowCreate(false);
         fetchCompanies();
       }
@@ -94,7 +93,7 @@ export default function B2BPage() {
 
   const startEdit = (corp: Company) => {
     setEditingId(corp.id);
-    setEditForm({ name: corp.name, domain: corp.domain || "", discountRate: corp.discountRate, creditLimit: corp.creditLimit || 0 });
+    setEditForm({ name: corp.name, domain: corp.domain || "", creditLimit: corp.creditLimit || 0 });
   };
 
   const saveEdit = async () => {
@@ -178,16 +177,7 @@ export default function B2BPage() {
               />
             </div>
             <div>
-              <label className="text-[10px] font-bold uppercase tracking-widest text-slate-400 mb-1 block">Discount Rate (%)</label>
-              <input
-                type="number"
-                value={newCompany.discountRate}
-                onChange={(e) => setNewCompany({ ...newCompany, discountRate: Number(e.target.value) })}
-                className="w-full px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm"
-              />
-            </div>
-            <div>
-              <label className="text-[10px] font-bold uppercase tracking-widest text-slate-400 mb-1 block">Initial Wallet (₹)</label>
+<label className="text-[10px] font-bold uppercase tracking-widest text-slate-400 mb-1 block">Initial Wallet (₹)</label>
               <input
                 type="number"
                 value={newCompany.walletBalance}
@@ -240,25 +230,16 @@ export default function B2BPage() {
                           className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm"
                         />
                       </div>
-                      <div>
-                        <label className="text-[10px] font-bold uppercase tracking-widest text-slate-400 mb-1 block">Domain</label>
-                        <input
-                          value={editForm.domain}
-                          onChange={(e) => setEditForm({ ...editForm, domain: e.target.value })}
-                          className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm"
-                        />
-                      </div>
-                      <div>
-                        <label className="text-[10px] font-bold uppercase tracking-widest text-slate-400 mb-1 block">Discount %</label>
-                        <input
-                          type="number"
-                          value={editForm.discountRate}
-                          onChange={(e) => setEditForm({ ...editForm, discountRate: Number(e.target.value) })}
-                          className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm"
-                        />
-                      </div>
-                      <div>
-                        <label className="text-[10px] font-bold uppercase tracking-widest text-slate-400 mb-1 block">Credit Limit (₹)</label>
+<div>
+<label className="text-[10px] font-bold uppercase tracking-widest text-slate-400 mb-1 block">Domain</label>
+<input
+  value={editForm.domain}
+  onChange={(e) => setEditForm({ ...editForm, domain: e.target.value })}
+  className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm"
+/>
+</div>
+<div>
+<label className="text-[10px] font-bold uppercase tracking-widest text-slate-400 mb-1 block">Credit Limit (₹)</label>
                         <input
                           type="number"
                           value={editForm.creditLimit}
@@ -289,9 +270,6 @@ export default function B2BPage() {
                         </div>
                       </div>
                       <div className="flex items-center gap-1">
-                        <span className="text-xs font-bold px-2 py-1 bg-green-100 text-green-700 rounded-full">
-                          {corp.discountRate}% Discount
-                        </span>
                         <button onClick={(e) => { e.stopPropagation(); startEdit(corp); }} className="p-1.5 text-slate-400 hover:text-blue-600 cursor-pointer">
                           <Pencil size={14} />
                         </button>

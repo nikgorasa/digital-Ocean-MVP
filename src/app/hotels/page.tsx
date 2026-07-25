@@ -208,6 +208,9 @@ export default function HotelsPage() {
         setResults(data.hotels || []);
         setSessionId(data.sessionId || "");
         setSearchTraceId(data.traceId || "");
+        if (data.message && (!data.hotels || data.hotels.length === 0)) {
+          setError(data.message);
+        }
       }
     } catch (e) {
       setError("Failed to search hotels. Please try again.");

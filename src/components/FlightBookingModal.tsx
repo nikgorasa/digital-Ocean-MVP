@@ -351,17 +351,62 @@ export default function FlightBookingModal({
         body: JSON.stringify({ action: "ssr", params: { traceId: currentTraceIdRef.current, resultIndex: flight.id } }),
       });
       const data = await res.json();
+      if (!res.ok || data.error) {
+        setErrorMessage(data.error || "Failed to load add-ons. Please try again.");
+        setStep("error");
+        return;
+      }
       if (data.traceId) currentTraceIdRef.current = data.traceId;
       setSsrBaggage(data.baggage || []);
       setSsrMeals(data.meals || []);
       setSsrSeats(data.seats || []);
-    } catch {
-      setSsrBaggage([]);
-      setSsrMeals([]);
-      setSsrSeats([]);
+      if ((data.baggage || []).length === 0 && (data.meals || []).length === 0 && (data.seats || []).length === 0) {
+        setStep("saving");
+        handleBook();
+        return;
+      }
+    } catch (e) {
+      console.error("SSR fetch failed:", e);
+      setErrorMessage("Could not load add-ons. Proceeding without selection.");
+      setStep("error");
     } finally {
       setSsrLoading(false);
     }
+  };
+
+  const buildSSRBaggage = () => {
+    const selections: any[] = [];
+    Object.entries(ssrSelections).forEach(([paxIdx, sel]) => {
+      if (sel.baggage) {
+        const b = ssrBaggage.find((x: any) => x.Code === sel.baggage);
+        if (b) selections.push({ ...b, PaxId: parseInt(paxIdx) + 1 });
+      }
+    });
+    return selections.length > 0 ? selections : undefined;
+  };
+
+  const buildSSRMeals = () => {
+    const selections: any[] = [];
+    Object.entries(ssrSelections).forEach(([paxIdx, sel]) => {
+      if (sel.meals.length > 0) {
+        sel.meals.forEach((code: string) => {
+          const m = ssrMeals.find((x: any) => x.Code === code);
+          if (m) selections.push({ ...m, PaxId: parseInt(paxIdx) + 1 });
+        });
+      }
+    });
+    return selections.length > 0 ? selections : undefined;
+  };
+
+  const buildSSRSeats = () => {
+    const selections: any[] = [];
+    Object.entries(ssrSelections).forEach(([paxIdx, sel]) => {
+      if (sel.seat) {
+        const s = ssrSeats.find((x: any) => x.Code === sel.seat);
+        if (s) selections.push({ ...s, PaxId: parseInt(paxIdx) + 1 });
+      }
+    });
+    return selections.length > 0 ? selections : undefined;
   };
 
   const toggleMeal = (code: string) => {
@@ -563,6 +608,9 @@ export default function FlightBookingModal({
                   segments: [],
                   fare: { BaseFare: flight.baseFare, Tax: flight.tax, YQTax: flight.yqTax || 0 },
                   fareBreakdown: [],
+                  ssrBaggage: flight.isLCC ? buildSSRBaggage() : undefined,
+                  ssrMeals: flight.isLCC ? buildSSRMeals() : undefined,
+                  ssrSeats: flight.isLCC ? buildSSRSeats() : undefined,
                 },
               }),
             });
