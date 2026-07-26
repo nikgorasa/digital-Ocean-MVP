@@ -13,6 +13,13 @@ import {
   Trash2, XCircle,
 } from "lucide-react";
 import CancellationDialog from "./CancellationDialog";
+
+// Convert YYYY-MM-DD to yyyy-MM-ddTHH:mm:ss for TBO API
+function toTboDateTime(dateStr: string): string {
+  if (!dateStr) return "";
+  if (dateStr.includes("T")) return dateStr;
+  return `${dateStr}T00:00:00`;
+}
 import CheckoutButton from "./CheckoutButton";
 import FormInput from "./ui/FormInput";
 import FormPhone from "./ui/FormPhone";
@@ -340,49 +347,27 @@ export default function FlightBookingModal({
   };
 
   const fetchSSR = async () => {
-    // Always do a fresh search first to get a fresh TraceId
-    // (the current one might be consumed by a previous booking)
+    // SSR is optional — try with original TraceId, proceed if it fails
+    // No fresh search here; handleBook() will do one if needed
     setStep("saving");
     try {
-      // Step 1: Fresh search to get a fresh TraceId
-      const searchRes = await fetch("/api/tbo", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          action: "search",
-          params: {
-            origin: flight.origin,
-            destination: flight.destination,
-            adults,
-            children,
-            infants,
-            departureDate: date,
-            tripType: "OneWay",
-          },
-        }),
-      });
-      const searchData = await searchRes.json();
-      if (searchData.traceId) {
-        currentTraceIdRef.current = searchData.traceId;
-      }
-
-      // Step 2: Try SSR with fresh TraceId
       const traceId = currentTraceIdRef.current;
-      const resultIndex = flight.id;
-      const res = await fetch("/api/tbo", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ action: "ssr", params: { traceId, resultIndex } }),
-      });
-      const data = await res.json();
-      if (data.traceId) currentTraceIdRef.current = data.traceId;
-      if (!data.error && data.baggage?.length) {
-        setSsrBaggage(data.baggage || []);
-        setSsrMeals(data.meals || []);
-        setSsrSeats(data.seats || []);
-        console.log("[SSR] Loaded", data.baggage?.length, "baggage,", data.meals?.length, "meals,", data.seats?.length, "seats");
-      } else {
-        console.log("[SSR] No data or error — proceeding without SSR selections");
+      if (traceId) {
+        const res = await fetch("/api/tbo", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ action: "ssr", params: { traceId, resultIndex: flight.id } }),
+        });
+        const data = await res.json();
+        if (data.traceId) currentTraceIdRef.current = data.traceId;
+        if (!data.error && data.baggage?.length) {
+          setSsrBaggage(data.baggage || []);
+          setSsrMeals(data.meals || []);
+          setSsrSeats(data.seats || []);
+          console.log("[SSR] Loaded", data.baggage?.length, "baggage,", data.meals?.length, "meals,", data.seats?.length, "seats");
+        } else {
+          console.log("[SSR] No data or error — proceeding without SSR selections");
+        }
       }
     } catch (e) {
       console.log("[SSR] Failed — proceeding without SSR selections:", e);
@@ -534,9 +519,11 @@ export default function FlightBookingModal({
       let tboBookingId: string | null = null;
       let tboPnr: string | null = null;
 
-      // Always do a fresh search first to get a fresh TraceId
-      // (the current one might be consumed by a previous booking)
+      // Fresh search to get a fresh TraceId AND matching ResultIndex.
+      // The original ResultIndex (flight.id) is tied to the original search session.
+      // A new TraceId requires the ResultIndex from the SAME search session.
       let currentTraceId = currentTraceIdRef.current;
+      let activeResultIndex = flight.id;
       try {
         const searchRes = await fetch("/api/tbo", {
           method: "POST",
@@ -549,7 +536,7 @@ export default function FlightBookingModal({
               adults,
               children,
               infants,
-              departureDate: date,
+              departureDate: toTboDateTime(date),
               tripType: "OneWay",
             },
           }),
@@ -558,6 +545,20 @@ export default function FlightBookingModal({
         if (searchData.traceId) {
           currentTraceId = searchData.traceId;
           currentTraceIdRef.current = currentTraceId;
+        }
+        // Find the matching flight in fresh results to get its new ResultIndex
+        if (searchData.flights?.length) {
+          const match = searchData.flights.find((f: any) =>
+            (f.airlineCode || "").toLowerCase() === (flight.airlineCode || "").toLowerCase() &&
+            f.flightNumber === flight.flightNumber &&
+            f.departureTime === flight.departureTime
+          );
+          if (match?.resultIndex) {
+            activeResultIndex = match.resultIndex;
+            console.log("[BOOK] Matched fresh ResultIndex:", activeResultIndex);
+          } else {
+            console.warn("[BOOK] Could not match flight in fresh search results, using original ResultIndex");
+          }
         }
       } catch (e) {
         console.warn("Fresh search failed, using existing TraceId:", e);
@@ -571,7 +572,7 @@ export default function FlightBookingModal({
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
               action: "fare-quote",
-              params: { traceId: currentTraceId, resultIndex: flight.id },
+              params: { traceId: currentTraceId, resultIndex: activeResultIndex },
             }),
           });
           let fqData = await fqRes.json();
@@ -584,7 +585,7 @@ export default function FlightBookingModal({
               headers: { "Content-Type": "application/json" },
               body: JSON.stringify({
                 action: "fare-quote",
-                params: { traceId: currentTraceId, resultIndex: flight.id },
+                params: { traceId: currentTraceId, resultIndex: activeResultIndex },
               }),
             });
             fqData = await fqRes.json();
@@ -623,7 +624,7 @@ export default function FlightBookingModal({
               headers: { "Content-Type": "application/json" },
               body: JSON.stringify({
                 action: "book",
-                params: { traceId: currentTraceId, resultIndex: flight.id, passengers },
+                params: { traceId: currentTraceId, resultIndex: activeResultIndex, passengers },
               }),
             });
             let bookData = await bookRes.json();
@@ -636,7 +637,7 @@ export default function FlightBookingModal({
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({
                   action: "book",
-                  params: { traceId: currentTraceId, resultIndex: flight.id, passengers },
+                  params: { traceId: currentTraceId, resultIndex: activeResultIndex, passengers },
                 }),
               });
               bookData = await bookRes.json();
@@ -675,7 +676,7 @@ export default function FlightBookingModal({
           try {
             console.log("[TBO-TICKET] Request params:", {
               traceId: currentTraceId,
-              resultIndex: flight.id,
+              resultIndex: activeResultIndex,
               bookingId: tboBookingId,
               pnr: tboPnr,
               isLCC: flight.isLCC,
@@ -687,7 +688,7 @@ export default function FlightBookingModal({
                 action: "ticket",
                 params: {
                   traceId: currentTraceId,
-                  resultIndex: flight.id,
+                  resultIndex: activeResultIndex,
                   passengers,
                   bookingId: tboBookingId,
                   pnr: tboPnr,
@@ -744,7 +745,8 @@ export default function FlightBookingModal({
           markupAmount: totalMarkupAmount || undefined,
           metadata: {
             traceId: currentTraceId || undefined,
-            resultIndex: flight.id,
+            resultIndex: activeResultIndex,
+            originalResultIndex: activeResultIndex !== flight.id ? flight.id : undefined,
             isLCC: flight.isLCC,
             isRefundable: flight.isRefundable,
             baseFare: totalBaseFare,
