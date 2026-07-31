@@ -213,8 +213,8 @@ export default function DateRangePicker({
 
       {isOpen && (
         <div
-          className="absolute top-full left-0 mt-2 z-50 bg-white rounded-xl shadow-xl border border-slate-200 overflow-hidden w-[calc(100vw-2rem)] sm:w-auto"
-          style={{ maxWidth: mode === "range" ? 720 : 290 }}
+          className="absolute top-full left-0 mt-2 z-50 bg-white rounded-xl shadow-xl border border-slate-200 w-[calc(100vw-2rem)] sm:w-auto"
+          style={{ maxWidth: mode === "range" ? 740 : 300 }}
         >
           <style>{`
             .rdp-root {
@@ -302,6 +302,7 @@ export default function DateRangePicker({
             }
             .rdp-today:not(.rdp-outside) .rdp-day_button {
               font-weight: 700 !important;
+              background-color: #FFF7ED !important;
               box-shadow: inset 0 0 0 1.5px #F97316;
             }
             .rdp-outside {

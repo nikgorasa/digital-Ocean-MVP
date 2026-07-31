@@ -10,7 +10,7 @@ import { useSearchTimer } from "@/hooks/useSearchTimer";
 import { motion, AnimatePresence } from "motion/react";
 import { formatCurrency } from "@/lib";
 import { parseFareType, parseFareInclusions, getFareTypeColor, formatFareType, type FareType } from "@/lib/fare-utils";
-import { Plane, Search, Calendar, Users, ArrowRight, ArrowRightLeft, Route, Star, Clock, Luggage, X, Loader2, ChevronDown, ChevronUp, Minus, Plus, User, AlertCircle, RefreshCw, SlidersHorizontal, Utensils, Armchair } from "lucide-react";
+import { Plane, Search, Calendar, Users, ArrowRight, ArrowRightLeft, Route, Star, Clock, Luggage, X, Loader2, ChevronDown, ChevronUp, Minus, Plus, User, AlertCircle, RefreshCw, SlidersHorizontal, Utensils, Armchair, IndianRupee, Calculator } from "lucide-react";
 import FlightBookingModal from "@/components/FlightBookingModal";
 import PassengerCabinSelector from "@/components/PassengerCabinSelector";
 import CitySearchDropdown from "@/components/CitySearchDropdown";
@@ -25,6 +25,10 @@ import { useFlightFilters } from "@/hooks/useFilters";
 import { applyFlightFilters, sortFlights, type FlightSortKey, type FlightResult } from "@/lib/ai/filters/applyFilters";
 import Link from "next/link";
 import { SearchResultsSkeleton } from "@/components/ui/Skeleton";
+import { StepIndicator } from "@/components/flights/StepIndicator";
+import { LegTabs } from "@/components/flights/LegTabs";
+import { LegPricePreview } from "@/components/flights/LegPricePreview";
+import { Toast } from "@/components/ui/Toast";
 
 function FlightJsonLd({ flights }: { flights: Flight[] }) {
   if (flights.length === 0) return null;
@@ -168,6 +172,11 @@ export default function FlightsPage() {
   const [showBookingModal, setShowBookingModal] = useState(false);
   const [flightSelections, setFlightSelections] = useState<Map<string, Flight>>(new Map());
 
+  // P0 Return Flight UX: Active leg, step indicator, toast
+  const [activeLeg, setActiveLeg] = useState<"outbound" | "return">("outbound");
+  const [step, setStep] = useState<1 | 2 | 3>(2);
+  const [toast, setToast] = useState<{ message: string; type: "info" | "warning" } | null>(null);
+
 const handleTripTypeChange = (type: "one-way" | "return" | "multi-city") => {
     if (type === tripType) return;
     setTripType(type);
@@ -183,12 +192,26 @@ const handleTripTypeChange = (type: "one-way" | "return" | "multi-city") => {
     } else if (type === "return") {
       setDepartDate(departDate);
       setReturnDate("");
-    }
-    setResults([]);
-    setSearched(false);
-  };
+}
+  setResults([]);
+  setSearched(false);
+};
 
-  const totalPassengers = adults + children + infants;
+// P0: Clear inbound selection when returnDate changes
+useEffect(() => {
+  if (tripType === "return" && returnDate && flightSelections.has("return")) {
+    setFlightSelections(prev => {
+      const next = new Map(prev);
+      next.delete("return");
+      return next;
+    });
+    setToast({ message: "Return date updated. Please re-select return flight.", type: "info" });
+    const timer = setTimeout(() => setToast(null), 4000);
+    return () => clearTimeout(timer);
+  }
+}, [returnDate, tripType]);
+
+const totalPassengers = adults + children + infants;
   const showConcierge = totalPassengers > 10;
   const isReturnTrip = tripType === "return" || tripType === "multi-city";
 
@@ -957,27 +980,64 @@ const handleTripTypeChange = (type: "one-way" | "return" | "multi-city") => {
 
                 {isReturnTrip && outboundFlights.length > 0 && inboundFlights.length > 0 ? (
                   <>
-                    <div className="mb-8">
-                      <div className="flex items-center gap-2 mb-3">
-                        <div className="w-1 h-5 bg-brand-antique-gold rounded-full" />
-                        <h3 className="text-lg font-serif font-bold text-brand-charcoal">Outbound</h3>
-                        <p className="text-xs text-slate-600 ml-auto">{outboundGroups.length} flights</p>
-                      </div>
-                      <div className="space-y-3">
-                        {outboundGroups.map((group, i) => renderFlightCard(group.representative, i, group.fares.length, group.key))}
-                      </div>
-                    </div>
+                    {/* P0: Step Indicator */}
+                    <StepIndicator currentStep={step} />
 
-                    <div>
-                      <div className="flex items-center gap-2 mb-3">
-                        <div className="w-1 h-5 bg-brand-gold rounded-full" />
-                        <h3 className="text-lg font-serif font-bold text-brand-charcoal">Inbound</h3>
-                        <p className="text-xs text-slate-600 ml-auto">{inboundGroups.length} flights</p>
-                      </div>
-                      <div className="space-y-3">
-                        {inboundGroups.map((group, i) => renderFlightCard(group.representative, i, group.fares.length, group.key))}
-                      </div>
-                    </div>
+                    {/* Toast for return date change */}
+                    {toast && (
+                      <Toast
+                        message={toast.message}
+                        type={toast.type}
+                        onClose={() => setToast(null)}
+                        className="mx-4 mt-4"
+                      />
+                    )}
+
+                    {/* P0: Leg Tabs */}
+                    <LegTabs
+                      activeLeg={activeLeg}
+                      onChange={setActiveLeg}
+                      disabledLegs={!flightSelections.has("outbound") ? ["return"] : []}
+                      hasOutboundSelection={flightSelections.has("outbound")}
+                      outboundPrice={flightSelections.get("outbound")?.price ?? null}
+                      returnPrice={flightSelections.get("return")?.price ?? null}
+                      onClearLeg={(leg) => {
+                        setFlightSelections(prev => {
+                          const next = new Map(prev);
+                          next.delete(leg);
+                          return next;
+                        });
+                      }}
+                    />
+
+                    {/* Flight Lists - filtered by active leg */}
+                    {activeLeg === "outbound" ? (
+                      <>
+                        <div className="mb-8">
+                          <div className="flex items-center gap-2 mb-3">
+                            <div className="w-1 h-5 bg-brand-antique-gold rounded-full" />
+                            <h3 className="text-lg font-serif font-bold text-brand-charcoal">Outbound</h3>
+                            <p className="text-xs text-slate-600 ml-auto">{outboundGroups.length} flights</p>
+                          </div>
+                          <div className="space-y-3">
+                            {outboundGroups.map((group, i) => renderFlightCard(group.representative, i, group.fares.length, group.key))}
+                          </div>
+                        </div>
+                      </>
+                    ) : (
+                      <>
+                        <div className="mb-8">
+                          <div className="flex items-center gap-2 mb-3">
+                            <div className="w-1 h-5 bg-brand-gold rounded-full" />
+                            <h3 className="text-lg font-serif font-bold text-brand-charcoal">Inbound</h3>
+                            <p className="text-xs text-slate-600 ml-auto">{inboundGroups.length} flights</p>
+                          </div>
+                          <div className="space-y-3">
+                            {inboundGroups.map((group, i) => renderFlightCard(group.representative, i, group.fares.length, group.key))}
+                          </div>
+                        </div>
+                      </>
+                    )}
                   </>
                 ) : (
                   <>
@@ -1004,30 +1064,37 @@ const handleTripTypeChange = (type: "one-way" | "return" | "multi-city") => {
           <motion.div
             initial={{ y: 100 }}
             animate={{ y: 0 }}
-            className="fixed bottom-0 left-0 right-0 z-50 bg-white border-t border-slate-200 shadow-2xl px-6 py-4"
+            className="fixed bottom-0 left-0 right-0 z-50 bg-white border-t border-slate-200 shadow-2xl"
           >
-            <div className="max-w-5xl mx-auto flex flex-col sm:flex-row items-stretch sm:items-center gap-3 sm:justify-between">
-              <div className="flex flex-wrap items-center gap-3">
-                {Array.from(flightSelections.entries()).map(([leg, f]) => (
-                  <div key={leg} className="flex items-center gap-2 text-xs sm:text-sm">
-                    <span className="text-[10px] font-bold uppercase text-slate-600">{leg}</span>
-                    <span className="font-semibold text-brand-charcoal">{f.airline} {f.flightNumber}</span>
-                    <span className="text-slate-600">{f.origin}→{f.destination}</span>
-                    <span className="font-mono font-bold text-brand-charcoal text-xs sm:text-sm">{formatCurrency(f.price)}</span>
-                  </div>
-                ))}
-              </div>
+            {/* P0: Leg Price Preview */}
+            <LegPricePreview
+              outboundPrice={flightSelections.get("outbound")?.price ?? null}
+              returnPrice={flightSelections.get("return")?.price ?? null}
+              totalPrice={
+                (flightSelections.get("outbound")?.price ?? 0) +
+                (flightSelections.get("return")?.price ?? 0)
+              }
+              isRoundTrip={tripType === "return"}
+            />
+
+            <div className="max-w-5xl mx-auto px-4 py-4 sm:px-6">
               <button
                 onClick={() => {
                   if (!user) {
                     setShowLogin(true);
                   } else {
+                    setStep(3);
                     setShowBookingModal(true);
                   }
                 }}
-                className="px-4 sm:px-8 py-3 bg-brand-antique-gold text-white rounded-xl font-bold hover:bg-brand-emerald transition-colors cursor-pointer"
+                disabled={tripType === "return" && !flightSelections.has("return")}
+                className="w-full py-3 bg-brand-antique-gold text-white rounded-xl font-bold hover:bg-brand-emerald transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                {user ? `Book ${flightSelections.size} Flights` : "Sign in to Book"}
+                {tripType === "return" && !flightSelections.has("return")
+                  ? "Select Return Flight"
+                  : user
+                  ? `Book ${flightSelections.size} Flights`
+                  : "Sign in to Book"}
               </button>
             </div>
           </motion.div>
