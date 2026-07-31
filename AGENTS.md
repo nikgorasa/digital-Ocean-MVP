@@ -222,6 +222,11 @@ Before ANY code commit or work session starts, the agent MUST:
 5. Closed issues must match closed code work — no orphaned open issues
 6. No work can be committed without the issue being listed in `EPIC-ISSUE-TRACKER.md`
 
+**Enforcement Mechanism:**
+- **Governance check:** `BEH-10` / `POST-13` in `Cckr-governance-check.sh` verifies EPIC-ISSUE-TRACKER.md exists, has recent updates, and has session entries
+- **Pre-commit hook:** `.git/hooks/pre-commit` blocks commits if EPIC-ISSUE-TRACKER.md is missing or has no open issues
+- **Bypass (emergency only):** `git commit --no-verify` — requires manual justification in commit message
+
 ---
 
 ## Key Files

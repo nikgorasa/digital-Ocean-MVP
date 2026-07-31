@@ -817,6 +817,62 @@ check_modal_pointer_events() {
     fi
 }
 
+check_epic_issue_tracking() {
+    # Enforce Rule 13: EPIC/Issue Tracking Gate
+    # No code can be committed without updating EPIC-ISSUE-TRACKER.md
+    # Every commit must reference at least one open issue from Section B
+    local tracker="$DOCS_DIR/EPIC-ISSUE-TRACKER.md"
+
+    if [[ ! -f "$tracker" ]]; then
+        print_fail "EPIC-ISSUE-TRACKER.md not found — create it before committing"
+        ERRORS=$((ERRORS + 1))
+        return 1
+    fi
+
+    # Check that the file has been modified today or has a recent session entry
+    local today
+    today=$(date +%Y-%m-%d)
+    local last_modified
+    last_modified=$(stat -c %Y "$tracker" 2>/dev/null || stat -f %m "$tracker" 2>/dev/null || echo 0)
+    local now
+    now=$(date +%s)
+    local age_hours=$(( (now - last_modified) / 3600 ))
+
+    # If the file is more than 24 hours old, warn (but don't block — might be a docs-only commit)
+    if [[ $age_hours -gt 24 ]]; then
+        print_warn "EPIC-ISSUE-TRACKER.md last modified $age_hours hours ago — verify it's up to date"
+    fi
+
+    # Check that Section D checklist items are checked (at least some)
+    local checklist_checked
+    checklist_checked=$(grep -c '\- \[x\]' "$tracker" 2>/dev/null || echo 0)
+    local checklist_total
+    checklist_total=$(grep -c '\- \[ \]' "$tracker" 2>/dev/null || echo 0)
+
+    if [[ $checklist_total -gt 0 ]]; then
+        print_warn "EPIC-ISSUE-TRACKER.md Section D: $checklist_total unchecked checklist items"
+    fi
+
+    # Check that Section E (Session Update Log) has an entry for today
+    if grep -q "$today" "$tracker" 2>/dev/null; then
+        print_pass "EPIC-ISSUE-TRACKER.md has session entry for $today"
+    else
+        print_warn "EPIC-ISSUE-TRACKER.md has no session entry for $today — add one before committing"
+    fi
+
+    # Check that Section B (Open Issues) has at least some entries
+    local open_issues
+    open_issues=$(grep -c '^| [0-9]' "$tracker" 2>/dev/null || echo 0)
+    if [[ $open_issues -eq 0 ]]; then
+        print_fail "EPIC-ISSUE-TRACKER.md Section B has no open issues — this is suspicious"
+        ERRORS=$((ERRORS + 1))
+        return 1
+    fi
+
+    print_pass "EPIC-ISSUE-TRACKER.md exists and has $open_issues tracked issues"
+    return 0
+}
+
 # ═══════════════════════════════════════════════════════
 # PHASE: PREFLIGHT
 # ═══════════════════════════════════════════════════════
@@ -847,6 +903,7 @@ run_preflight() {
     run_check webhook_check       "BEH-07  Webhook signatures"     info  check_webhook_check || true
     run_check currency_check      "BEH-08  Currency hardcoded"     info  check_currency_check || true
     run_check modal_pointer_events "BEH-09  Modal pointer-events"  gate  check_modal_pointer_events || true
+    run_check epic_issue_tracking  "BEH-10  EPIC/Issue tracking"   gate  check_epic_issue_tracking || true
 }
 
 # ═══════════════════════════════════════════════════════
@@ -870,6 +927,7 @@ run_post_task() {
     run_check tbo_endpoint_routing "POST-10 TBO endpoint routing" gate  check_tbo_endpoint_routing || true
     run_check config_sync         "POST-11 Config multi-source"   gate  check_config_sync || true
     run_check modal_pointer_events "POST-12 Modal pointer-events" gate  check_modal_pointer_events || true
+    run_check epic_issue_tracking  "POST-13 EPIC/Issue tracking"  gate  check_epic_issue_tracking || true
 }
 
 # ═══════════════════════════════════════════════════════
