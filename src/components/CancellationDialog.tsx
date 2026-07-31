@@ -93,8 +93,8 @@ export default function CancellationDialog({
   const refundPercentage = bookingPrice > 0 ? Math.round((refundAmount / bookingPrice) * 100) : 0;
 
   return (
-    <div className="fixed inset-0 z-[120] flex items-end sm:items-center sm:justify-center sm:p-4">
-      <div className="absolute inset-0 bg-slate-900/60 backdrop-blur-md" onClick={onClose} />
+    <div className="fixed inset-0 z-[120] flex items-end sm:items-center sm:justify-center sm:p-4" pointer-events-none>
+      <div className="absolute inset-0 bg-slate-900/60 backdrop-blur-md" pointer-events-auto onClick={onClose} />
       <motion.div
         initial={{ opacity: 0, y: 40 }}
         animate={{ opacity: 1, y: 0 }}

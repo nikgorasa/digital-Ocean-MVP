@@ -60,12 +60,12 @@ export default function LoginModal({ isOpen, onClose }: LoginModalProps) {
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         exit={{ opacity: 0 }}
-        className="fixed inset-0 z-[200] flex items-center justify-center p-4"
+        className="fixed inset-0 z-[200] flex items-center justify-center p-4 pointer-events-none"
       >
         <motion.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
-          className="absolute inset-0 bg-slate-900/60 backdrop-blur-md"
+          className="absolute inset-0 bg-slate-900/60 backdrop-blur-md pointer-events-auto"
           onClick={onClose}
         />
         <motion.div
@@ -76,7 +76,7 @@ export default function LoginModal({ isOpen, onClose }: LoginModalProps) {
           animate={{ opacity: 1, scale: 1, y: 0 }}
           exit={{ opacity: 0, scale: 0.95, y: 20 }}
           transition={{ duration: 0.2, ease: "easeOut" }}
-          className="relative bg-white w-full max-w-md rounded-3xl shadow-2xl overflow-hidden p-8 border border-slate-100 max-h-[90vh] overflow-y-auto"
+          className="relative bg-white w-full max-w-md rounded-3xl shadow-2xl overflow-hidden p-8 border border-slate-100 max-h-[90vh] overflow-y-auto pointer-events-auto"
         >
           <button
             onClick={onClose}

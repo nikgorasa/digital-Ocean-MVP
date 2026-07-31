@@ -31,8 +31,8 @@ export default function PriceChangeModal({
   const difference = Math.abs(newPrice - oldPrice);
 
   return (
-    <div className="fixed inset-0 z-[120] flex items-center justify-center p-4">
-      <div className="absolute inset-0 bg-slate-900/60 backdrop-blur-md" onClick={onClose} />
+    <div className="fixed inset-0 z-[120] flex items-center justify-center p-4" pointer-events-none>
+      <div className="absolute inset-0 bg-slate-900/60 backdrop-blur-md" pointer-events-auto onClick={onClose} />
       <motion.div
         role="dialog"
         aria-modal="true"

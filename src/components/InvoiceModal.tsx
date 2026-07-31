@@ -82,17 +82,17 @@ export default function InvoiceModal({ isOpen, onClose, booking, userName, userE
 
   return (
     <AnimatePresence>
-      <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+      <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 pointer-events-none">
         <motion.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
-          className="absolute inset-0 bg-slate-900/60 backdrop-blur-md"
+          className="absolute inset-0 bg-slate-900/60 backdrop-blur-md pointer-events-auto"
           onClick={onClose}
         />
         <motion.div
           initial={{ opacity: 0, scale: 0.95, y: 20 }}
           animate={{ opacity: 1, scale: 1, y: 0 }}
-          className="relative bg-white w-full max-w-lg rounded-3xl shadow-2xl overflow-hidden"
+          className="relative bg-white w-full max-w-lg rounded-3xl shadow-2xl overflow-hidden pointer-events-auto"
         >
           <div className="bg-gradient-to-r from-brand-saffron to-brand-burnt px-6 py-4 flex items-center justify-between">
             <div>

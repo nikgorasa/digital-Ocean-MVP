@@ -761,6 +761,62 @@ check_currency_check() {
     return 0
 }
 
+check_modal_pointer_events() {
+    # Ensure all modals with fixed inset-0 backdrop have pointer-events-none/auto pattern.
+    # This prevents Opera/Vivaldi click target regression (Issue #291, Issue 018).
+    # Only checks modals that have a backdrop with onClick (dismissible modals).
+    local modal_files
+    modal_files=$(grep -rln "fixed inset-0" "$REPO_ROOT/src/components/" 2>/dev/null | grep -v node_modules | grep -v ".next" || true)
+
+    if [[ -z "$modal_files" ]]; then
+        print_pass "No modal components found (nothing to check)"
+        return 0
+    fi
+
+    local bad=0
+    while IFS= read -r file; do
+        [[ -z "$file" ]] && continue
+        local basename
+        basename=$(basename "$file")
+
+        # Skip non-modal overlays (SplashScreen, FilterPanel, etc.)
+        # Only check files that have a backdrop with onClick handler
+        if ! grep -q "absolute inset-0.*onClick\|onClick.*absolute inset-0" "$file" 2>/dev/null; then
+            continue
+        fi
+
+        # Check container has pointer-events-none
+        if ! grep -q "fixed inset-0.*pointer-events-none\|pointer-events-none.*fixed inset-0" "$file" 2>/dev/null; then
+            print_fail "$basename: modal container missing pointer-events-none (Issue #291 regression)"
+            bad=$((bad + 1))
+            continue
+        fi
+
+        # Check backdrop has pointer-events-auto
+        if ! grep -q "absolute inset-0.*pointer-events-auto\|pointer-events-auto.*absolute inset-0" "$file" 2>/dev/null; then
+            print_fail "$basename: modal backdrop missing pointer-events-auto (Issue #291 regression)"
+            bad=$((bad + 1))
+            continue
+        fi
+
+        # Check content has pointer-events-auto
+        if ! grep -q "pointer-events-auto" "$file" 2>/dev/null; then
+            print_fail "$basename: modal content missing pointer-events-auto (Issue #291 regression)"
+            bad=$((bad + 1))
+            continue
+        fi
+    done <<< "$modal_files"
+
+    if [[ $bad -eq 0 ]]; then
+        print_pass "All modals have pointer-events-none/auto pattern (Issue #291 protected)"
+        return 0
+    else
+        print_fail "$bad modal(s) missing pointer-events pattern — Opera/Vivaldi clicks will break"
+        ERRORS=$((ERRORS + 1))
+        return 1
+    fi
+}
+
 # ═══════════════════════════════════════════════════════
 # PHASE: PREFLIGHT
 # ═══════════════════════════════════════════════════════
@@ -790,6 +846,7 @@ run_preflight() {
     run_check schema_cluster_reminder "BEH-06  Schema reminder"    info  check_schema_cluster_reminder || true
     run_check webhook_check       "BEH-07  Webhook signatures"     info  check_webhook_check || true
     run_check currency_check      "BEH-08  Currency hardcoded"     info  check_currency_check || true
+    run_check modal_pointer_events "BEH-09  Modal pointer-events"  gate  check_modal_pointer_events || true
 }
 
 # ═══════════════════════════════════════════════════════
@@ -812,6 +869,7 @@ run_post_task() {
     run_check city_mode_hotel     "POST-09 Hotel city mode"       gate  check_city_mode_hotel || true
     run_check tbo_endpoint_routing "POST-10 TBO endpoint routing" gate  check_tbo_endpoint_routing || true
     run_check config_sync         "POST-11 Config multi-source"   gate  check_config_sync || true
+    run_check modal_pointer_events "POST-12 Modal pointer-events" gate  check_modal_pointer_events || true
 }
 
 # ═══════════════════════════════════════════════════════
