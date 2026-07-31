@@ -311,15 +311,7 @@ export default function HotelBookingModal({
           setLastCancellationDeadline(blockData.lastCancellationDeadline);
         }
 
-        if (blockData.isPriceChanged) {
-          const proceed = window.confirm(
-            "The room price has changed. The new total is shown in the booking summary. Do you want to proceed?"
-          );
-          if (!proceed) {
-            setStep("form");
-            return;
-          }
-        }
+        // Price changes are reflected in the summary — no blocking dialog needed
 
         setStep("book-confirming");
 
