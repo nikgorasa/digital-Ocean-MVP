@@ -29,7 +29,7 @@ export default function SplashScreen({ children }: SplashScreenProps) {
       {children}
       {phase !== "hidden" && (
         <div
-          className="fixed inset-0 z-[9999] flex flex-col items-center justify-center"
+          className="fixed inset-0 z-[9999] flex flex-col items-center justify-center overflow-hidden px-4"
           style={{ backgroundColor: "#082A24" }}
         >
           <div
@@ -49,7 +49,7 @@ export default function SplashScreen({ children }: SplashScreenProps) {
             />
           </div>
           <p
-            className="text-[#F5EFE0]/70 text-sm tracking-[0.25em]"
+            className="text-[#F5EFE0]/70 text-xs sm:text-sm tracking-[0.12em] sm:tracking-[0.25em] max-w-[88vw] leading-relaxed"
             style={{
               animation: "splashFadeIn 1s ease-out forwards",
             }}
