@@ -4,7 +4,7 @@
 > **Version:** 1.0.0
 > **Last Updated:** 2026-08-01 (Session 51 — GitHub/Tracker Reconciliation + Duplicate Cleanup + Hotel Price Fix)
 > **Current Sprint:** Sprint 4 — Production Readiness
-> **Maximum GitHub Issue Number:** 319 (new issues start from #320)
+> **Maximum GitHub Issue Number:** 320 (new issues start from #321)
 > **Source of Truth:** This file is the canonical registry of all epics and open GitHub issues. It MUST be updated before any PR/commit. No work can be committed if its EPIC/issue is not tracked here.
 > **SPRINT-PLAN.md:** Condensed view (16 epics grouped by priority). This file is the full view (every open issue individually).
 
@@ -132,10 +132,11 @@
 | 315 | HOT-01: Wire CancellationDialog into HotelBookingModal cancel button | CANCEL-EPIC | high | IN_PROGRESS | — | 2026-07-25 | Session 44 |
 | 316 | HOTELS-SEARCH-FIX: Hotels search broken (stale city codes + dropped PROD static cache) + calendar last-row clipping | TBO-ARCH-EPIC | high | DONE | — | 2026-08-01 | Session 50 |
 | 319 | HOTEL-PRICE-FIX: Hotel room price shows cheapest room price instead of selected room price on checkout | PRICING-EPIC | critical | IN_PROGRESS | — | 2026-08-01 | Session 51 |
+| 320 | HOTEL-PAN-FIX: PAN field disappears on retry + PAN validation rejects lowercase input | UX-A11Y-EPIC | high | IN_PROGRESS | — | 2026-08-01 | Session 51 |
 
-**Total open issues: 89**
-**Highest open issue number: 319**
-**Next new issue number: #320**
+**Total open issues: 90**
+**Highest open issue number: 320**
+**Next new issue number: #321**
 
 ---
 
@@ -187,7 +188,7 @@
 
 | Session | Date | Issues Added | Issues Closed | Epics Created | Epics Closed | Updated By |
 |---------|------|-------------|---------------|---------------|--------------|-----------|
-| 51 | 2026-08-01 | 3 (#317, #318, #319) | 3 (#288, #317, #318) | SCHEMA-EPIC, OBSERVABILITY-EPIC | — | Agent (GitHub/Tracker Reconciliation + Duplicate Cleanup + Hotel Price Fix) |
+| 51 | 2026-08-01 | 4 (#317, #318, #319, #320) | 3 (#288, #317, #318) | SCHEMA-EPIC, OBSERVABILITY-EPIC | — | Agent (GitHub/Tracker Reconciliation + Hotel Price Fix + PAN Fix) |
 | 50 | 2026-08-01 | 1 (#316) | 0 | — | — | Agent (Hotels Search Regression + Cache + Calendar Fix) |
 | 49 | 2026-08-01 | 1 (#301) | 0 | — | — | Agent (Return Flight UX P0+P1+P2) |
 | 48 | 2026-07-31 | 0 | 0 | — | — | General agent |

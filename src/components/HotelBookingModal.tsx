@@ -192,7 +192,7 @@ export default function HotelBookingModal({
       case "lastName": return !value.trim() ? "Last name is required" : "";
       case "phone": return value.trim().length < 7 ? "Phone must be at least 7 digits" : "";
       case "email": return !value.trim() ? "Email is required" : "";
-      case "pan": return value && !/^[A-Z]{5}[0-9]{4}[A-Z]$/.test(value) ? "Invalid PAN format" : "";
+      case "pan": return value && !/^[A-Za-z]{5}[0-9]{4}[A-Za-z]$/.test(value) ? "Invalid PAN format" : "";
       default: return "";
     }
   };
@@ -1295,7 +1295,7 @@ export default function HotelBookingModal({
                 Cancel
               </button>
               <button
-                onClick={() => { setStep("form"); setErrorMessage(""); }}
+                onClick={() => { setStep("form"); setErrorMessage(""); setValidationInfo(null); }}
                 className="flex-1 py-3 bg-brand-saffron text-white rounded-xl font-bold hover:bg-brand-burnt cursor-pointer"
               >
                 Try Again
