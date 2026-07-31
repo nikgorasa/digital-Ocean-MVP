@@ -16,6 +16,7 @@
 | **CANCEL-EPIC** | #292, #293, #294, #295, #296 | Real TBO cancellation flow — flights + hotels. Wire flight cancel to /api/cancellations, replace calculateMockRefund with real TBO charges, build styled dialog, **add cancel button to FlightBookingModal** | **PARTIAL** — Flight cancel API wired, TBO charges used, CancellationDialog exists, **Cancel button added to FlightBookingModal done step** | — |
 | **TBO-ARCH** | #237, #238, #239, #241, #242, #244 | TBO API architecture: ConfigProvider integration for flight endpoints (DB-config), mock fallback (forceMock), graceful errors, admin health check, response caching | **PARTIAL** — ConfigProvider integration for flight endpoints DONE (tbo-flight-api.ts reads from ConfigProvider), forceMock added to tbo-flight-client.ts | #240 (retry logic) DONE |
 | **FLIGHT-UX** | #102, #219 | Premium economy shown when economy searched; Filter results by requested cabin class | STILL_OPEN | — |
+| **RETURN-FLIGHT-UX** | (new) | Return flight selection UX — step indicator, leg tabs, price preview, mobile bottom sheet, micro-interactions | **DONE** (Session 47) | Research: `RETURN-FLIGHT-UX-RESEARCH.md` |
 
 ---
 

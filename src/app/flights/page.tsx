@@ -6,6 +6,7 @@ import Footer from "@/components/Footer";
 import LoginModal from "@/components/LoginModal";
 import { useAuth } from "@/hooks/useAuth";
 import { useSearchTimer } from "@/hooks/useSearchTimer";
+import { useMediaQuery } from "@/hooks/useMediaQuery";
 
 import { motion, AnimatePresence } from "motion/react";
 import { formatCurrency } from "@/lib";
@@ -28,6 +29,7 @@ import { SearchResultsSkeleton } from "@/components/ui/Skeleton";
 import { StepIndicator } from "@/components/flights/StepIndicator";
 import { LegTabs } from "@/components/flights/LegTabs";
 import { LegPricePreview } from "@/components/flights/LegPricePreview";
+import { FlightBottomSheet } from "@/components/flights/FlightBottomSheet";
 import { Toast } from "@/components/ui/Toast";
 
 function FlightJsonLd({ flights }: { flights: Flight[] }) {
@@ -176,6 +178,7 @@ export default function FlightsPage() {
   const [activeLeg, setActiveLeg] = useState<"outbound" | "return">("outbound");
   const [step, setStep] = useState<1 | 2 | 3>(2);
   const [toast, setToast] = useState<{ message: string; type: "info" | "warning" } | null>(null);
+  const isMobile = useMediaQuery("(max-width: 767px)");
 
 const handleTripTypeChange = (type: "one-way" | "return" | "multi-city") => {
     if (type === tripType) return;
@@ -1011,33 +1014,40 @@ const totalPassengers = adults + children + infants;
                     />
 
                     {/* Flight Lists - filtered by active leg */}
-                    {activeLeg === "outbound" ? (
-                      <>
-                        <div className="mb-8">
-                          <div className="flex items-center gap-2 mb-3">
-                            <div className="w-1 h-5 bg-brand-antique-gold rounded-full" />
-                            <h3 className="text-lg font-serif font-bold text-brand-charcoal">Outbound</h3>
-                            <p className="text-xs text-slate-600 ml-auto">{outboundGroups.length} flights</p>
+                    <FlightBottomSheet
+                      isOpen={isMobile && activeLeg !== null}
+                      onClose={() => {}}
+                      title={activeLeg === "outbound" ? "Select Outbound Flight" : "Select Return Flight"}
+                      subtitle={`${activeLeg === "outbound" ? outboundGroups.length : inboundGroups.length} flights available`}
+                    >
+                      {activeLeg === "outbound" ? (
+                        <>
+                          <div className="mb-8">
+                            <div className="flex items-center gap-2 mb-3">
+                              <div className="w-1 h-5 bg-brand-antique-gold rounded-full" />
+                              <h3 className="text-lg font-serif font-bold text-brand-charcoal">Outbound</h3>
+                              <p className="text-xs text-slate-600 ml-auto">{outboundGroups.length} flights</p>
+                            </div>
+                            <div className="space-y-3">
+                              {outboundGroups.map((group, i) => renderFlightCard(group.representative, i, group.fares.length, group.key))}
+                            </div>
                           </div>
-                          <div className="space-y-3">
-                            {outboundGroups.map((group, i) => renderFlightCard(group.representative, i, group.fares.length, group.key))}
+                        </>
+                      ) : (
+                        <>
+                          <div className="mb-8">
+                            <div className="flex items-center gap-2 mb-3">
+                              <div className="w-1 h-5 bg-brand-gold rounded-full" />
+                              <h3 className="text-lg font-serif font-bold text-brand-charcoal">Inbound</h3>
+                              <p className="text-xs text-slate-600 ml-auto">{inboundGroups.length} flights</p>
+                            </div>
+                            <div className="space-y-3">
+                              {inboundGroups.map((group, i) => renderFlightCard(group.representative, i, group.fares.length, group.key))}
+                            </div>
                           </div>
-                        </div>
-                      </>
-                    ) : (
-                      <>
-                        <div className="mb-8">
-                          <div className="flex items-center gap-2 mb-3">
-                            <div className="w-1 h-5 bg-brand-gold rounded-full" />
-                            <h3 className="text-lg font-serif font-bold text-brand-charcoal">Inbound</h3>
-                            <p className="text-xs text-slate-600 ml-auto">{inboundGroups.length} flights</p>
-                          </div>
-                          <div className="space-y-3">
-                            {inboundGroups.map((group, i) => renderFlightCard(group.representative, i, group.fares.length, group.key))}
-                          </div>
-                        </div>
-                      </>
-                    )}
+                        </>
+                      )}
+                    </FlightBottomSheet>
                   </>
                 ) : (
                   <>

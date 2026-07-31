@@ -2380,3 +2380,57 @@ EPIC 2 removes the India-only restriction. Previously, users could only search h
 - Deployed to both DEV (cckr) and PROD (cckr2)
 
 **Commit:** `42159da`
+
+---
+
+## Session 47 — Return Flight Selection UX (P0 + P1 + P2) — 2026-08-01
+
+**Objective:** Implement return flight selection UX improvements across all 3 phases — step indicator, leg tabs with prices, toast on date change, mobile bottom sheet, micro-interactions.
+
+**Research:** Created `Governance/docs/governance/RETURN-FLIGHT-UX-RESEARCH.md` — 7-portal comparison (MakeMyTrip, Goibibo, Booking.com, Skyscanner, Google Flights, Cleartrip, Expedia). Key finding: Indian portals use horizontal tabs + sticky bottom bar + toast on date change.
+
+### P0 — Ship First
+
+| # | Component | File | Status |
+|---|-----------|------|--------|
+| 1 | StepIndicator | `src/components/flights/StepIndicator.tsx` (NEW) | ✅ |
+| 2 | LegTabs | `src/components/flights/LegTabs.tsx` (NEW) | ✅ |
+| 3 | LegPricePreview | `src/components/flights/LegPricePreview.tsx` (NEW) | ✅ |
+| 4 | Toast | `src/components/ui/Toast.tsx` (NEW) | ✅ |
+| 5 | Integration | `src/app/flights/page.tsx` — activeLeg, step, toast, isMobile state; useEffect clears inbound on returnDate change; bottom bar with LegPricePreview + smart CTA | ✅ |
+
+### P1 — Enhance
+
+| # | Enhancement | File | Status |
+|---|-------------|------|--------|
+| 6 | AnimatePresence tab transitions | `LegTabs.tsx` | ✅ |
+| 7 | Animated active indicator (width 0→100%) | `LegTabs.tsx` | ✅ |
+| 8 | Animated tooltip pop-in | `LegTabs.tsx` | ✅ |
+| 9 | Animated clear buttons (scale) | `LegTabs.tsx` | ✅ |
+
+### P2 — Mobile/Polish
+
+| # | Component | File | Status |
+|---|-----------|------|--------|
+| 10 | FlightBottomSheet | `src/components/flights/FlightBottomSheet.tsx` (NEW) | ✅ |
+| 11 | useMediaQuery | `src/hooks/useMediaQuery.ts` (NEW) | ✅ |
+| 12 | Mobile integration | `src/app/flights/page.tsx` — FlightBottomSheet wraps flight lists on mobile | ✅ |
+
+### Files Changed (7 files)
+
+| File | Type |
+|------|------|
+| `src/components/flights/StepIndicator.tsx` | NEW |
+| `src/components/flights/LegTabs.tsx` | NEW |
+| `src/components/flights/LegPricePreview.tsx` | NEW |
+| `src/components/flights/FlightBottomSheet.tsx` | NEW |
+| `src/components/ui/Toast.tsx` | NEW |
+| `src/hooks/useMediaQuery.ts` | NEW |
+| `src/app/flights/page.tsx` | Modified |
+
+### Verification
+
+- TypeScript: 0 errors
+- Build: passes clean
+- Preflight (quick): 14/14 gating checks passed
+- Post-task: 13/13 checks passed
