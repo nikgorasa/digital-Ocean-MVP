@@ -142,7 +142,7 @@
 | 285 | HOTEL-PRICING-02: Card per-night price doesn't match modal per-night price | 2026-07-23 | Session 43 | |
 | 289 | TBO-CERT-UX: Fix all UX issues for TBO certification (8 critical gaps) | 2026-07-23 | Session 43 | All 13 cert cases UI-supported |
 | 290 | PRICING-FIX: Multi-room pricing display and calculation fixes | 2026-07-25 | Session 44 | multi-room pricing display fixed |
-| 291 | COMPAT-FIX: Opera/Vivaldi browser compatibility fixes | 2026-07-25 | Session 44 | Removed active:scale, replaced cmdk, removed autoFocus |
+| 291 | COMPAT-FIX: Opera/Vivaldi browser compatibility fixes | 2026-07-25 | Session 44 | Removed active:scale, replaced cmdk, removed autoFocus. REGRESSION fixed 2026-07-31: added pointer-events (Issue 018) |
 
 ---
 

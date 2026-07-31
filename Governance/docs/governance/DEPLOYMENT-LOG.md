@@ -42,3 +42,5 @@
 | 2026-07-24 | PROD | ✅ Live | https://project-yidb6.vercel.app | Search Epics 1-6 — same as DEV (559d954) |
 | 2026-07-24 | DEV+PROD | ✅ Live | Both | Search UX — status messages, price display, domestic/intl tabs, progressive filters (4d99cdf) |
 | 2026-07-24 | DEV+PROD | ✅ Live | Both | Global cities fix — parallel fetch, countryCode pass (bb2d5e9) |
+| 2026-07-31 | DEV+PROD | ✅ Live | Both | Search UX — flight type segmented control, passenger block dedup, pricing fixes (7fa5100) |
+| 2026-07-31 | DEV+PROD | ✅ Live | Both | Opera/Vivaldi Book button fix + hotel search alignment (42159da) |

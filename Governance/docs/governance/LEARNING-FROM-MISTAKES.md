@@ -234,3 +234,18 @@
   2. Never show a blank screen or generic spinner during multi-second API calls — use skeleton screens (Baymard research: feel 2x faster).
   3. For search endpoints with >3s latency, always implement: skeleton → status message → progressive results.
   4. Consider pre-fetching popular destinations into DB cache so the dropdown has instant data before TBO API responds.
+
+### Issue 018 — Opera/Vivaldi Book Button Regression (Issue #291 Reintroduced)
+
+- **Date:** 2026-07-31
+- **Duration:** ~30 min
+- **Severity:** High
+- **Symptoms:** "Book Now" button was not clickable in Vivaldi/Opera browsers on Linux. Same symptoms as Issue 011 — button appeared visually but clicking had no effect. This was a REGRESSION of Issue #291 (closed 2026-07-25).
+- **Root Cause:** The original fix (commit `470a0d7`) removed `active:scale-[0.98]` from all buttons. However, the fix was incomplete — it did not add `pointer-events` CSS to the modal container. The `motion.div` entrance animation (`initial={{ opacity: 0, y: 40 }}`) combined with the `absolute inset-0` backdrop created a stacking context where Opera/Vivaldi's click target resolution failed during the animation. The backdrop intercepted clicks that should reach the content.
+- **Resolution:** Added `pointer-events-none` to the modal container (`fixed inset-0`), `pointer-events-auto` to the backdrop (`absolute inset-0`), and `pointer-events-auto` to the content (`motion.div`). This ensures the backdrop only receives clicks in areas not covered by the content.
+- **Prevention:**
+  1. ALL modal components must have `pointer-events-none` on the container and `pointer-events-auto` on backdrop + content. This is a mandatory pattern for any `fixed inset-0` modal with a backdrop.
+  2. The original Issue 011 fix was incomplete — removing `active:scale` was necessary but not sufficient. The `pointer-events` fix is the actual solution for Opera/Vivaldi click target issues.
+  3. When closing a GitHub issue, verify the fix addresses the ROOT CAUSE, not just one symptom. Issue #291 should have required the `pointer-events` fix, not just the `active:scale` removal.
+  4. Add a pre-commit check or lint rule: any `fixed inset-0` modal with a backdrop MUST have `pointer-events-none` on the container.
+  5. Test on Opera/Vivaldi after ANY modal animation changes.

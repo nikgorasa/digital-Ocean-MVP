@@ -2302,3 +2302,81 @@ EPIC 2 removes the India-only restriction. Previously, users could only search h
 - Build: passes clean
 - Preflight (quick): 12/12 gating checks passed
 - Post-task: 11/11 checks passed
+
+---
+
+### Session 2026-07-31 (Session 45) — Search Form UX + Pricing Fixes
+
+**Objective:** Improve flight search form UX (trip type selector, date preservation, passenger block deduplication) and fix per-unit pricing markups.
+
+**Changes Made:**
+
+1. **Flight Type Segmented Control** — `src/app/flights/page.tsx`
+   - Added segmented control with One Way / Return / Multi-city tabs
+   - Icons per option (ArrowRight, ArrowRightLeft, Route)
+   - Default: Return (Indian market standard)
+   - ARIA `role="tablist"` for accessibility
+   - `handleTripTypeChange` preserves dates when switching between One Way and Return
+   - Only clears dates when switching to/from Multi-city
+
+2. **Passenger Block Deduplication** — `src/components/PassengerCabinSelector.tsx` (NEW)
+   - Extracted ~200 lines of duplicated passenger/cabin JSX into reusable component
+   - Component handles: cabin class selection, adult/children/infant counters, child ages, concierge flow
+   - Used in both multi-city and one-way/return sections of flights page
+   - Proper `items-end` grid alignment for consistent input heights
+
+3. **Per-Unit Pricing Fix** — `src/lib/pricing/pricing-service.ts`, `src/lib/tbo-flight-client.ts`
+   - FLAT markup now multiplied by `unitCount` (rooms for hotels, passengers for flights)
+   - PERCENT markup unchanged (already correct)
+   - `unitCount` passed from flight search (AdultCount + ChildCount + InfantCount)
+   - Hotel pricing: `hotel.price * roomCount` in booking modal
+
+4. **Show Nights Count** — `src/app/flights/page.tsx`
+   - Return DateRangePicker now shows trip duration (`showNightsCount={true}`)
+
+**Files Changed:**
+- `src/app/flights/page.tsx` — Segmented control, date preservation, passenger block replacement
+- `src/components/PassengerCabinSelector.tsx` — NEW component (229 lines)
+- `src/lib/pricing/pricing-service.ts` — FLAT markup × unitCount
+- `src/lib/tbo-flight-client.ts` — Pass pax count to calculatePrice
+- `src/components/HotelBookingModal.tsx` — hotel.price × roomCount
+
+**Verification:**
+- TypeScript: 0 errors
+- Build: passes clean
+- Deployed to both DEV (cckr) and PROD (cckr2)
+
+**Commits:** `89c5ebe` (initial), `7fa5100` (refactor), `42159da` (bug fixes)
+
+---
+
+### Session 2026-07-31 (Session 46) — Opera/Vivaldi Regression + Hotel Alignment
+
+**Objective:** Fix regression of Opera/Vivaldi Book button bug (Issue #291) and hotel search field misalignment.
+
+**Changes Made:**
+
+1. **Opera/Vivaldi Book Button Fix** — `src/components/FlightBookingModal.tsx`, `src/components/HotelBookingModal.tsx`
+   - Added `pointer-events-none` to modal container
+   - Added `pointer-events-auto` to backdrop and content
+   - Prevents backdrop from intercepting clicks in Opera/Vivaldi during `motion.div` entrance animation
+   - This is a REGRESSION of Issue 011 — the original `active:scale` fix was applied but the `pointer-events` fix was missing
+
+2. **Hotel Search Alignment** — `src/app/hotels/page.tsx`
+   - Added `items-end` to the 4-column grid (`grid-cols-1 md:grid-cols-4 gap-3 items-end`)
+   - Column 1 has Domestic/International toggle buttons above CitySearchDropdown
+   - Without `items-end`, the toggle buttons pushed the input down, misaligning with DateRangePicker and Rooms columns
+   - With `items-end`, all inputs align at the bottom of their respective columns
+
+**Files Changed:**
+- `src/components/FlightBookingModal.tsx` — pointer-events fix
+- `src/components/HotelBookingModal.tsx` — pointer-events fix
+- `src/app/hotels/page.tsx` — items-end grid alignment
+
+**Verification:**
+- TypeScript: 0 errors
+- Build: passes clean
+- Hotel booking confirmed working (Booking ID: f5549a1f-d8e6-4c7e-a70f-e01910af2fea)
+- Deployed to both DEV (cckr) and PROD (cckr2)
+
+**Commit:** `42159da`
