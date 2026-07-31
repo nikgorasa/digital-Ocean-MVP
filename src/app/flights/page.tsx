@@ -26,10 +26,6 @@ import { useFlightFilters } from "@/hooks/useFilters";
 import { applyFlightFilters, sortFlights, type FlightSortKey, type FlightResult } from "@/lib/ai/filters/applyFilters";
 import Link from "next/link";
 import { SearchResultsSkeleton } from "@/components/ui/Skeleton";
-import { StepIndicator } from "@/components/flights/StepIndicator";
-import { LegTabs } from "@/components/flights/LegTabs";
-import { LegPricePreview } from "@/components/flights/LegPricePreview";
-import { FlightBottomSheet } from "@/components/flights/FlightBottomSheet";
 import { Toast } from "@/components/ui/Toast";
 
 function FlightJsonLd({ flights }: { flights: Flight[] }) {
@@ -171,54 +167,49 @@ export default function FlightsPage() {
   const { statusMessage } = useSearchTimer(searching);
   const [selectedFlight, setSelectedFlight] = useState<Flight | null>(null);
   const [bookingFlight, setBookingFlight] = useState<Flight | null>(null);
-  const [showBookingModal, setShowBookingModal] = useState(false);
-  const [flightSelections, setFlightSelections] = useState<Map<string, Flight>>(new Map());
+const [showBookingModal, setShowBookingModal] = useState(false);
+const [flightSelections, setFlightSelections] = useState<Map<string, Flight>>(new Map());
 
-  // P0 Return Flight UX: Active leg, step indicator, toast
-  const [activeLeg, setActiveLeg] = useState<"outbound" | "return">("outbound");
-  const [step, setStep] = useState<1 | 2 | 3>(2);
-  const [toast, setToast] = useState<{ message: string; type: "info" | "warning" } | null>(null);
-  const isMobile = useMediaQuery("(max-width: 767px)");
+// Keep useMediaQuery for potential use elsewhere
+const isMobile = useMediaQuery("(max-width: 767px)");
+const [step, setStep] = useState<1 | 2 | 3>(2);
 
 const handleTripTypeChange = (type: "one-way" | "return" | "multi-city") => {
-    if (type === tripType) return;
-    setTripType(type);
-    if (type === "multi-city") {
-      setDepartDate("");
-      setReturnDate("");
-      setMultiCityLegs([
-        { origin: originCity, destination: destinationCity, date: "" },
-        { origin: destinationCity, destination: originCity, date: "" },
-      ]);
-    } else if (type === "one-way") {
-      setReturnDate("");
-    } else if (type === "return") {
-      setDepartDate(departDate);
-      setReturnDate("");
-}
+  if (type === tripType) return;
+  setTripType(type);
+  if (type === "multi-city") {
+    setDepartDate("");
+    setReturnDate("");
+    setMultiCityLegs([
+      { origin: originCity, destination: destinationCity, date: "" },
+      { origin: destinationCity, destination: originCity, date: "" },
+    ]);
+  } else if (type === "one-way") {
+    setReturnDate("");
+  } else if (type === "return") {
+    setDepartDate(departDate);
+    setReturnDate("");
+  }
   setResults([]);
   setSearched(false);
 };
 
 // P0: Clear inbound selection when returnDate changes
 useEffect(() => {
-  if (tripType === "return" && returnDate && flightSelections.has("return")) {
+  if (tripType === "return" && returnDate && flightSelections.has("inbound")) {
     setFlightSelections(prev => {
       const next = new Map(prev);
-      next.delete("return");
+      next.delete("inbound");
       return next;
     });
-    setToast({ message: "Return date updated. Please re-select return flight.", type: "info" });
-    const timer = setTimeout(() => setToast(null), 4000);
-    return () => clearTimeout(timer);
   }
-}, [returnDate, tripType]);
+}, [returnDate, tripType, flightSelections]);
 
 const totalPassengers = adults + children + infants;
-  const showConcierge = totalPassengers > 10;
-  const isReturnTrip = tripType === "return" || tripType === "multi-city";
+const showConcierge = totalPassengers > 10;
+const isReturnTrip = tripType === "return" || tripType === "multi-city";
 
-  const allLegsSelected = useMemo(() => {
+const allLegsSelected = useMemo(() => {
     if (!searched || results.length === 0) return false;
     if (isReturnTrip) return flightSelections.has("outbound") && flightSelections.has("inbound");
     return false;
@@ -286,6 +277,10 @@ const totalPassengers = adults + children + infants;
   const outboundFlights = outboundGroups.map(g => g.representative);
   const inboundFlights = inboundGroups.map(g => g.representative);
 
+  const outboundSelected = isReturnTrip && flightSelections.has("outbound");
+  const showInboundSection = isReturnTrip && outboundSelected && inboundFlights.length > 0;
+  const inboundSelected = isReturnTrip && flightSelections.has("inbound");
+
   useEffect(() => {
     function handleClickOutside(e: MouseEvent) {
       if (passengerRef.current && !passengerRef.current.contains(e.target as Node)) {
@@ -305,9 +300,12 @@ const totalPassengers = adults + children + infants;
   }, [children]);
 
   const handleSearch = async () => {
-    if (!originCity.name || !destinationCity.name) return;
-    if (tripType !== "multi-city" && !departDate) return;
-    if (tripType === "return" && !returnDate) return;
+  if (!originCity.name || !destinationCity.name) return;
+  if (tripType !== "multi-city" && !departDate) return;
+  if (tripType === "return" && !returnDate) {
+    setSearchError("Please select a return date before searching.");
+    return;
+  }
     if (tripType === "multi-city" && multiCityLegs.some(l => !l.origin.name || !l.destination.name || !l.date)) {
       setSearchError("Please fill in origin, destination, and date for all multi-city legs.");
       setSearched(true);
@@ -981,134 +979,148 @@ const totalPassengers = adults + children + infants;
                   />
                 )}
 
-                {isReturnTrip && outboundFlights.length > 0 && inboundFlights.length > 0 ? (
-                  <>
-                    {/* P0: Step Indicator */}
-                    <StepIndicator currentStep={step} />
+{isReturnTrip && outboundFlights.length > 0 && inboundFlights.length > 0 ? (
+  <div>
+    {/* Sequential: outbound first, then return (only after outbound is selected) */}
+    {/* Outbound Flights - always visible */}
+    <div className="mb-6">
+      <div className="flex items-center gap-2 mb-3">
+        <div className="w-1 h-5 bg-brand-antique-gold rounded-full" />
+        <h3 className="text-lg font-serif font-bold text-brand-charcoal">Outbound Flights</h3>
+        <span className="text-xs text-slate-600 ml-auto">{outboundGroups.length} flights</span>
+      </div>
+      {outboundSelected && (
+        <div className="mb-3 px-3 py-2 bg-brand-emerald/10 border border-brand-emerald/30 rounded-lg flex items-center gap-2">
+          <span className="text-brand-emerald font-bold text-sm">✓ Outbound selected</span>
+          {!showInboundSection && (
+            <span className="text-slate-600 text-xs">— select a return flight below to continue</span>
+          )}
+        </div>
+      )}
+      {!showInboundSection && !outboundSelected && (
+        <p className="text-xs text-slate-500 mb-3">Please select one outbound flight to see return options.</p>
+      )}
+      <div className="space-y-3">
+        {outboundGroups.map((group, i) => renderFlightCard(group.representative, i, group.fares.length, group.key))}
+      </div>
+    </div>
 
-                    {/* Toast for return date change */}
-                    {toast && (
-                      <Toast
-                        message={toast.message}
-                        type={toast.type}
-                        onClose={() => setToast(null)}
-                        className="mx-4 mt-4"
-                      />
-                    )}
+    {/* Separator Divider */}
+    {showInboundSection && (
+      <div className="flex items-center gap-3 my-6">
+        <div className="flex-1 h-px bg-slate-200" />
+        <div className="flex items-center gap-2 px-3 py-1.5 bg-brand-gold/10 rounded-full">
+          <span className="text-[10px] font-bold text-brand-antique-gold uppercase tracking-wider">Return Leg</span>
+        </div>
+        <div className="flex-1 h-px bg-slate-200" />
+      </div>
+    )}
 
-                    {/* P0: Leg Tabs */}
-                    <LegTabs
-                      activeLeg={activeLeg}
-                      onChange={setActiveLeg}
-                      disabledLegs={!flightSelections.has("outbound") ? ["return"] : []}
-                      hasOutboundSelection={flightSelections.has("outbound")}
-                      outboundPrice={flightSelections.get("outbound")?.price ?? null}
-                      returnPrice={flightSelections.get("return")?.price ?? null}
-                      onClearLeg={(leg) => {
-                        setFlightSelections(prev => {
-                          const next = new Map(prev);
-                          next.delete(leg);
-                          return next;
-                        });
-                      }}
-                    />
-
-                    {/* Flight Lists - filtered by active leg */}
-                    <FlightBottomSheet
-                      isOpen={isMobile && activeLeg !== null}
-                      onClose={() => {}}
-                      title={activeLeg === "outbound" ? "Select Outbound Flight" : "Select Return Flight"}
-                      subtitle={`${activeLeg === "outbound" ? outboundGroups.length : inboundGroups.length} flights available`}
-                    >
-                      {activeLeg === "outbound" ? (
-                        <>
-                          <div className="mb-8">
-                            <div className="flex items-center gap-2 mb-3">
-                              <div className="w-1 h-5 bg-brand-antique-gold rounded-full" />
-                              <h3 className="text-lg font-serif font-bold text-brand-charcoal">Outbound</h3>
-                              <p className="text-xs text-slate-600 ml-auto">{outboundGroups.length} flights</p>
-                            </div>
-                            <div className="space-y-3">
-                              {outboundGroups.map((group, i) => renderFlightCard(group.representative, i, group.fares.length, group.key))}
-                            </div>
-                          </div>
-                        </>
-                      ) : (
-                        <>
-                          <div className="mb-8">
-                            <div className="flex items-center gap-2 mb-3">
-                              <div className="w-1 h-5 bg-brand-gold rounded-full" />
-                              <h3 className="text-lg font-serif font-bold text-brand-charcoal">Inbound</h3>
-                              <p className="text-xs text-slate-600 ml-auto">{inboundGroups.length} flights</p>
-                            </div>
-                            <div className="space-y-3">
-                              {inboundGroups.map((group, i) => renderFlightCard(group.representative, i, group.fares.length, group.key))}
-                            </div>
-                          </div>
-                        </>
-                      )}
-                    </FlightBottomSheet>
-                  </>
-                ) : (
-                  <>
-                    <p className="text-sm text-slate-600 mb-4">{groupedResults.length} flights found</p>
-                    {groupedResults.length === 0 && results.length > 0 && (
-                      <div className="text-center py-12">
-                        <Plane size={40} className="mx-auto text-slate-300 mb-3" />
-                        <p className="text-slate-500 font-medium mb-1">No flights match your filters</p>
-                        <button onClick={resetFilters} className="text-sm text-emerald-600 hover:text-emerald-700 font-medium cursor-pointer">Clear all filters</button>
-                      </div>
-                    )}
-                    <div className="space-y-3">
-                      {groupedResults.map((group, i) => renderFlightCard(group.representative, i, group.fares.length, group.key))}
-                    </div>
-                  </>
-                )}
+    {/* Inbound Flights - only shown after outbound is selected */}
+    {showInboundSection ? (
+      <div className="mb-2">
+        <div className="flex items-center gap-2 mb-3">
+          <div className="w-1 h-5 bg-brand-gold rounded-full" />
+          <h3 className="text-lg font-serif font-bold text-brand-charcoal">Return Flights</h3>
+          <span className="text-xs text-slate-600 ml-auto">{inboundGroups.length} flights</span>
+        </div>
+        {inboundSelected && (
+          <div className="mb-3 px-3 py-2 bg-brand-emerald/10 border border-brand-emerald/30 rounded-lg flex items-center gap-2">
+            <span className="text-brand-emerald font-bold text-sm">✓ Outbound + Return both selected — you can now book</span>
+          </div>
+        )}
+        <div className="space-y-3">
+          {inboundGroups.map((group, i) => renderFlightCard(group.representative, i, group.fares.length, group.key))}
+        </div>
+      </div>
+    ) : (
+      <div className="py-8 border border-dashed border-slate-200 rounded-2xl text-center bg-white/50">
+        <Plane size={32} className="mx-auto text-slate-300 mb-2" />
+        <p className="text-sm text-slate-500 font-medium">Return flights will appear here</p>
+        <p className="text-xs text-slate-400 mt-1">Select an outbound flight first</p>
+      </div>
+    )}
+  </div>
+) : (
+  <>
+    <p className="text-sm text-slate-600 mb-4">{groupedResults.length} flights found</p>
+    {groupedResults.length === 0 && results.length > 0 && (
+      <div className="text-center py-12">
+        <Plane size={40} className="mx-auto text-slate-300 mb-3" />
+        <p className="text-slate-500 font-medium mb-1">No flights match your filters</p>
+        <button onClick={resetFilters} className="text-sm text-emerald-600 hover:text-emerald-700 font-medium cursor-pointer">Clear all filters</button>
+      </div>
+    )}
+    <div className="space-y-3">
+      {groupedResults.map((group, i) => renderFlightCard(group.representative, i, group.fares.length, group.key))}
+    </div>
+  </>
+)}
               </div>
             )}
           </div>
         </section>
 
-        {/* Multi-leg booking bar */}
-        {isReturnTrip && allLegsSelected && (
-          <motion.div
-            initial={{ y: 100 }}
-            animate={{ y: 0 }}
-            className="fixed bottom-0 left-0 right-0 z-50 bg-white border-t border-slate-200 shadow-2xl"
-          >
-            {/* P0: Leg Price Preview */}
-            <LegPricePreview
-              outboundPrice={flightSelections.get("outbound")?.price ?? null}
-              returnPrice={flightSelections.get("return")?.price ?? null}
-              totalPrice={
-                (flightSelections.get("outbound")?.price ?? 0) +
-                (flightSelections.get("return")?.price ?? 0)
-              }
-              isRoundTrip={tripType === "return"}
-            />
-
-            <div className="max-w-5xl mx-auto px-4 py-4 sm:px-6">
-              <button
-                onClick={() => {
-                  if (!user) {
-                    setShowLogin(true);
-                  } else {
-                    setStep(3);
-                    setShowBookingModal(true);
-                  }
-                }}
-                disabled={tripType === "return" && !flightSelections.has("return")}
-                className="w-full py-3 bg-brand-antique-gold text-white rounded-xl font-bold hover:bg-brand-emerald transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                {tripType === "return" && !flightSelections.has("return")
-                  ? "Select Return Flight"
-                  : user
-                  ? `Book ${flightSelections.size} Flights`
-                  : "Sign in to Book"}
-              </button>
+{/* Multi-leg booking bar */}
+{isReturnTrip && (flightSelections.has("outbound") || flightSelections.has("inbound")) && (
+  <motion.div
+    initial={{ y: 100 }}
+    animate={{ y: 0 }}
+    className="fixed bottom-0 left-0 right-0 z-50 bg-white border-t border-slate-200 shadow-2xl"
+  >
+    <div className="max-w-5xl mx-auto px-4 py-3 sm:px-6">
+      <div className="flex items-center justify-between gap-3 flex-wrap">
+        {/* Price summary */}
+        <div className="flex items-center gap-4 flex-wrap">
+          {flightSelections.has("outbound") && (
+            <div className="flex items-center gap-1.5">
+              <span className="text-[10px] font-bold uppercase text-slate-500">Outbound:</span>
+              <span className="text-sm font-bold text-brand-charcoal">₹{flightSelections.get("outbound")?.price?.toLocaleString("en-IN")}</span>
             </div>
-          </motion.div>
-        )}
+          )}
+          {flightSelections.has("inbound") && (
+            <div className="flex items-center gap-1.5">
+              <IndianRupee size={12} className="text-slate-400" />
+              <span className="text-[10px] font-bold uppercase text-slate-500">Return:</span>
+              <span className="text-sm font-bold text-brand-charcoal">₹{flightSelections.get("inbound")?.price?.toLocaleString("en-IN")}</span>
+            </div>
+          )}
+          {flightSelections.has("outbound") && flightSelections.has("inbound") && (
+            <div className="flex items-center gap-1 pl-3 border-l border-slate-200">
+              <IndianRupee size={14} className="text-brand-antique-gold" />
+              <span className="text-lg font-black text-brand-charcoal">
+                ₹{(flightSelections.get("outbound")!.price + flightSelections.get("inbound")!.price).toLocaleString("en-IN")}
+              </span>
+              <span className="text-[10px] text-slate-500">total</span>
+            </div>
+          )}
+        </div>
+
+        {/* CTA Button */}
+        <button
+          onClick={() => {
+            if (!user) {
+              setShowLogin(true);
+            } else if (allLegsSelected) {
+              setStep(3);
+              setShowBookingModal(true);
+            }
+          }}
+          disabled={!allLegsSelected}
+          className="px-6 py-2.5 bg-brand-antique-gold text-white rounded-xl font-bold hover:bg-brand-emerald transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed text-sm min-w-[180px]"
+        >
+          {!flightSelections.has("outbound")
+            ? "Select Outbound Flight"
+            : !flightSelections.has("inbound")
+              ? "Select Return Flight"
+              : user
+                ? `Book 2 Flights`
+                : "Sign in to Book"}
+        </button>
+      </div>
+    </div>
+  </motion.div>
+)}
       </main>
 
       {/* Flight Detail Modal */}

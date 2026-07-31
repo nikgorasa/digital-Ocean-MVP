@@ -283,12 +283,16 @@ export async function searchFlights(params: {
 
   const flights = await Promise.all(filteredList.map((r) => {
     const isReturn = params.JourneyType === 2 || params.JourneyType === 5;
-    const tripInd = r.Segments?.[0]?.[0]?.TripIndicator ?? 1;
     let leg: "outbound" | "inbound" | "oneway";
-    if (!isReturn) leg = "oneway";
-    else if (tripInd === 1) leg = "outbound";
-    else leg = "inbound";
-    return toDisplay(r, leg, (params.AdultCount || 1) + (params.ChildCount || 0) + (params.InfantCount || 0));
+    if (!isReturn) {
+      leg = "oneway";
+    } else {
+      // Iterate ALL segments — TBO packs both legs under Segments[0]
+      const allSegs = (r.Segments ?? []).flat();
+      const hasInbound = allSegs.some(s => s?.TripIndicator === 2);
+      leg = hasInbound ? "inbound" : "outbound";
+    }
+    return toDisplay(r, leg, (params.AdultCount || 1) + (params.ChildCount || 0) + (params.InfantCount || 1));
   }));
   const result: TBOFlightSearchOutput = { flights, traceId: res.Response.TraceId };
   const t4 = Date.now();

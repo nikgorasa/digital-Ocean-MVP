@@ -2,9 +2,9 @@
 
 > **Title:** EPIC/Issue Tracker — Active Work Registry
 > **Version:** 1.0.0
-> **Last Updated:** 2026-08-01 (Session 50 — Hotels Search Regression + Cache Re-population + Calendar Fix)
+> **Last Updated:** 2026-08-01 (Session 51 — GitHub/Tracker Reconciliation + Duplicate Cleanup)
 > **Current Sprint:** Sprint 4 — Production Readiness
-> **Maximum GitHub Issue Number:** 316 (new issues start from #317)
+> **Maximum GitHub Issue Number:** 318 (new issues start from #319)
 > **Source of Truth:** This file is the canonical registry of all epics and open GitHub issues. It MUST be updated before any PR/commit. No work can be committed if its EPIC/issue is not tracked here.
 > **SPRINT-PLAN.md:** Condensed view (16 epics grouped by priority). This file is the full view (every open issue individually).
 
