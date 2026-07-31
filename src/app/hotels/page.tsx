@@ -283,7 +283,7 @@ export default function HotelsPage() {
               transition={{ delay: 0.1 }}
               className="bg-white rounded-2xl p-5 shadow-xl"
             >
-              <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
+              <div className="grid grid-cols-1 md:grid-cols-4 gap-3 items-end">
                 <div>
                   <div className="flex gap-1 mb-2">
                     <button
