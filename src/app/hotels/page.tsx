@@ -835,7 +835,15 @@ export default function HotelsPage() {
                     </div>
                   ) : (
                     <div className="space-y-2">
-                      {hotelRooms.map((room) => (
+                      {/* Compute markup ratio: hotel.price is cheapest room's marked-up price */}
+                      {(() => {
+                        const cheapestFare = hotelRooms.length > 0
+                          ? Math.min(...hotelRooms.map(r => r.totalFare))
+                          : 1;
+                        const ratio = cheapestFare > 0 && selectedHotel ? selectedHotel.price / cheapestFare : 1;
+                        return hotelRooms.map((room) => {
+                          const roomPriceWithMarkup = Math.round(room.totalFare * ratio);
+                          return (
                         <div
                           key={room.roomIndex}
                           onClick={() => setSelectedRoom(room)}
@@ -881,39 +889,50 @@ export default function HotelsPage() {
                               )}
                             </div>
                             <div className="text-right">
-                              <p className="text-xl font-black font-mono text-brand-charcoal">{formatCurrency(Math.round((room.roomFare + room.roomTax) * nights))}</p>
-                              <p className="text-[10px] text-slate-600/70">{roomCount > 1 ? `per room · ${formatCurrency(Math.round((room.roomFare + room.roomTax) * nights * roomCount))} total` : `for ${nights} night${nights > 1 ? "s" : ""}`}</p>
+                              <p className="text-xl font-black font-mono text-brand-charcoal">{formatCurrency(roomPriceWithMarkup * roomCount)}</p>
+                              <p className="text-[10px] text-slate-600/70">{roomCount > 1 ? `per room · ${formatCurrency(roomPriceWithMarkup * roomCount)} total` : `for ${nights} night${nights > 1 ? "s" : ""}`}</p>
                             </div>
                           </div>
                         </div>
-                      ))}
+                      );
+                      });
+                      })()}
                     </div>
                   )}
                 </div>
 
                 {/* Booking Section */}
-                {selectedRoom && (
+                {selectedRoom && (() => {
+                  const cheapestFare = hotelRooms.length > 0
+                    ? Math.min(...hotelRooms.map(r => r.totalFare))
+                    : 1;
+                  const markupRatio = cheapestFare > 0 && selectedHotel ? selectedHotel.price / cheapestFare : 1;
+                  const selectedRoomPrice = Math.round(selectedRoom.totalFare * markupRatio);
+                  const perNight = Math.round(selectedRoomPrice / nights);
+                  const roomFareMarkup = Math.round(selectedRoom.roomFare * markupRatio);
+                  const roomTaxMarkup = perNight - roomFareMarkup;
+                  return (
                   <div className="mt-4 pt-4 border-t border-slate-200">
                     <div className="rounded-xl p-4 mb-4 bg-brand-ivory">
                       {roomCount > 1 && (
                         <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400 mb-2">Per Room</p>
                       )}
                       <div className="flex justify-between items-center mb-2">
-                        <span className="text-sm text-slate-600">Room Fare ({formatCurrency(selectedRoom.roomFare)} × {nights} night{nights > 1 ? "s" : ""})</span>
-                        <span className="font-mono font-bold">{formatCurrency(selectedRoom.roomFare * nights)}</span>
+                        <span className="text-sm text-slate-600">Room Fare ({formatCurrency(roomFareMarkup)} × {nights} night{nights > 1 ? "s" : ""})</span>
+                        <span className="font-mono font-bold">{formatCurrency(roomFareMarkup * nights)}</span>
                       </div>
                       <div className="flex justify-between items-center mb-2">
-                        <span className="text-sm text-slate-600">Taxes & Fees ({formatCurrency(selectedRoom.roomTax)} × {nights} night{nights > 1 ? "s" : ""})</span>
-                        <span className="font-mono font-bold">{formatCurrency(selectedRoom.roomTax * nights)}</span>
+                        <span className="text-sm text-slate-600">Taxes & Fees ({formatCurrency(roomTaxMarkup)} × {nights} night{nights > 1 ? "s" : ""})</span>
+                        <span className="font-mono font-bold">{formatCurrency(roomTaxMarkup * nights)}</span>
                       </div>
                       <div className="flex justify-between items-center pt-2 border-t border-slate-200">
                         <span className="font-bold text-brand-charcoal">{roomCount > 1 ? `Per Room Total` : "Total"}</span>
-                        <span className="font-mono font-black text-xl text-brand-antique-gold">{formatCurrency((selectedRoom.roomFare + selectedRoom.roomTax) * nights)}</span>
+                        <span className="font-mono font-black text-xl text-brand-antique-gold">{formatCurrency(selectedRoomPrice)}</span>
                       </div>
                       {roomCount > 1 && (
                         <div className="flex justify-between items-center mt-2 pt-2 border-t border-slate-200">
                           <span className="font-bold text-brand-charcoal">Total ({roomCount} rooms × {nights} night{nights > 1 ? "s" : ""})</span>
-                          <span className="font-mono font-black text-xl text-brand-antique-gold">{formatCurrency((selectedRoom.roomFare + selectedRoom.roomTax) * nights * roomCount)}</span>
+                          <span className="font-mono font-black text-xl text-brand-antique-gold">{formatCurrency(selectedRoomPrice * roomCount)}</span>
                         </div>
                       )}
                     </div>
@@ -930,7 +949,8 @@ export default function HotelsPage() {
                       {user ? "Book Now" : "Sign in to Book"}
                     </button>
                   </div>
-                )}
+                );
+                })()}
               </div>
             </motion.div>
           </div>

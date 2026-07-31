@@ -2,9 +2,9 @@
 
 > **Title:** EPIC/Issue Tracker — Active Work Registry
 > **Version:** 1.0.0
-> **Last Updated:** 2026-08-01 (Session 51 — GitHub/Tracker Reconciliation + Duplicate Cleanup)
+> **Last Updated:** 2026-08-01 (Session 51 — GitHub/Tracker Reconciliation + Duplicate Cleanup + Hotel Price Fix)
 > **Current Sprint:** Sprint 4 — Production Readiness
-> **Maximum GitHub Issue Number:** 318 (new issues start from #319)
+> **Maximum GitHub Issue Number:** 319 (new issues start from #320)
 > **Source of Truth:** This file is the canonical registry of all epics and open GitHub issues. It MUST be updated before any PR/commit. No work can be committed if its EPIC/issue is not tracked here.
 > **SPRINT-PLAN.md:** Condensed view (16 epics grouped by priority). This file is the full view (every open issue individually).
 
@@ -24,14 +24,16 @@
 | BREVO-EPIC | Brevo SMTP / Transactional emails migration | `epic:infra` | 20 | 20 | — | 0 | Session 44 | 2026-07-17 | STILL_OPEN | [BREVO-EPIC](https://github.com/Gorasa-In-2026/Gorasa-Cockroach/issues/251) |
 | SEARCH-UX-EPIC | Search UX — cold start, domestic/intl tabs, display clutter | `epic` | 3 | 3 | — | 0 | Session 44 | 2026-07-24 | IN_PROGRESS | [SEARCH-UX-EPIC-1](https://github.com/Gorasa-In-2026/Gorasa-Cockroach/issues/297) |
 | INVOICE-EPIC | Admin invoice — edit modal, partial payment, non-corporate | `epic:invoice` | 5 | 5 | — | 0 | Session 44 | 2026-07-17 | STILL_OPEN | [INVOICE-EPIC](https://github.com/Gorasa-In-2026/Gorasa-Cockroach/issues/165) |
-| MOCK-EPIC | Remove all mock/fallback/demo code from production booking | *(none)* | 1 | 1 | — | 0 | Session 44 | 2026-07-09 | STILL_OPEN | [MOCK-EPIC](https://github.com/Gorasa-In-2026/Gorasa-Cockroach/issues/92) |
+| MOCK-EPIC | Remove all mock/fallback/demo code from production booking | `epic:mock` | 4 | 4 | — | 0 | Session 44 | 2026-07-09 | IN_PROGRESS | [MOCK-EPIC](https://github.com/Gorasa-In-2026/Gorasa-Cockroach/issues/92) |
 | UX-A11Y-EPIC | UX/Accessibility — aria-labels, error states, ConfirmDialog | `epic:ux` | 6 | 6 | — | 0 | Session 44 | 2026-07-17 | STILL_OPEN | [UX-A11Y-EPIC](https://github.com/Gorasa-In-2026/Gorasa-Cockroach/issues/211) |
 | TBO-CERT-EPIC | TBO certification UX fixes (see closed #289) | *(closed)* | 0 | 0 | — | 1 | Session 44 | 2026-07-24 | CLOSED | [TBO-CERT-EPIC](https://github.com/Gorasa-In-2026/Gorasa-Cockroach/issues/289) |
 | INTL-EPIC | Remove India-only assumptions — global platform (see closed #139) | *(closed)* | 0 | 0 | — | 1 | Session 44 | 2026-07-16 | CLOSED | [INTL-EPIC](https://github.com/Gorasa-In-2026/Gorasa-Cockroach/issues/139) |
-| PRICING-EPIC | Pricing module work | *(NEW — no GitHub label yet)* | 0 | 0 | — | 0 | Session 44 | 2026-07-25 | STILL_OPEN | *(no GitHub issue — create before work starts)* |
+| PRICING-EPIC | Pricing module fixes — seed script, schema, dead field cleanup | `epic:pricing` | 5 | 5 | — | 0 | Session 44 | 2026-07-25 | IN_PROGRESS | [PRICING-EPIC](https://github.com/Gorasa-In-2026/Gorasa-Cockroach/issues/300) |
 | QA-EPIC | Quality assurance — E2E tests, performance audit | `epic:qa` | 2 | 2 | — | 0 | Session 44 | 2026-07-02 | STILL_OPEN | [QA-EPIC](https://github.com/Gorasa-In-2026/Gorasa-Cockroach/issues/26) |
 | INFRA-EPIC | Production infrastructure — monitoring, DNS, fonts | `epic:infra` | 3 | 3 | — | 0 | Session 44 | 2026-07-02 | STILL_OPEN | [INFRA-EPIC](https://github.com/Gorasa-In-2026/Gorasa-Cockroach/issues/19) |
 | LAUNCH-EPIC | Go-live — deploy to production, 24h monitoring | `epic:launch` | 2 | 2 | — | 0 | Session 44 | 2026-07-02 | BLOCKED | [LAUNCH-EPIC](https://github.com/Gorasa-In-2026/Gorasa-Cockroach/issues/29) |
+| SCHEMA-EPIC | Apply missing DB columns to CockroachDB clusters (DEV + PROD) | `epic:schedule` | 4 | 4 | — | 0 | Session 44 | 2026-07-25 | IN_PROGRESS | [SCHEMA-EPIC](https://github.com/Gorasa-In-2026/Gorasa-Cockroach/issues/305) |
+| OBSERVABILITY-EPIC | Replace silent error handlers and add production monitoring | `epic:infra` | 2 | 2 | — | 0 | Session 44 | 2026-07-25 | STILL_OPEN | [OBSERVABILITY-EPIC](https://github.com/Gorasa-In-2026/Gorasa-Cockroach/issues/309) |
 
 ---
 
@@ -104,7 +106,6 @@
 | 275 | D5: End-to-end test send + delivery confirmation via MCP | BREVO-EPIC | medium | STILL_OPEN | — | 2026-07-17 | Session 44 |
 | 286 | CORP-RECONCILE-01: Stuck PENDING bookings when TBO reservation succeeds but checkout fails | CORP-EPIC | high | PARTIAL | — | 2026-07-22 | Session 44 |
 | 287 | CORP-VERIFY-01: Automated TBO voucher verification after booking | CORP-EPIC | high | PARTIAL | — | 2026-07-22 | Session 44 |
-| 288 | Remove Demo Mode entirely | *(none)* | — | STILL_OPEN | — | 2026-07-22 | Session 44 |
 | 292 | CANCEL-EPIC: Real TBO cancellation flow — flights + hotels | CANCEL-EPIC | critical | IN_PROGRESS | — | 2026-07-24 | Session 44 |
 | 293 | CANCEL-01: Wire flight cancel into /api/cancellations route | CANCEL-EPIC | critical | IN_PROGRESS | — | 2026-07-24 | Session 44 |
 | 294 | CANCEL-02: Replace calculateMockRefund with real TBO charges | CANCEL-EPIC | critical | IN_PROGRESS | — | 2026-07-24 | Session 44 |
@@ -113,13 +114,28 @@
 | 297 | SEARCH-UX-EPIC-1: Cold Start & Loading States (P0) | SEARCH-UX-EPIC | high | IN_PROGRESS | — | 2026-07-24 | Session 44 |
 | 298 | SEARCH-UX-EPIC-2: Domestic/International Separation (P0) | SEARCH-UX-EPIC | high | IN_PROGRESS | — | 2026-07-24 | Session 44 |
 | 299 | SEARCH-UX-EPIC-3: Display Clutter Reduction (P0) | SEARCH-UX-EPIC | high | IN_PROGRESS | — | 2026-07-24 | Session 44 |
-| 300 | UI-POLISH-01: Session-gated responsive splash, viewport meta, booking modal alignment, emoji planner + chat | UX-A11Y-EPIC | high | IN_PROGRESS | — | 2026-07-31 | Session 45 |
-| 301 | RETURN-FLIGHT-UX: Return flight selection UX — step indicator, leg tabs, price preview, mobile bottom sheet, micro-interactions | SEARCH-UX-EPIC | high | DONE | — | 2026-08-01 | Session 47 |
-| 316 | HOTELS-SEARCH-FIX: Hotels search broken (stale city codes + dropped PROD static cache) + calendar last-row clipping | TBO-ARCH-EPIC | high | IN_PROGRESS | — | 2026-08-01 | Session 50 |
+| 300 | PRICING-EPIC: Pricing module fixes — seed script, schema, dead field cleanup | PRICING-EPIC | high | IN_PROGRESS | — | 2026-07-25 | Session 44 |
+| 301 | PRICING-01: Apply markupPercent nullable schema change to PROD CockroachDB | PRICING-EPIC | high | IN_PROGRESS | — | 2026-07-25 | Session 44 |
+| 302 | PRICING-02: Rename seed script + switch upsert→create to prevent rule resurrection | PRICING-EPIC | high | IN_PROGRESS | — | 2026-07-25 | Session 44 |
+| 303 | PRICING-03: Remove Company.discountRate dead column from DEV + PROD DB | PRICING-EPIC | medium | IN_PROGRESS | — | 2026-07-25 | Session 44 |
+| 304 | PRICING-04: Remove Company.discountRate from B2B Registry admin UI | PRICING-EPIC | high | IN_PROGRESS | — | 2026-07-25 | Session 44 |
+| 305 | SCHEMA-EPIC: Apply missing DB columns to CockroachDB clusters (DEV + PROD) | SCHEMA-EPIC | high | IN_PROGRESS | — | 2026-07-25 | Session 44 |
+| 306 | SCHEMA-01: Apply static_cache.cacheKey column to DEV + PROD | SCHEMA-EPIC | critical | IN_PROGRESS | — | 2026-07-25 | Session 44 |
+| 307 | SCHEMA-02: Apply WalletLedger transaction_ref + idempotency_key columns to DEV + PROD | SCHEMA-EPIC | medium | IN_PROGRESS | — | 2026-07-25 | Session 44 |
+| 308 | SCHEMA-03: Update Payment.gateway default from razorpay to zaakpay | SCHEMA-EPIC | medium | IN_PROGRESS | — | 2026-07-25 | Session 44 |
+| 309 | OBSERVABILITY-EPIC: Replace silent error handlers and add production monitoring | OBSERVABILITY-EPIC | high | STILL_OPEN | — | 2026-07-25 | Session 44 |
+| 310 | OBS-01: Audit and replace all silent .catch(() => {}) with user-visible error states | OBSERVABILITY-EPIC | high | STILL_OPEN | — | 2026-07-25 | Session 44 |
+| 311 | MOCK-01: Remove tbo-hotel-mock.ts dead code (700+ lines) | MOCK-EPIC | high | IN_PROGRESS | — | 2026-07-25 | Session 44 |
+| 312 | MOCK-02: Remove tbo-flight-mock.ts dead code (700+ lines) | MOCK-EPIC | high | IN_PROGRESS | — | 2026-07-25 | Session 44 |
+| 313 | MOCK-03: Remove mock-handler.ts Razorpay mock and mockScenario from checkout schema | MOCK-EPIC | medium | IN_PROGRESS | — | 2026-07-25 | Session 44 |
+| 314 | INTL-06: Parameterize hardcoded nationality=Indian in FlightBookingModal | INTL-EPIC | high | IN_PROGRESS | — | 2026-07-25 | Session 44 |
+| 315 | HOT-01: Wire CancellationDialog into HotelBookingModal cancel button | CANCEL-EPIC | high | IN_PROGRESS | — | 2026-07-25 | Session 44 |
+| 316 | HOTELS-SEARCH-FIX: Hotels search broken (stale city codes + dropped PROD static cache) + calendar last-row clipping | TBO-ARCH-EPIC | high | DONE | — | 2026-08-01 | Session 50 |
+| 319 | HOTEL-PRICE-FIX: Hotel room price shows cheapest room price instead of selected room price on checkout | PRICING-EPIC | critical | IN_PROGRESS | — | 2026-08-01 | Session 51 |
 
-**Total open issues: 74**
-**Highest open issue number: 316**
-**Next new issue number: #302**
+**Total open issues: 89**
+**Highest open issue number: 319**
+**Next new issue number: #320**
 
 ---
 
@@ -146,6 +162,9 @@
 | 289 | TBO-CERT-UX: Fix all UX issues for TBO certification (8 critical gaps) | 2026-07-23 | Session 43 | All 13 cert cases UI-supported |
 | 290 | PRICING-FIX: Multi-room pricing display and calculation fixes | 2026-07-25 | Session 44 | multi-room pricing display fixed |
 | 291 | COMPAT-FIX: Opera/Vivaldi browser compatibility fixes | 2026-07-25 | Session 44 | Removed active:scale, replaced cmdk, removed autoFocus. REGRESSION fixed 2026-07-31: added pointer-events (Issue 018) |
+| 288 | Remove Demo Mode entirely | 2026-08-01 | Session 51 | Closed as duplicate of MOCK-EPIC #92 |
+| 317 | UI-POLISH-01: Session-gated responsive splash, viewport meta, booking modal alignment, emoji planner + chat | 2026-08-01 | Session 51 | Rule 13 compliance — created retroactively for committed code (381962e, c8a5fc8, 9a022f3) |
+| 318 | RETURN-FLIGHT-UX: Return flight selection UX — step indicator, leg tabs, price preview, mobile bottom sheet, micro-interactions | 2026-08-01 | Session 51 | Rule 13 compliance — created retroactively for committed code (b304c8d, 543e424) |
 
 ---
 
@@ -153,7 +172,7 @@
 
 > **This checklist MUST be completed before any code commit.** All items must pass.
 
-- [x] **1. Every code change maps to at least one open GitHub issue** — No untracked work committed (Issue #316)
+- [x] **1. Every code change maps to at least one open GitHub issue** — No untracked work committed (Issue #316, #319)
 - [x] **2. Every open GitHub issue is listed in Section B** — No missing issues in the registry
 - [x] **3. Every active epic has at least one open issue** — No empty epics
 - [x] **4. No duplicates** — Same work tracked in multiple issues must be merged, not duplicated
@@ -168,6 +187,7 @@
 
 | Session | Date | Issues Added | Issues Closed | Epics Created | Epics Closed | Updated By |
 |---------|------|-------------|---------------|---------------|--------------|-----------|
+| 51 | 2026-08-01 | 3 (#317, #318, #319) | 3 (#288, #317, #318) | SCHEMA-EPIC, OBSERVABILITY-EPIC | — | Agent (GitHub/Tracker Reconciliation + Duplicate Cleanup + Hotel Price Fix) |
 | 50 | 2026-08-01 | 1 (#316) | 0 | — | — | Agent (Hotels Search Regression + Cache + Calendar Fix) |
 | 49 | 2026-08-01 | 1 (#301) | 0 | — | — | Agent (Return Flight UX P0+P1+P2) |
 | 48 | 2026-07-31 | 0 | 0 | — | — | General agent |
@@ -190,9 +210,9 @@
 3. **Closing an issue MUST be accompanied by a session log entry.** Add the closed issue to Section C and update Section E in the same session.
 4. **Duplicate issues must be merged, not created.** Before creating a new issue, search Section B for existing coverage. If work is tracked in multiple issues, merge them and close duplicates.
 5. **SPRINT-PLAN.md is the condensed view; this file is the full view.** SPRINT-PLAN.md groups epics by priority. This file lists every issue individually. Both must stay in sync.
-6. **Maximum issue number is 299 until next session.** Any new issues created after this session will start from #300. Verify the number before creating.
+6. **Maximum issue number is 318 until next session.** Any new issues created after this session will start from #319. Verify the number before creating.
 7. **Epic labels must match GitHub.** When tagging an issue with an epic label, confirm the label exists on GitHub (e.g., `epic:payment`, `epic:corporate`). Do not invent new labels without creating them on GitHub first.
-8. **PRICING-EPIC requires a GitHub issue before any work.** This epic has no GitHub issue yet. Create one before implementing any pricing module changes.
+8. **PRICING-EPIC has GitHub issue #300.** All pricing work must reference #300 or its sub-issues (#301-304).
 
 ---
 

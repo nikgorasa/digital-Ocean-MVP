@@ -168,7 +168,14 @@ export default function HotelBookingModal({
   const perRoomPerNight = Math.round(room.totalFare / nights);
   const perRoomTotal = perRoomPerNight * nights;
   const rawTotal = perRoomTotal * roomCount;
-  const totalWithMarkup = hotel.price * roomCount;
+  // hotel.price is the cheapest room's marked-up price. Compute markup ratio
+  // and apply it to the SELECTED room's totalFare for correct pricing.
+  const cheapestRoomFare = rooms && rooms.length > 0
+    ? Math.min(...rooms.map(r => r.totalFare))
+    : room.totalFare;
+  const markupRatio = cheapestRoomFare > 0 ? hotel.price / cheapestRoomFare : 1;
+  const selectedRoomWithMarkup = Math.round(room.totalFare * markupRatio);
+  const totalWithMarkup = selectedRoomWithMarkup * roomCount;
   const serviceFee = Math.max(0, totalWithMarkup - rawTotal);
   const totalPayable = totalWithMarkup - discountApplied; // Total for all rooms
   const passportValid = !passportRequired || (passportNo.trim() && passportExpiry);
@@ -367,16 +374,50 @@ export default function HotelBookingModal({
           }]
         };
 
-        const bookRes = await fetchWithRetry("/api/tbo-hotels", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(bookReqPayload),
-        });
+        // Retry book up to 2 times — bookingCode from preBook can expire if TBO is slow
+        let lastBookError: string | null = null;
+        for (let bookAttempt = 0; bookAttempt < 2; bookAttempt++) {
+          const bookRes = await fetchWithRetry("/api/tbo-hotels", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(bookReqPayload),
+          });
 
-        bookData = await bookRes.json();
+          bookData = await bookRes.json();
+
+          if (bookData?.success) break;
+
+          // If bookingCode expired, do a fresh preBook to get a new one
+          const errMsg = bookData?.error || "";
+          const isCodeExpired = errMsg.includes("BookingCode") || errMsg.includes("expired")
+            || errMsg.includes("Invalid") || errMsg.includes("not found");
+          if (bookAttempt === 0 && isCodeExpired) {
+            try {
+              const freshBlock = await fetchWithRetry("/api/tbo-hotels", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                  action: "block",
+                  sessionId,
+                  resultIndex: hotel.resultIndex,
+                  hotelCode: hotel.hotelCode,
+                  hotelName: hotel.name,
+                  room,
+                }),
+              });
+              const freshBlockData = await freshBlock.json();
+              if (freshBlock.ok && freshBlockData.success && freshBlockData.bookingCode) {
+                bookReqPayload.bookingCode = freshBlockData.bookingCode;
+                if (freshBlockData.netAmount) bookReqPayload.netAmount = freshBlockData.netAmount;
+                continue;
+              }
+            } catch { /* fall through to error */ }
+          }
+          lastBookError = errMsg;
+        }
 
         if (!bookData?.success) {
-          setErrorMessage("Booking confirmation failed. Please try again.");
+          setErrorMessage(lastBookError || "Booking confirmation failed. Please try again.");
           setStep("error");
           return;
         }
@@ -413,7 +454,7 @@ export default function HotelBookingModal({
           type: "HOTEL",
           itemName: hotel.name,
           providerOrAirline: "GoRASA",
-          price: hotel.price,
+          price: selectedRoomWithMarkup,
           originalPrice: room.totalFare,
           discountApplied: discountApplied,
           promoCost: discountApplied,
@@ -424,7 +465,7 @@ export default function HotelBookingModal({
           travelDates: `${checkIn} to ${checkOut}`,
           leadGuestPan: showPan && pan.trim() ? pan.trim().toUpperCase() : undefined,
           supplierBookingRef: bookData?.bookingId ? String(bookData.bookingId) : undefined,
-          markupAmount: Math.max(0, (hotel.price - room.totalFare) * roomCount),
+          markupAmount: Math.max(0, (selectedRoomWithMarkup - room.totalFare) * roomCount),
           metadata: {
             tboBookingId: bookData?.bookingId,
             confirmationNo: bookData?.confirmationNo,

@@ -2465,3 +2465,33 @@ EPIC 2 removes the India-only restriction. Previously, users could only search h
 - Playwright calendar: last row fully visible in all viewports (desktop, mobile 390x700, worst-case 1100x400 with internal scroll)
 - Bug #291 modal pointer-events fix confirmed present on main (639f6e8), governance BEH-09 check covers it
 - Preflight: passed
+
+---
+
+## Session 51 — 2026-08-01 (GitHub/Tracker Reconciliation + Hotel Price Fix)
+
+**Issues:** #317, #318, #319
+
+### GitHub/Tracker Reconciliation
+- Created + closed #317 UI-POLISH-01 (Rule 13 compliance — committed code had no GitHub issue)
+- Created + closed #318 RETURN-FLIGHT-UX (Rule 13 compliance)
+- Closed #288 "Remove Demo Mode entirely" as duplicate of MOCK-EPIC #92
+- Updated tracker: fixed fabricated #300/#301 entries, added #302-315 (16 missing GitHub issues), added SCHEMA-EPIC + OBSERVABILITY-EPIC to Section A
+- Pre-commit hook: NOT yet upgraded (pending)
+
+### Hotel Price Fix (Issue #319)
+- Root cause: HotelBookingModal used hotel.price (cheapest room's marked-up price) for all rooms
+- Fix: Compute markup ratio from hotel.price / cheapestRoomFare, apply to selected room's totalFare
+- Updated room selection UI to show markup-adjusted prices
+- Added retry-with-fresh-prebook for intermittent booking failures (bookingCode expiry)
+
+### Verification
+- TypeScript: 0 errors
+- Build: passes clean
+
+### Files Changed
+| File | Change |
+|------|--------|
+| src/components/HotelBookingModal.tsx | Pricing fix (markup ratio) + booking retry logic |
+| src/app/hotels/page.tsx | Room list + booking section show markup-adjusted prices |
+| Governance/docs/governance/EPIC-ISSUE-TRACKER.md | Reconciliation + session 51 |
