@@ -44,3 +44,12 @@
 | 2026-07-24 | DEV+PROD | ✅ Live | Both | Global cities fix — parallel fetch, countryCode pass (bb2d5e9) |
 | 2026-07-31 | DEV+PROD | ✅ Live | Both | Search UX — flight type segmented control, passenger block dedup, pricing fixes (7fa5100) |
 | 2026-07-31 | DEV+PROD | ✅ Live | Both | Opera/Vivaldi Book button fix + hotel search alignment (42159da) |
+
+## 2026-08-01 — Hotels search regression fix (Issue #316)
+
+| Env | Project | URL | Commit | Status |
+|-----|---------|-----|--------|--------|
+| DEV | cckr | https://cckr.vercel.app | 0f6218d | ✅ Deployed |
+| PROD | cckr2 | https://project-yidb6.vercel.app | 0f6218d | ✅ Deployed |
+
+Ships return-flight UX (b304c8d) + hotels search fix + calendar fix. Both return HTTP 200. PROD static_cache re-populated (CityList 36, CountryList 249, HotelCodeList 18) before deploy.
