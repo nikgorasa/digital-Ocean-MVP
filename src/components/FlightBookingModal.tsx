@@ -850,7 +850,7 @@ export default function FlightBookingModal({
         animate={{ opacity: 1, y: 0 }}
         exit={{ opacity: 0, y: 40 }}
         transition={{ duration: 0.2, ease: "easeOut" }}
-        className="relative bg-white w-full sm:max-w-lg sm:rounded-3xl rounded-t-3xl shadow-2xl overflow-hidden max-h-[95vh] sm:max-h-[90vh] overflow-y-auto pointer-events-auto"
+              className="relative bg-white w-full sm:max-w-lg sm:rounded-3xl rounded-t-3xl shadow-2xl overflow-hidden max-h-[88vh] sm:max-h-[92vh] overflow-y-auto overscroll-y-contain pointer-events-auto"
       >
         <div className="sticky top-0 bg-white border-b border-slate-200 px-6 py-4 flex items-center justify-between z-10">
           <h2 id="flight-booking-title" className="text-lg font-bold text-slate-900">
@@ -1646,9 +1646,9 @@ export default function FlightBookingModal({
             </div>
             <h3 className="text-xl font-bold text-slate-900 mb-1">Booking Failed</h3>
             <p className="text-sm text-red-500 mb-6">{errorMessage}</p>
-            <div className="flex gap-2">
-              <button onClick={handleClose} className="flex-1 py-3 bg-slate-200 text-slate-700 rounded-xl font-bold hover:bg-slate-300 cursor-pointer">Cancel</button>
-              <button onClick={() => { setStep("form"); setErrorMessage(""); }} className="flex-1 py-3 bg-brand-saffron text-white rounded-xl font-bold hover:bg-brand-burnt cursor-pointer">Try Again</button>
+              <div className="flex flex-col sm:flex-row gap-2">
+              <button onClick={handleClose} className="flex-1 py-3 bg-slate-200 text-slate-700 rounded-xl font-bold hover:bg-slate-300 cursor-pointer min-h-[44px]">Cancel</button>
+              <button onClick={() => { setStep("form"); setErrorMessage(""); }} className="flex-1 py-3 bg-brand-saffron text-white rounded-xl font-bold hover:bg-brand-burnt cursor-pointer min-h-[44px]">Try Again</button>
             </div>
           </div>
         )}

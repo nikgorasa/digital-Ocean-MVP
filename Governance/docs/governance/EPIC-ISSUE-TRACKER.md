@@ -2,7 +2,7 @@
 
 > **Title:** EPIC/Issue Tracker — Active Work Registry
 > **Version:** 1.0.0
-> **Last Updated:** 2026-07-25 (Session 44 — CANCEL/TBO-ARCH/RECONCILE implementation)
+> **Last Updated:** 2026-07-31 (Session 45 — UI polish: splash, booking modals, chat, planner)
 > **Current Sprint:** Sprint 4 — Production Readiness
 > **Maximum GitHub Issue Number:** 299 (new issues start from #300)
 > **Source of Truth:** This file is the canonical registry of all epics and open GitHub issues. It MUST be updated before any PR/commit. No work can be committed if its EPIC/issue is not tracked here.
@@ -113,10 +113,11 @@
 | 297 | SEARCH-UX-EPIC-1: Cold Start & Loading States (P0) | SEARCH-UX-EPIC | high | IN_PROGRESS | — | 2026-07-24 | Session 44 |
 | 298 | SEARCH-UX-EPIC-2: Domestic/International Separation (P0) | SEARCH-UX-EPIC | high | IN_PROGRESS | — | 2026-07-24 | Session 44 |
 | 299 | SEARCH-UX-EPIC-3: Display Clutter Reduction (P0) | SEARCH-UX-EPIC | high | IN_PROGRESS | — | 2026-07-24 | Session 44 |
+| 300 | UI-POLISH-01: Session-gated responsive splash, viewport meta, booking modal alignment, emoji planner + chat | UX-A11Y-EPIC | high | IN_PROGRESS | — | 2026-07-31 | Session 45 |
 
-**Total open issues: 72**
-**Highest open issue number: 299**
-**Next new issue number: #300**
+**Total open issues: 73**
+**Highest open issue number: 300**
+**Next new issue number: #301**
 
 ---
 
@@ -150,12 +151,12 @@
 
 > **This checklist MUST be completed before any code commit.** All items must pass.
 
-- [ ] **1. Every code change maps to at least one open GitHub issue** — No untracked work committed
-- [ ] **2. Every open GitHub issue is listed in Section B** — No missing issues in the registry
-- [ ] **3. Every active epic has at least one open issue** — No empty epics
-- [ ] **4. No duplicates** — Same work tracked in multiple issues must be merged, not duplicated
-- [ ] **5. All closed issues in the current session are recorded in Section C** — Audit trail maintained
-- [ ] **6. Issue status matches code state** — DONE = closed on GitHub; IN_PROGRESS = code changes in progress; STILL_OPEN = no active work
+- [x] **1. Every code change maps to at least one open GitHub issue** — No untracked work committed (Issue #300)
+- [x] **2. Every open GitHub issue is listed in Section B** — No missing issues in the registry
+- [x] **3. Every active epic has at least one open issue** — No empty epics
+- [x] **4. No duplicates** — Same work tracked in multiple issues must be merged, not duplicated
+- [x] **5. All closed issues in the current session are recorded in Section C** — Audit trail maintained
+- [x] **6. Issue status matches code state** — DONE = closed on GitHub; IN_PROGRESS = code changes in progress; STILL_OPEN = no active work
 
 ---
 
@@ -165,6 +166,7 @@
 
 | Session | Date | Issues Added | Issues Closed | Epics Created | Epics Closed | Updated By |
 |---------|------|-------------|---------------|---------------|--------------|-----------|
+| 45 | 2026-07-31 | 1 (#300) | 0 | — | — | General agent |
 | 47 | 2026-07-31 | 0 | 0 | — | — | General agent |
 | 46 | 2026-07-31 | 0 | 0 | — | — | General agent |
 | 44 | 2026-07-25 | 5 (#292–296, #297–299) | 4 (#240, #290, #291, #139 ref) | SEARCH-UX-EPIC, PRICING-EPIC | — | General agent |

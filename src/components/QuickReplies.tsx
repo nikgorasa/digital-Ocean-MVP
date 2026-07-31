@@ -20,7 +20,7 @@ export default function QuickReplies({ replies, onSelect }: QuickRepliesProps) {
           whileHover={{ scale: 1.05 }}
           whileTap={{ scale: 0.95 }}
           onClick={() => onSelect(reply)}
-          className="px-4 py-2 border border-slate-200 rounded-full text-sm font-medium text-slate-700 hover:bg-orange-50 hover:border-orange-300 hover:text-orange-600 transition-colors cursor-pointer"
+          className="px-4 py-2 border border-slate-200 rounded-full text-sm font-medium text-slate-700 bg-gradient-to-r from-transparent to-transparent hover:from-orange-50 hover:to-amber-50 hover:border-orange-300 hover:text-orange-600 transition-all cursor-pointer"
         >
           {reply}
         </motion.button>

@@ -43,7 +43,7 @@ export default function ItineraryPreview({ itinerary, onGetQuote }: ItineraryPre
   }
 
   return (
-    <div className="bg-white rounded-3xl border border-slate-100 shadow-sm overflow-hidden flex flex-col sticky top-20 max-h-[calc(100vh-120px)]">
+    <div className="bg-white rounded-3xl border border-slate-100 shadow-sm overflow-hidden flex flex-col sticky top-16 max-h-[85vh] lg:max-h-[calc(100vh-120px)]">
       <div className="p-4 border-b border-slate-100">
         <div className="flex items-center justify-between mb-2">
           <h3 className="text-lg font-serif font-bold text-slate-900">

@@ -40,7 +40,7 @@ export default function SplashScreen({ children }: SplashScreenProps) {
   return (
     <>
       {children}
-      {phase !== "hidden" && (
+      {true && (
         <div
           className="fixed inset-0 z-[9999] flex flex-col items-center justify-center"
           style={{ backgroundColor: "#082A24" }}

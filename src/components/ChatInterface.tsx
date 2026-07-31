@@ -47,6 +47,18 @@ export default function ChatInterface({
     }
   };
 
+  const getBotEmoji = (content: string): string => {
+    const lower = content.toLowerCase();
+    if (/^(namaste|namaskar|hello|hi\b|good\s+(morning|afternoon|evening))/.test(lower)) return "🙏";
+    if (/\b(itinerary|hotel|flight|day\b|trip\b|book)/.test(lower)) return "✈️";
+    if (/\b(quote|connect|expert|call|reach|contact)/.test(lower)) return "📞";
+    if (/\b(suggest|recommend|tip|try|consider|worth)/.test(lower)) return "💡";
+    if (/\?(.*?)(please|help|what|how|when|where|which)/.test(lower)) return "🤔";
+    if (/(great|wonderful|perfect|excellent|amazing|fantastic|congrats|done)/.test(lower)) return "🎉";
+    if (/(updated|changed|upgraded|noted|fresh)/.test(lower)) return "📝";
+    return "✨";
+  };
+
   return (
     <div className="bg-white rounded-3xl border border-slate-100 flex flex-col h-[600px] shadow-sm overflow-hidden">
       <div className="bg-slate-900 text-white p-4 flex items-center justify-between">
@@ -62,7 +74,7 @@ export default function ChatInterface({
                 AI Agent
               </span>
             </div>
-            <p className="text-slate-400 text-xs font-mono">Status: Connected • Instant Planning</p>
+            <p className="text-slate-400 text-xs font-medium">🟢 Live — Instant Planning</p>
           </div>
         </div>
         <div className="flex items-center space-x-2">
@@ -97,15 +109,18 @@ export default function ChatInterface({
                 {msg.role === "user" ? <UserIcon className="w-4 h-4" /> : <Bot className="w-4 h-4" />}
               </div>
 
-              <motion.div
-                layout
-                className={`max-w-[75%] p-4 rounded-3xl text-sm leading-relaxed relative ${
-                  msg.role === "user"
-                    ? "bg-orange-500 text-white rounded-tr-none shadow-orange-100 shadow-md"
-                    : "bg-white text-slate-800 border border-slate-100 rounded-tl-none shadow-sm"
-                }`}
-              >
-                <p className="whitespace-pre-line">{msg.content}</p>
+      <motion.div
+        layout
+        className={`max-w-[75%] p-4 rounded-3xl text-sm leading-relaxed relative ${
+          msg.role === "user"
+            ? "bg-orange-500 text-white rounded-tr-none shadow-orange-100 shadow-md"
+            : "bg-white text-slate-800 border border-slate-100 rounded-tl-none shadow-sm"
+        }`}
+      >
+        {msg.role === "assistant" && (
+          <span className="mr-1.5 shrink-0">{getBotEmoji(msg.content)}</span>
+        )}
+        <p className="whitespace-pre-line inline">{msg.content}</p>
                 <span
                   className={`block text-[9px] mt-1.5 ${
                     msg.role === "user" ? "text-white/60" : "text-slate-400"

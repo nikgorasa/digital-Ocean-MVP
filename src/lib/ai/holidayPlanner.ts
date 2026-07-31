@@ -78,58 +78,58 @@ function generateItinerary(destination: string, days: number, travelers: number,
   for (let i = 1; i <= Math.min(days, 10); i++) {
     let day: ItineraryDay;
 
-    if (i === 1) {
-      day = {
-        day: i,
-        title: "Arrival & Orientation",
-        activities: [
-          { time: "14:00", activity: `Airport pickup & ${hotelPrefix} check-in`, duration: "1h" },
-          { time: "16:00", activity: "Explore local area & get acquainted", duration: "2h" },
-          { time: "19:00", activity: isRomantic ? "Romantic welcome dinner" : "Welcome dinner at local restaurant", duration: "2h" },
-        ],
-        hotel: `${hotelPrefix} in ${title}`,
-        estimatedCost: baseCost + 2000,
-      };
-    } else if (i === days) {
-      day = {
-        day: i,
-        title: "Departure",
-        activities: [
-          { time: "08:00", activity: "Breakfast at hotel", duration: "1h" },
-          { time: "10:00", activity: "Last-minute shopping & souvenir hunt", duration: "2h" },
-          { time: "13:00", activity: "Check-out & airport transfer", duration: "2h" },
-        ],
-        hotel: hotelPrefix,
-        estimatedCost: 3000,
-      };
-    } else if (isRomantic && i === Math.floor(days / 2) + 1) {
-      day = {
-        day: i,
-        title: "Special Romantic Day",
-        activities: [
-          { time: "09:00", activity: "Couples spa & wellness session", duration: "3h" },
-          { time: "13:00", activity: "Private lunch at scenic spot", duration: "2h" },
-          { time: "16:00", activity: "Sunset cruise / scenic viewpoint visit", duration: "2h" },
-          { time: "19:00", activity: "Candlelight dinner under the stars", duration: "2h" },
-        ],
-        hotel: hotelPrefix,
-        estimatedCost: baseCost + 5000,
-      };
-    } else {
-      day = {
-        day: i,
-        title: `Exploring ${title}`,
-        activities: [
-          { time: "08:00", activity: "Breakfast at hotel", duration: "1h" },
-          { time: "09:30", activity: `Visit ${destInfo?.highlights?.[i % destInfo.highlights.length] || "local attraction"}`, duration: "3h" },
-          { time: "13:00", activity: "Lunch at popular local spot", duration: "1.5h" },
-          { time: "15:00", activity: isBudget ? "Free time to explore" : `Premium experience: ${destInfo?.highlights?.[(i + 1) % destInfo.highlights.length] || "cultural tour"}`, duration: "3h" },
-          { time: "19:00", activity: "Dinner & evening leisure", duration: "2h" },
-        ],
-        hotel: hotelPrefix,
-        estimatedCost: baseCost,
-      };
-    }
+  if (i === 1) {
+    day = {
+      day: i,
+      title: "✈️ Arrival & Orientation",
+      activities: [
+        { time: "14:00", activity: `✈️ Airport pickup & 🏨 ${hotelPrefix} check-in`, duration: "1h" },
+        { time: "16:00", activity: "🗺️ Explore local area & get acquainted", duration: "2h" },
+        { time: "19:00", activity: isRomantic ? "🕯️ Romantic welcome dinner" : "🍽️ Welcome dinner at local restaurant", duration: "2h" },
+      ],
+      hotel: `${hotelPrefix} in ${title}`,
+      estimatedCost: baseCost + 2000,
+    };
+  } else if (i === days) {
+    day = {
+      day: i,
+      title: "✈️ Departure",
+      activities: [
+        { time: "08:00", activity: "☕ Breakfast at hotel", duration: "1h" },
+        { time: "10:00", activity: "🛍️ Last-minute shopping & souvenir hunt", duration: "2h" },
+        { time: "13:00", activity: "🧳 Check-out & 🚗 airport transfer", duration: "2h" },
+      ],
+      hotel: hotelPrefix,
+      estimatedCost: 3000,
+    };
+  } else if (isRomantic && i === Math.floor(days / 2) + 1) {
+    day = {
+      day: i,
+      title: "💖 Special Romantic Day",
+      activities: [
+        { time: "09:00", activity: "💆 Couples spa & wellness session", duration: "3h" },
+        { time: "13:00", activity: "🍽️ Private lunch at scenic spot", duration: "2h" },
+        { time: "16:00", activity: "🌅 Sunset cruise / scenic viewpoint visit", duration: "2h" },
+        { time: "19:00", activity: "🕯️ Candlelight dinner under the stars", duration: "2h" },
+      ],
+      hotel: hotelPrefix,
+      estimatedCost: baseCost + 5000,
+    };
+  } else {
+    day = {
+      day: i,
+      title: `🌴 Exploring ${title}`,
+      activities: [
+        { time: "08:00", activity: "☕ Breakfast at hotel", duration: "1h" },
+        { time: "09:30", activity: `🗺️ Visit ${destInfo?.highlights?.[i % destInfo.highlights.length] || "local attraction"}`, duration: "3h" },
+        { time: "13:00", activity: "🍽️ Lunch at popular local spot", duration: "1.5h" },
+        { time: "15:00", activity: isBudget ? "🆓 Free time to explore" : `✨ Premium experience: ${destInfo?.highlights?.[(i + 1) % destInfo.highlights.length] || "cultural tour"}`, duration: "3h" },
+        { time: "19:00", activity: "🌅 Dinner & evening leisure", duration: "2h" },
+      ],
+      hotel: hotelPrefix,
+      estimatedCost: baseCost,
+    };
+  }
 
     dayTemplates.push(day);
   }
@@ -168,7 +168,7 @@ export function generateHolidayResponse(
 
   if (messageCount === 0) {
     return {
-      message: "Namaste! I'm your GoRASA travel planning assistant. Where would you love to go for your next holiday?",
+      message: "🙏 Namaste! I'm your GoRASA holiday planner ✈️\n\nWhere would you love to go for your next dream vacation?",
       itinerary: null,
       quickReplies: ["Goa", "Kerala", "Maldives", "Manali", "Rajasthan", "Surprise me"],
       state: "GREETING",
@@ -179,14 +179,15 @@ export function generateHolidayResponse(
     const destination = userMessages[0].content;
     if (destination.toLowerCase().includes("surprise")) {
       return {
-        message: "I love a good surprise! Let me suggest some amazing destinations:\n\n🌅 **Goa** — Beaches, nightlife, heritage\n🌿 **Kerala** — Backwaters, hill stations, wellness\n🏔️ **Manali** — Mountains, adventure, snow\n🏜️ **Rajasthan** — Forts, desert, royal heritage\n🏝️ **Maldives** — Luxury overwater villas\n\nWhich one catches your eye?",
+        message: "🎲 I love a good surprise! Let me suggest some amazing destinations:\n\n🌅 **Goa** — beaches, nightlife, heritage vibes\n🌿 **Kerala** — backwaters, hill stations, Ayurveda wellness\n🏔️ **Manali** — mountains, adventure, snow-capped peaks\n🏜️ **Rajasthan** — royal forts, desert safaris, culture\n🏝️ **Maldives** — luxury overwater villas\n\nWhich one catches your eye? 👀",
         itinerary: null,
         quickReplies: ["Goa", "Kerala", "Manali", "Rajasthan", "Maldives"],
         state: "CLARIFYING",
       };
     }
+    const destInfo = getDestinationInfo(destination);
     return {
-      message: `Great choice! ${getDestinationInfo(destination)?.title || destination} is beautiful.\n\nHow many days are you planning for?`,
+      message: `🌍 Great choice! **${destInfo?.title || destination}** is stunning!\n\n✨ Top highlights: ${destInfo?.highlights?.join(", ") || "amazing experiences ahead"}\n🗓️ Best time: ${destInfo?.bestTime || "year-round"}\n\nHow many days are you planning for?`,
       itinerary: null,
       quickReplies: ["3 days", "5 days", "7 days", "10+ days"],
       state: "CLARIFYING",
@@ -195,7 +196,7 @@ export function generateHolidayResponse(
 
   if (messageCount === 2) {
     return {
-      message: "Perfect! And how many travelers will there be?",
+      message: "👥 Perfect! And how many travelers will be joining?",
       itinerary: null,
       quickReplies: ["Solo (1)", "Couple (2)", "Family (3-4)", "Group (5+)"],
       state: "CLARIFYING",
@@ -204,7 +205,7 @@ export function generateHolidayResponse(
 
   if (messageCount === 3) {
     return {
-      message: "Lovely! What's your budget range? This helps me suggest the right hotels and experiences.",
+      message: "💰 Lovely! What's your budget vibe?\n\nThis helps me match the perfect hotels & experiences for you.",
       itinerary: null,
       quickReplies: ["Budget-friendly", "Comfortable", "Luxury", "No limit"],
       state: "CLARIFYING",
@@ -220,15 +221,15 @@ export function generateHolidayResponse(
     const days = parseInt(daysStr) || 5;
     const travelers = travelersStr.includes("Couple") ? 2 :
       travelersStr.includes("Family") ? 4 :
-        travelersStr.includes("Group") ? 6 :
-          travelersStr.includes("Solo") ? 1 : 2;
+      travelersStr.includes("Group") ? 6 :
+      travelersStr.includes("Solo") ? 1 : 2;
 
     const itinerary = generateItinerary(destination, days, travelers, budget, "");
 
-    const dayList = itinerary.itinerary.map((d) => `📍 Day ${d.day} — ${d.title}`).join("\n");
+    const dayList = itinerary.itinerary.map((d) => `📅 Day ${d.day} — ${d.title}`).join("\n");
 
     return {
-      message: `Excellent! Here's your personalized ${days}-day ${itinerary.destination} itinerary for ${travelers} traveler${travelers > 1 ? "s" : ""}:\n\n${dayList}\n\n💰 **Total Estimated: ₹${itinerary.totalEstimatedCost.toLocaleString("en-IN")}**\n\n✅ Includes: ${itinerary.inclusions.join(", ")}\n❌ Excludes: ${itinerary.exclusions.join(", ")}\n\nWant me to make any changes? I can adjust the hotel, add more activities, or modify anything!`,
+      message: `🎉 Excellent! Your personalized **${days}-day ${itinerary.destination}** itinerary for **${travelers} traveler${travelers > 1 ? "s" : ""}**:\n\n${dayList}\n\n💸 **Total Estimate: ₹${itinerary.totalEstimatedCost.toLocaleString("en-IN")}**\n\n✅ **Included:** ${itinerary.inclusions.join(" · ")}\n❌ **Not included:** ${itinerary.exclusions.join(" · ")}\n\n🔧 Want tweaks? I can adjust the hotel, add activities, or anything else!`,
       itinerary,
       quickReplies: ["Looks perfect!", "Make it more luxury", "Add more activities", "Change hotel", "Start over"],
       state: "REFINING",
@@ -239,7 +240,7 @@ export function generateHolidayResponse(
 
   if (lastMessage.includes("perfect") || lastMessage.includes("great") || lastMessage.includes("looks good")) {
     return {
-      message: "Wonderful! I'm glad you love it! 🎉\n\nClick **Get Full Quote** to connect with our travel expert who will finalize the itinerary and provide exact pricing within 4 hours.",
+      message: "🎊 Wonderful! You're going to love this trip!\n\n👇 Click **Get Full Quote** below and our travel expert will finalize everything and send you exact pricing within 4 hours.",
       itinerary: context?.previousItinerary || null,
       quickReplies: ["Get Full Quote"],
       state: "HANDOFF_READY",
@@ -248,7 +249,7 @@ export function generateHolidayResponse(
 
   if (lastMessage.includes("start over") || lastMessage.includes("restart")) {
     return {
-      message: "No problem! Let's start fresh. Where would you love to go?",
+      message: "🔄 No worries! Fresh start it is.\n\nWhere would you love to go for your next adventure? ✈️",
       itinerary: null,
       quickReplies: ["Goa", "Kerala", "Maldives", "Manali", "Rajasthan", "Surprise me"],
       state: "GREETING",
@@ -257,7 +258,7 @@ export function generateHolidayResponse(
 
   if (lastMessage.includes("luxury") || lastMessage.includes("upgrade") || lastMessage.includes("premium")) {
     return {
-      message: `I've upgraded your itinerary to luxury tier! ✨\n\n🏨 Hotels upgraded to 5★ Premium Resorts\n🍽️ Fine dining experiences added\n🚗 Private transfers included\n💆 Premium spa sessions\n\nNew estimated total: ₹${((context?.previousItinerary?.totalEstimatedCost || 100000) * 1.6).toLocaleString("en-IN")}\n\nAny other changes?`,
+      message: `💎 Upgraded to **Luxury Tier**!\n\n🏨 5★ Premium Resorts\n🍽️ Fine dining at top restaurants\n🚗 Private chauffeured transfers\n💆 Premium spa & wellness\n\n💸 New estimate: ₹${((context?.previousItinerary?.totalEstimatedCost || 100000) * 1.6).toLocaleString("en-IN")}\n\nMore tweaks?`,
       itinerary: context?.previousItinerary || null,
       quickReplies: ["Looks perfect!", "Even more luxury", "Add activities", "Start over"],
       state: "REFINING",
@@ -266,7 +267,7 @@ export function generateHolidayResponse(
 
   if (lastMessage.includes("more activities") || lastMessage.includes("add more") || lastMessage.includes("action")) {
     return {
-      message: `I've added more exciting activities to your itinerary! 🎭\n\n• Morning yoga session\n• Local cooking class\n• Adventure activity (zip-lining/rafting)\n• Cultural show evening\n• Sunset viewpoint visit\n\nNew estimated total: ₹${((context?.previousItinerary?.totalEstimatedCost || 100000) * 1.2).toLocaleString("en-IN")}\n\nWant any other changes?`,
+      message: `🎭 Added exciting new activities!\n\n🧘 Morning yoga session\n👩‍🍳 Local cooking class\n🧗 Adventure activity (zip-lining / rafting)\n🎪 Cultural show evening\n🌄 Sunset viewpoint visit\n\n💸 New estimate: ₹${((context?.previousItinerary?.totalEstimatedCost || 100000) * 1.2).toLocaleString("en-IN")}\n\nHappy with this?`,
       itinerary: context?.previousItinerary || null,
       quickReplies: ["Looks perfect!", "Remove some", "Change hotel", "Start over"],
       state: "REFINING",
@@ -275,7 +276,7 @@ export function generateHolidayResponse(
 
   if (lastMessage.includes("change hotel") || lastMessage.includes("different hotel")) {
     return {
-      message: "I've updated your hotel selection! 🏨\n\nAlternative options:\n• Heritage property with local charm\n• Boutique hotel with personalized service\n• Beachfront resort with stunning views\n\nWould you like me to proceed with one of these, or shall I show more options?",
+      message: "🏨 Hotel updated with fresh options!\n\n• 🏛️ Heritage property with local charm\n• 🎨 Boutique hotel with personalized service\n• 🏖️ Beachfront resort with stunning views\n\nPick one, or want to see more?",
       itinerary: context?.previousItinerary || null,
       quickReplies: ["Looks perfect!", "Show more options", "Start over"],
       state: "REFINING",
@@ -283,7 +284,7 @@ export function generateHolidayResponse(
   }
 
   return {
-    message: `I've noted your feedback: "${userMessages[userMessages.length - 1].content.substring(0, 50)}..."\n\nI'll keep this in mind for your itinerary. Is there anything specific you'd like me to change? I can adjust:\n• Activities and experiences\n• Hotel type\n• Budget level\n• Daily schedule`,
+    message: `📝 Noted! I've jotted that down for your itinerary.\n\nWhat would you like me to tweak next?\n• 🗺️ Activities & experiences\n• 🏨 Hotel type\n• 💰 Budget level\n• 📅 Daily schedule`,
     itinerary: context?.previousItinerary || null,
     quickReplies: ["Looks perfect!", "Make it more luxury", "Add activities", "Start over"],
     state: "REFINING",

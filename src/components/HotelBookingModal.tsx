@@ -604,7 +604,7 @@ export default function HotelBookingModal({
         animate={{ opacity: 1, y: 0 }}
         exit={{ opacity: 0, y: 40 }}
         transition={{ duration: 0.2, ease: "easeOut" }}
-        className="relative bg-white w-full sm:max-w-lg sm:rounded-3xl rounded-t-3xl shadow-2xl overflow-hidden max-h-[95vh] sm:max-h-[90vh] overflow-y-auto pointer-events-auto"
+              className="relative bg-white w-full sm:max-w-lg sm:rounded-3xl rounded-t-3xl shadow-2xl overflow-hidden max-h-[88vh] sm:max-h-[92vh] overflow-y-auto overscroll-y-contain pointer-events-auto"
       >
         <div className="sticky top-0 bg-white border-b border-slate-200 px-6 py-4 flex items-center justify-between z-10">
           <h2 id="hotel-booking-title" className="text-lg font-bold text-slate-900">Complete Booking</h2>
