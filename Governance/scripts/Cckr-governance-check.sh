@@ -869,6 +869,30 @@ check_epic_issue_tracking() {
         return 1
     fi
 
+    # NEW: Check if code files are staged but EPIC-ISSUE-TRACKER.md is NOT staged
+    # This means code was changed without updating the tracker
+    local staged_code_files
+    staged_code_files=$(git diff --cached --name-only 2>/dev/null | grep -E '\.(ts|tsx|js|jsx)$' | grep -v node_modules | grep -v '.next' || true)
+    local staged_tracker
+    staged_tracker=$(git diff --cached --name-only 2>/dev/null | grep 'EPIC-ISSUE-TRACKER.md' || true)
+
+    if [[ -n "$staged_code_files" && -z "$staged_tracker" ]]; then
+        print_fail "BLOCKED: Code files staged but EPIC-ISSUE-TRACKER.md NOT updated"
+        print_fail "Staged code files:"
+        echo "$staged_code_files" | head -5 | while read -r f; do
+            print_fail "  - $f"
+        done
+        print_fail ""
+        print_fail "You MUST update EPIC-ISSUE-TRACKER.md before committing:"
+        print_fail "  1. Add/update the issue in Section B (Open Issues)"
+        print_fail "  2. Complete the checklist in Section D"
+        print_fail "  3. Add session entry in Section E"
+        print_fail ""
+        print_fail "Then: git add Governance/docs/governance/EPIC-ISSUE-TRACKER.md && git commit"
+        ERRORS=$((ERRORS + 1))
+        return 1
+    fi
+
     print_pass "EPIC-ISSUE-TRACKER.md exists and has $open_issues tracked issues"
     return 0
 }

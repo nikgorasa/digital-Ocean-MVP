@@ -213,8 +213,8 @@ export default function DateRangePicker({
 
       {isOpen && (
         <div
-          className="absolute top-full left-0 mt-2 z-50 bg-white rounded-xl shadow-xl border border-slate-200 w-[calc(100vw-2rem)] sm:w-auto"
-          style={{ maxWidth: mode === "range" ? 580 : 290 }}
+          className="absolute top-full left-0 mt-2 z-50 bg-white rounded-xl shadow-xl border border-slate-200 overflow-hidden w-[calc(100vw-2rem)] sm:w-auto"
+          style={{ maxWidth: mode === "range" ? 720 : 290 }}
         >
           <style>{`
             .rdp-root {
