@@ -53,3 +53,12 @@
 | PROD | cckr2 | https://project-yidb6.vercel.app | 0f6218d | ✅ Deployed |
 
 Ships return-flight UX (b304c8d) + hotels search fix + calendar fix. Both return HTTP 200. PROD static_cache re-populated (CityList 36, CountryList 249, HotelCodeList 18) before deploy.
+
+## 2026-08-01 — Hotel price fix + tracker reconciliation (Issue #319)
+
+| Env | Project | URL | Commit | Status |
+|-----|---------|-----|--------|--------|
+| DEV | cckr | https://cckr.vercel.app | 96f52f3 | ✅ Deployed |
+| PROD | cckr2 | https://project-yidb6.vercel.app | 96f52f3 | ✅ Deployed |
+
+Ships: hotel room price fix (markup ratio for selected room), booking retry (fresh prebook on expiry), tracker reconciliation (16 missing issues added, 3 duplicates closed, 2 Rule 13 issues created+closed). Both return HTTP 200.
