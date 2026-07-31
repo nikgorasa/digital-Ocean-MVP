@@ -2,9 +2,9 @@
 
 > **Title:** EPIC/Issue Tracker — Active Work Registry
 > **Version:** 1.0.0
-> **Last Updated:** 2026-08-01 (Session 47 — Return Flight Selection UX)
+> **Last Updated:** 2026-08-01 (Session 50 — Hotels Search Regression + Cache Re-population + Calendar Fix)
 > **Current Sprint:** Sprint 4 — Production Readiness
-> **Maximum GitHub Issue Number:** 301 (new issues start from #302)
+> **Maximum GitHub Issue Number:** 316 (new issues start from #317)
 > **Source of Truth:** This file is the canonical registry of all epics and open GitHub issues. It MUST be updated before any PR/commit. No work can be committed if its EPIC/issue is not tracked here.
 > **SPRINT-PLAN.md:** Condensed view (16 epics grouped by priority). This file is the full view (every open issue individually).
 
@@ -115,9 +115,10 @@
 | 299 | SEARCH-UX-EPIC-3: Display Clutter Reduction (P0) | SEARCH-UX-EPIC | high | IN_PROGRESS | — | 2026-07-24 | Session 44 |
 | 300 | UI-POLISH-01: Session-gated responsive splash, viewport meta, booking modal alignment, emoji planner + chat | UX-A11Y-EPIC | high | IN_PROGRESS | — | 2026-07-31 | Session 45 |
 | 301 | RETURN-FLIGHT-UX: Return flight selection UX — step indicator, leg tabs, price preview, mobile bottom sheet, micro-interactions | SEARCH-UX-EPIC | high | DONE | — | 2026-08-01 | Session 47 |
+| 316 | HOTELS-SEARCH-FIX: Hotels search broken (stale city codes + dropped PROD static cache) + calendar last-row clipping | TBO-ARCH-EPIC | high | IN_PROGRESS | — | 2026-08-01 | Session 50 |
 
-**Total open issues: 73**
-**Highest open issue number: 301**
+**Total open issues: 74**
+**Highest open issue number: 316**
 **Next new issue number: #302**
 
 ---
@@ -152,7 +153,7 @@
 
 > **This checklist MUST be completed before any code commit.** All items must pass.
 
-- [x] **1. Every code change maps to at least one open GitHub issue** — No untracked work committed (Issue #301)
+- [x] **1. Every code change maps to at least one open GitHub issue** — No untracked work committed (Issue #316)
 - [x] **2. Every open GitHub issue is listed in Section B** — No missing issues in the registry
 - [x] **3. Every active epic has at least one open issue** — No empty epics
 - [x] **4. No duplicates** — Same work tracked in multiple issues must be merged, not duplicated
@@ -167,6 +168,7 @@
 
 | Session | Date | Issues Added | Issues Closed | Epics Created | Epics Closed | Updated By |
 |---------|------|-------------|---------------|---------------|--------------|-----------|
+| 50 | 2026-08-01 | 1 (#316) | 0 | — | — | Agent (Hotels Search Regression + Cache + Calendar Fix) |
 | 49 | 2026-08-01 | 1 (#301) | 0 | — | — | Agent (Return Flight UX P0+P1+P2) |
 | 48 | 2026-07-31 | 0 | 0 | — | — | General agent |
 | 47 | 2026-07-31 | 0 | 0 | — | — | General agent |

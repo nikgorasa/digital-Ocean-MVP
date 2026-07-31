@@ -45,8 +45,28 @@ export default function DateRangePicker({
   className = "",
 }: DateRangePickerProps) {
   const [isOpen, setIsOpen] = useState(false);
+  const [openAbove, setOpenAbove] = useState(false);
+  const [popupMaxHeight, setPopupMaxHeight] = useState<number | undefined>(undefined);
   const [hoveredDate, setHoveredDate] = useState<Date | undefined>();
   const containerRef = useRef<HTMLDivElement>(null);
+
+  // The popup is absolutely positioned, so it adds no scroll space. If it
+  // would extend past the viewport bottom, flip it open above the trigger and
+  // cap its height to the space actually available, with internal scrolling,
+  // so the last calendar row is never clipped or unreachable.
+  const toggleOpen = () => {
+    if (!isOpen && containerRef.current) {
+      const rect = containerRef.current.getBoundingClientRect();
+      const spaceBelow = window.innerHeight - rect.bottom;
+      const spaceAbove = rect.top;
+      const estPopupHeight = mode === "range" ? 400 : 360;
+      const above = spaceBelow < estPopupHeight;
+      setOpenAbove(above);
+      const available = Math.max(180, above ? spaceAbove : spaceBelow);
+      setPopupMaxHeight(Math.min(available, 520));
+    }
+    setIsOpen(!isOpen);
+  };
 
   const start = toDate(startDate);
   const end = toDate(endDate);
@@ -188,7 +208,7 @@ export default function DateRangePicker({
       )}
       <button
         type="button"
-        onClick={() => setIsOpen(!isOpen)}
+        onClick={toggleOpen}
         className={`w-full px-3 py-3 bg-white border rounded-xl text-sm text-left focus:ring-2 focus:ring-brand-saffron focus:ring-offset-2 outline-none transition-all cursor-pointer flex items-center gap-2 ${
           isOpen ? "border-brand-saffron" : "border-slate-200"
         } ${!startDate ? "text-slate-400" : "text-slate-900"}`}
@@ -213,8 +233,10 @@ export default function DateRangePicker({
 
       {isOpen && (
         <div
-          className="absolute top-full left-0 mt-2 z-50 bg-white rounded-xl shadow-xl border border-slate-200 w-[calc(100vw-2rem)] sm:w-auto"
-          style={{ maxWidth: mode === "range" ? 740 : 300 }}
+          className={`absolute left-0 z-50 bg-white rounded-xl shadow-xl border border-slate-200 overflow-y-auto w-[calc(100vw-2rem)] sm:w-auto ${
+            openAbove ? "bottom-full mb-2" : "top-full mt-2"
+          }`}
+          style={{ maxWidth: mode === "range" ? 740 : 300, maxHeight: popupMaxHeight }}
         >
           <style>{`
             .rdp-root {

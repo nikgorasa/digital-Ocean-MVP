@@ -277,6 +277,7 @@ async function getCityCodeFromCache(countryCode: string, cityName: string): Prom
   try {
     const dbEntry = await cacheGet<Array<{ Code: string; Name: string; CityCode?: string; CityName?: string }>>("CityList", countryCode);
     if (dbEntry) {
+      let bestMatch: { code: string; name: string } | null = null;
       for (const c of dbEntry) {
         const fullName = c.CityName || c.Name || "";
         const code = c.CityCode || c.Code;
@@ -286,6 +287,16 @@ async function getCityCodeFromCache(countryCode: string, cityName: string): Prom
           _cityNameToCodeCache[cacheKey] = String(code);
           return String(code);
         }
+        if (fullName.toLowerCase().includes(cityName.toLowerCase())) {
+          if (!bestMatch || name.length < bestMatch.name.length) {
+            bestMatch = { code: String(code), name: fullName };
+          }
+        }
+      }
+      if (bestMatch) {
+        _cityNameToCodeCache[cacheKey] = bestMatch.code;
+        console.log(`Resolved TBO city code for "${cityName}" from DB cache: ${bestMatch.code} (partial match: ${bestMatch.name})`);
+        return bestMatch.code;
       }
     }
   } catch (e) {

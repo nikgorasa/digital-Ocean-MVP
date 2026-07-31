@@ -2434,3 +2434,34 @@ EPIC 2 removes the India-only restriction. Previously, users could only search h
 - Build: passes clean
 - Preflight (quick): 14/14 gating checks passed
 - Post-task: 13/13 checks passed
+
+---
+
+## Session 50 — 2026-08-01 (Hotels Search Regression + Cache + Calendar Fix)
+
+**Issue:** #316 (HOTELS-SEARCH-FIX)
+
+**Context:** User reported hotels search broken, booking modal clicks broken, calendar last-row clipped. Root causes: stale TBO city code 15648 (no longer valid), PROD static_cache rows dropped (CityList/CountryList missing), DateRangePicker popup absolute/out-of-flow clipping at viewport bottom.
+
+### Fixes
+| # | Change | File | Status |
+|---|--------|------|--------|
+| 1 | Default Goa code 15648 → 119805 | `src/app/hotels/page.tsx` | ✅ |
+| 2 | All 18 FALLBACK_HOTEL_CITIES codes replaced with TBO-static-validated codes | `src/components/CitySearchDropdown.tsx` | ✅ |
+| 3 | getCityCodeFromCache partial-match fallback (shortest-name best match) | `src/lib/tbo-hotel-client.ts` | ✅ |
+| 4 | DateRangePicker flip-above + height cap (180–520px) + internal scroll | `src/components/DateRangePicker.tsx` | ✅ |
+| 5 | Cache re-population DEV + PROD | `cache-refresh.ts` (via `tsx`) | ✅ |
+
+### Cache Re-population (BOTH clusters)
+- CountryList: 1 key (249 countries)
+- CityList: 36 keys (39,009 cities)
+- HotelCodeList: 18 keys (all validated fallback codes)
+- HotelDetails: 3,190 keys (DEV)
+
+### Verification
+- TypeScript: 0 errors
+- Build: passes clean
+- DEV e2e: POST /api/tbo-hotels Goa → 33 hotels (Calangute Grande), Jaipur → 45 hotels (Girisadan Homestay), HTTP 200
+- Playwright calendar: last row fully visible in all viewports (desktop, mobile 390x700, worst-case 1100x400 with internal scroll)
+- Bug #291 modal pointer-events fix confirmed present on main (639f6e8), governance BEH-09 check covers it
+- Preflight: passed

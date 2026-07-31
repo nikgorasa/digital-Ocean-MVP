@@ -88,7 +88,7 @@ function makeRoom(adults = 2, children = 0): RoomConfig {
 export default function HotelsPage() {
   const { user } = useAuth();
   const [showLogin, setShowLogin] = useState(false);
-  const [selectedCity, setSelectedCity] = useState<City>({ code: "15648", name: "Goa", state: "Goa", source: "fallback", country_code: "IN" });
+  const [selectedCity, setSelectedCity] = useState<City>({ code: "119805", name: "Goa", state: "Goa", source: "fallback", country_code: "IN" });
   const [hotelCountryCode, setHotelCountryCode] = useState("IN");
   const [searchScope, setSearchScope] = useState<"domestic" | "international">("domestic");
   const [checkIn, setCheckIn] = useState("");

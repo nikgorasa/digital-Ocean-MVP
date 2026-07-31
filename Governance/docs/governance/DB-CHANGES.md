@@ -226,3 +226,20 @@ VALUES ('default-flight-markup', 'GLOBAL', 'Flight Default 5%', 'FLIGHT', 'PERCE
 ```
 
 **Applied via:** Direct SQL on both DEV + PROD CockroachDB clusters (2026-07-22)
+
+---
+
+## 2026-08-01 — static_cache re-population (data, not schema) — Issue #316
+
+**Cluster:** DEV (`aqua-pony-27730`) + PROD (`losing-cyclops-27787`)
+
+**Problem:** PROD `static_cache` rows had dropped (only `HotelCodeList:119805` remained). DEV cached stale hotel city codes.
+
+**Applied via:** `refreshCountries()` / `refreshCities()` / `refreshHotelCodes()` in `src/lib/cache-refresh.ts`, executed with `npx tsx` against each cluster's DATABASE_URL.
+
+| cacheKey | Before (PROD) | After (both clusters) |
+|----------|---------------|----------------------|
+| CityList | 0 keys | 36 keys (39,009 cities) |
+| CountryList | 0 keys | 1 key (249 countries) |
+| HotelCodeList | 1 key | 18 keys (all validated fallback codes) |
+| HotelDetails | 0 keys | 3,190 keys (DEV; PROD pending — populated on-demand) |
