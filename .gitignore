@@ -43,3 +43,4 @@ yarn-error.log*
 .vercel
 .env*
 .opencode/
+.mimocode/mcp/digitalocean.json
