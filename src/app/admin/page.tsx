@@ -1,114 +1,68 @@
-"use client";
+'use client';
 
-import React, { useEffect, useState } from "react";
-import { motion } from "motion/react";
-import { formatCurrency } from "@/lib";
-import { Users, Package, BarChart3, DollarSign, TrendingUp, Activity } from "lucide-react";
+import { useState } from 'react';
 
-interface DashboardStats {
-  totalUsers: number;
-  activePackages: number;
-  totalLeads: number;
-  totalBookings: number;
-  pendingLeads: number;
-  totalRevenue: number;
-  roleDistribution: Array<{ role: string; count: number }>;
+interface ApiOption {
+  id: string;
+  label: string;
+  enabled: boolean;
+  endpoint: string;
+  mode: 'search' | 'booking' | 'both';
 }
 
-export default function AdminDashboard() {
-  const [stats, setStats] = useState<DashboardStats | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+export default function AdminApiOptions() {
+  const [options, setOptions] = useState<ApiOption[]>([
+    { id: 'tbo-hotel-search', label: 'TBO Hotel Search', enabled: true, endpoint: 'https://affiliate.tektravels.com/HotelAPI', mode: 'search' },
+    { id: 'tbo-hotel-book', label: 'TBO Hotel Booking', enabled: true, endpoint: 'https://HotelBE.tektravels.com/hotelservice.svc/rest', mode: 'booking' },
+    { id: 'tbo-flight-search', label: 'TBO Flight Search', enabled: true, endpoint: 'https://flight.tektravels.com', mode: 'search' },
+  ]);
 
-  const fetchDashboard = () => {
-    setLoading(true);
-    setError(null);
-    fetch("/api/dashboard")
-      .then((res) => {
-        if (!res.ok) throw new Error(`HTTP ${res.status}`);
-        return res.json();
-      })
-      .then((data) => {
-        setStats(data);
-        setLoading(false);
-      })
-      .catch(() => {
-        setError("Failed to load dashboard data.");
-        setLoading(false);
-      });
+  const toggleOption = (id: string) => {
+    setOptions(prev => prev.map(o => o.id === id ? { ...o, enabled: !o.enabled } : o));
   };
 
-  useEffect(() => {
-    fetchDashboard();
-  }, []);
+  const updateEndpoint = (id: string, endpoint: string) => {
+    setOptions(prev => prev.map(o => o.id === id ? { ...o, endpoint } : o));
+  };
 
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center py-12">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-brand-saffron" />
-      </div>
-    );
-  }
-
-  if (error) {
-    return (
-      <div className="text-center py-12">
-        <BarChart3 size={48} className="mx-auto text-red-300 mb-4" />
-        <h2 className="text-xl font-bold text-slate-900 mb-2">Unable to load dashboard</h2>
-        <p className="text-slate-500 mb-4">{error}</p>
-        <button onClick={fetchDashboard} className="btn btn-primary text-sm">
-          Try Again
-        </button>
-      </div>
-    );
-  }
-
-  const kpiCards = [
-    { label: "Total Users", value: stats?.totalUsers || 0, icon: Users, color: "bg-blue-500" },
-    { label: "Active Packages", value: stats?.activePackages || 0, icon: Package, color: "bg-emerald-500" },
-    { label: "Total Leads", value: stats?.totalLeads || 0, icon: BarChart3, color: "bg-purple-500" },
-    { label: "Total Bookings", value: stats?.totalBookings || 0, icon: Activity, color: "bg-orange-500" },
-    { label: "Pending Leads", value: stats?.pendingLeads || 0, icon: TrendingUp, color: "bg-yellow-500" },
-    { label: "Total Revenue", value: formatCurrency(stats?.totalRevenue ?? 0), icon: DollarSign, color: "bg-green-500" },
-  ];
+  const saveConfig = async () => {
+    await fetch('/api/api-options', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ options }),
+    });
+    alert('API Options saved — public route will now serve this config');
+  };
 
   return (
-    <div>
-      <h1 className="text-2xl font-serif font-bold text-slate-900 mb-6">Dashboard</h1>
+    <div className="p-6 max-w-4xl mx-auto">
+      <h1 className="text-2xl font-bold mb-4">Admin — API Options (EPIC #321)</h1>
+      <p className="text-sm text-gray-500 mb-6">Configure which endpoints and modes are active. Changes are served via /api/api-options</p>
 
-      {/* KPI Cards */}
-      <div className="grid grid-cols-2 md:grid-cols-3 gap-4 mb-8">
-        {kpiCards.map((card, i) => (
-          <motion.div
-            key={card.label}
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: i * 0.1 }}
-            className="bg-white rounded-2xl p-5 border border-slate-200"
-          >
-            <div className="flex items-center gap-3 mb-3">
-              <div className={`w-10 h-10 rounded-xl ${card.color} flex items-center justify-center`}>
-                <card.icon size={20} className="text-white" />
-              </div>
+      <div className="space-y-4">
+        {options.map(opt => (
+          <div key={opt.id} className="border rounded-lg p-4 flex items-center gap-4 bg-white">
+            <input type="checkbox" checked={opt.enabled} onChange={() => toggleOption(opt.id)} className="w-5 h-5" />
+            <div className="flex-1">
+              <div className="font-medium">{opt.label}</div>
+              <input
+                type="text"
+                value={opt.endpoint}
+                onChange={e => updateEndpoint(opt.id, e.target.value)}
+                className="w-full mt-1 text-sm font-mono border px-2 py-1 rounded"
+              />
             </div>
-            <p className="text-2xl font-bold text-slate-900">{card.value}</p>
-            <p className="text-sm text-slate-500">{card.label}</p>
-          </motion.div>
+            <select value={opt.mode} onChange={e => setOptions(prev => prev.map(o => o.id === opt.id ? { ...o, mode: e.target.value as any } : o))} className="border px-2 py-1 rounded text-sm">
+              <option value="search">Search only</option>
+              <option value="booking">Booking only</option>
+              <option value="both">Both</option>
+            </select>
+          </div>
         ))}
       </div>
 
-      {/* Role Distribution */}
-      <div className="bg-white rounded-2xl p-6 border border-slate-200">
-        <h2 className="text-lg font-bold text-slate-900 mb-4">User Role Distribution</h2>
-        <div className="space-y-3">
-          {stats?.roleDistribution?.map((item) => (
-            <div key={item.role} className="flex items-center justify-between">
-              <span className="text-sm font-medium text-slate-700">{item.role}</span>
-              <span className="text-sm font-bold text-slate-900">{item.count}</span>
-            </div>
-          ))}
-        </div>
-      </div>
+      <button onClick={saveConfig} className="mt-6 px-6 py-2 bg-black text-white rounded hover:bg-gray-800">Save & Publish to Public API</button>
+      <div className="mt-4 text-xs text-gray-400">Public endpoint: GET /api/api-options — consumed by Flight & Hotel pages via useApiOptions hook</div>
     </div>
   );
 }

@@ -4,7 +4,7 @@
 > **Version:** 1.0.0
 > **Last Updated:** 2026-08-01 (Session 51 — GitHub/Tracker Reconciliation + Duplicate Cleanup + Hotel Price Fix)
 > **Current Sprint:** Sprint 4 — Production Readiness
-> **Maximum GitHub Issue Number:** 321 (new issues start from #322)
+> **Maximum GitHub Issue Number:** 322 (new issues start from #323)
 > **Source of Truth:** This file is the canonical registry of all epics and open GitHub issues. It MUST be updated before any PR/commit. No work can be committed if its EPIC/issue is not tracked here.
 > **SPRINT-PLAN.md:** Condensed view (16 epics grouped by priority). This file is the full view (every open issue individually).
 
@@ -135,8 +135,8 @@
 | 320 | HOTEL-PAN-FIX: PAN field disappears on retry + PAN validation rejects lowercase input | UX-A11Y-EPIC | high | IN_PROGRESS | — | 2026-08-01 | Session 51 |
 
 **Total open issues: 91**
-**Highest open issue number: 321**
-**Next new issue number: #322**
+**Highest open issue number: 322**
+**Next new issue number: #323**
 
 ---
 

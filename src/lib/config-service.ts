@@ -1,6 +1,7 @@
 import type { Prisma } from "@prisma/client";
 import prisma from "./prisma";
 import { encrypt, decrypt } from "./crypto";
+import { DEFAULT_API_OPTIONS, mergeApiOptions, ApiOptions, validateApiOptions } from "./api-options";
 
 export interface ConfigProviderData {
   id: string;
@@ -17,6 +18,7 @@ export interface ConfigProviderData {
   forceMock: boolean;
   isActive: boolean;
   version: number;
+  apiOptions: ApiOptions;
 }
 
 interface CacheEntry {
@@ -51,6 +53,7 @@ function getDefaults(): ConfigProviderData {
     forceMock: false,
     isActive: true,
     version: 0,
+    apiOptions: { ...DEFAULT_API_OPTIONS },
   };
 }
 
@@ -90,6 +93,7 @@ function envFallback(provider: string): ConfigProviderData {
       cfg.forceMock = process.env.TBO_FLIGHT_FORCE_MOCK === "true";
       break;
   }
+  cfg.apiOptions = { ...DEFAULT_API_OPTIONS };
   return cfg;
 }
 
@@ -108,6 +112,7 @@ function mapDbToData(row: {
   forceMock: boolean;
   isActive: boolean;
   version: number;
+  apiOptions?: any;
 }): ConfigProviderData {
   return {
     id: row.id,
@@ -124,6 +129,7 @@ function mapDbToData(row: {
     forceMock: row.forceMock,
     isActive: row.isActive,
     version: row.version,
+    apiOptions: row.apiOptions ? validateApiOptions(row.apiOptions) : { ...DEFAULT_API_OPTIONS },
   };
 }
 
@@ -136,7 +142,9 @@ export async function readConfig(provider: string): Promise<ConfigProviderData> 
   try {
     const row = await prisma.configProvider.findUnique({ where: { provider } });
     if (row) {
-      const data = mapDbToData(row);
+      const data = mapDbToData(row as any);
+      // Merge DB apiOptions over defaults (fail-open preserved)
+      data.apiOptions = mergeApiOptions(data.apiOptions as Partial<ApiOptions>);
       cache.set(provider, { data, expiresAt: Date.now() + CACHE_TTL_MS });
       return data;
     }
@@ -144,7 +152,9 @@ export async function readConfig(provider: string): Promise<ConfigProviderData> 
     // DB unavailable — fall through to env
   }
 
-  return envFallback(provider);
+  const fallback = envFallback(provider);
+  fallback.apiOptions = { ...DEFAULT_API_OPTIONS };
+  return fallback;
 }
 
 export async function upsertConfig(
@@ -162,10 +172,11 @@ export async function upsertConfig(
     forceMock?: boolean;
     isActive?: boolean;
     updatedBy?: string | null;
+    apiOptions?: Partial<ApiOptions>;
   },
 ): Promise<ConfigProviderData> {
-  const updateData: Prisma.ConfigProviderUpdateInput = {};
-  const createData: Prisma.ConfigProviderCreateInput = {
+  const updateData: any = {};
+  const createData: any = {
     provider,
     label: data.label || provider,
   };
@@ -202,6 +213,11 @@ export async function upsertConfig(
     updateData.updatedBy = data.updatedBy;
     createData.updatedBy = data.updatedBy;
   }
+  if (data.apiOptions !== undefined) {
+    const merged = mergeApiOptions(data.apiOptions);
+    updateData.apiOptions = merged as any;
+    createData.apiOptions = merged as any;
+  }
 
   if (data.username !== undefined) {
     const val = data.username ? encrypt(data.username) : null;
@@ -233,7 +249,24 @@ export async function upsertConfig(
     },
   });
 
-  const result = mapDbToData(row);
+    // ConfigAuditLog entry (version bump already in upsert)
+    try {
+      await prisma.configAuditLog.create({
+        data: {
+          provider,
+          action: "upsert",
+          performedBy: data.updatedBy || "system",
+          field: "all",
+          oldValue: null,
+          newValue: JSON.stringify((row as any).apiOptions || DEFAULT_API_OPTIONS),
+        },
+      });
+    } catch {
+      // Audit log optional; fail open
+    }
+
+  const result = mapDbToData(row as any);
+  result.apiOptions = mergeApiOptions(result.apiOptions as Partial<ApiOptions>);
   cache.set(provider, { data: result, expiresAt: Date.now() + CACHE_TTL_MS });
   return result;
 }
