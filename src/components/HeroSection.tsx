@@ -10,7 +10,6 @@ import { useRef } from "react";
 const SEARCH_TABS = [
   { id: "holidays", label: "Plan My Holiday", icon: Map, href: "/holidays" },
   { id: "hotels", label: "Hotels", icon: Building2, href: "/hotels" },
-  { id: "flights", label: "Flights", icon: Plane, href: "/flights" },
 ];
 
 interface HeroSectionProps {
