@@ -1,0 +1,24 @@
+name: gorasa-next
+region: blr
+services:
+  - name: gorasa-next
+    github:
+      repo: nikgorasa/digital-Ocean-MVP
+      branch: main
+      deploy_on_push: true
+    environment_slug: nodejs
+    instance_size_slug: basic-xs
+    run_command: npm run start
+    build_command: npm run build
+    routes:
+      - path: /
+    envs:
+      - key: NODE_ENV
+        scope: RUN_TIME
+        value: production
+      - key: DATABASE_URL
+        scope: RUN_TIME
+        value: ${DATABASE_URL}
+      - key: DIRECT_URL
+        scope: RUN_TIME
+        value: ${DIRECT_URL}
