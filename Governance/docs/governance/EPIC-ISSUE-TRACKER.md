@@ -135,8 +135,8 @@
 | 320 | HOTEL-PAN-FIX: PAN field disappears on retry + PAN validation rejects lowercase input | UX-A11Y-EPIC | high | IN_PROGRESS | — | 2026-08-01 | Session 51 |
 
 **Total open issues: 91**
-**Highest open issue number: 323**
-**Next new issue number: #324**
+**Highest open issue number: 324**
+**Next new issue number: #325**
 
 ---
 

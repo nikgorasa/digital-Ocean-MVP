@@ -34,7 +34,11 @@ function getEndUserIp(): string {
 }
 
 export function setEndUserIp(ip: string): void {
-  _defaultEndUserIp = ip;
+  if (ip.includes(':')) {
+    _defaultEndUserIp = "192.168.1.1";
+  } else {
+    _defaultEndUserIp = ip;
+  }
 }
 
 async function getClientId(): Promise<string> {
